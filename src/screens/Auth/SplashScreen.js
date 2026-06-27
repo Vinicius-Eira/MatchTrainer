@@ -64,9 +64,9 @@ export default function SplashScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#070707" />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
       <Animated.Image
-        source={require("../../assets/images/PersonalMatch_logo.png")}
+        source={require("../../assets/images/MatchTrainer_logo.png")}
         style={[
           styles.logo,
           {
@@ -83,12 +83,12 @@ export default function SplashScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: "#070707", 
+    backgroundColor: "#000000", 
     justifyContent: "center", 
     alignItems: "center" 
   },
   logo: { 
-    width: 320, 
-    height: 320 
+    width: 360, 
+    height: 360 
   },
-});
+});             
