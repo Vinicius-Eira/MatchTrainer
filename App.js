@@ -113,7 +113,6 @@ export default function App() {
   });
 
   useEffect(() => {
-    // FUNÇÃO TRATOR: Força a navegação quando o App estiver pronto
     const forcarNavegacao = (telaDestino) => {
       const tentativa = setInterval(() => {
         if (navigationRef.isReady()) {
@@ -157,7 +156,7 @@ export default function App() {
               if (url.includes('PersonalLogin')) telaDestino = 'PersonalLogin';
 
               Alert.alert("Conta Ativada! 🎉", "Sua conta foi ativada com sucesso. É só você fazer login.");
-              forcarNavegacao(telaDestino); // Usa a paciência mecânica para abrir a tela certa
+              forcarNavegacao(telaDestino); 
             }
           }
         }
