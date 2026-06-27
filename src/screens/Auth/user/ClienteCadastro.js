@@ -12,7 +12,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import BotaoPrincipal from "../../../components/BotaoPrincipal";
 import { supabase } from "../../../services/supabase";
 import { theme } from "../../../theme/theme";
@@ -29,8 +31,9 @@ export default function ClienteCadastro({ navigation }) {
   const [inputFocado, setInputFocado] = useState(null);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
+  const [modalSucesso, setModalSucesso] = useState(false);
 
-  const handleCadastro = async () => {
+ const handleCadastro = async () => {
     if (!nome || !email || !senha || !confirmarSenha) {
       return Alert.alert("Atenção", "Por favor, preencha todos os campos.");
     }
@@ -44,32 +47,23 @@ export default function ClienteCadastro({ navigation }) {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
+      const { error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
         password: senha,
-        options: { data: { nome: nome.trim(), tipo: "cliente" } },
+        options: { 
+          data: { nome: nome.trim(), tipo: "cliente" },
+          emailRedirectTo: 'exp://192.168.15.26:8081/--/ClienteLogin'
+        },
       });
 
       if (error) throw error;
 
-      if (data?.user) {
-        const { error: dbError } = await supabase
-          .from("usuarios")
-          .upsert([
-            { id: data.user.id, nome: nome.trim(), email: email.trim() },
-          ]);
+      setModalSucesso(true);
 
-        if (dbError) throw dbError;
-      }
-
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "ClienteSetup" }],
-      });
     } catch (error) {
       Alert.alert(
         "Erro no Cadastro",
-        error.message || "Não foi possível concluir o cadastro.",
+        error.message || "Não foi possível concluir o cadastro."
       );
     } finally {
       setLoading(false);
@@ -81,25 +75,33 @@ export default function ClienteCadastro({ navigation }) {
       <View style={styles.glowTopLeft} />
       <View style={styles.glowBottomRight} />
 
+      <BlurView
+        intensity={Platform.OS === 'ios' ? 70 : 100}
+        tint="dark"
+        experimentalBlurMethod="dimezisBlurView"
+        style={styles.headerGlass}
+      >
+        <TouchableOpacity
+          style={styles.btnVoltar}
+          onPress={() => navigation.navigate("ChoiceScreen")}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+      </BlurView>
+
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0} 
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <View>
-            <TouchableOpacity
-              style={styles.backButtonPill}
-              onPress={() => navigation.navigate("ChoiceScreen")}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="arrow-back" size={18} color="#FFF" />
-              <Text style={styles.backButtonText}>Voltar</Text>
-            </TouchableOpacity>
-
-            <View style={styles.header}>
+            <View style={styles.headerTextContainer}>
               <Text style={styles.title}>
                 Sua jornada {"\n"}
                 <Text style={styles.titleHighlight}>começa aqui.</Text>
@@ -120,16 +122,13 @@ export default function ClienteCadastro({ navigation }) {
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color={inputFocado === "nome" ? theme.colors.primary : "#777"}
+                  color={inputFocado === "nome" ? theme.colors.primary : theme.colors.textMuted}
                   style={styles.icon}
                 />
                 <TextInput
-                  style={[
-                    styles.input,
-                    Platform.OS === "web" && { outlineStyle: "none" },
-                  ]}
+                  style={styles.input}
                   placeholder="Como quer ser chamado?"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={theme.colors.textMuted}
                   value={nome}
                   onChangeText={setNome}
                   onFocus={() => setInputFocado("nome")}
@@ -151,17 +150,14 @@ export default function ClienteCadastro({ navigation }) {
                   name="mail-outline"
                   size={20}
                   color={
-                    inputFocado === "email" ? theme.colors.primary : "#777"
+                    inputFocado === "email" ? theme.colors.primary : theme.colors.textMuted
                   }
                   style={styles.icon}
                 />
                 <TextInput
-                  style={[
-                    styles.input,
-                    Platform.OS === "web" && { outlineStyle: "none" },
-                  ]}
+                  style={styles.input}
                   placeholder="Seu melhor e-mail"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={theme.colors.textMuted}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -184,17 +180,14 @@ export default function ClienteCadastro({ navigation }) {
                   name="lock-closed-outline"
                   size={20}
                   color={
-                    inputFocado === "senha" ? theme.colors.primary : "#777"
+                    inputFocado === "senha" ? theme.colors.primary : theme.colors.textMuted
                   }
                   style={styles.icon}
                 />
                 <TextInput
-                  style={[
-                    styles.input,
-                    Platform.OS === "web" && { outlineStyle: "none" },
-                  ]}
+                  style={styles.input}
                   placeholder="Crie uma senha forte"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={theme.colors.textMuted}
                   secureTextEntry={!mostrarSenha}
                   value={senha}
                   onChangeText={setSenha}
@@ -212,7 +205,7 @@ export default function ClienteCadastro({ navigation }) {
                   <Ionicons
                     name={mostrarSenha ? "eye-off-outline" : "eye-outline"}
                     size={20}
-                    color="#888"
+                    color={theme.colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -227,17 +220,14 @@ export default function ClienteCadastro({ navigation }) {
                   name="shield-checkmark-outline"
                   size={20}
                   color={
-                    inputFocado === "confirmar" ? theme.colors.primary : "#777"
+                    inputFocado === "confirmar" ? theme.colors.primary : theme.colors.textMuted
                   }
                   style={styles.icon}
                 />
                 <TextInput
-                  style={[
-                    styles.input,
-                    Platform.OS === "web" && { outlineStyle: "none" },
-                  ]}
+                  style={styles.input}
                   placeholder="Repita a senha"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={theme.colors.textMuted}
                   secureTextEntry={!mostrarConfirmarSenha}
                   value={confirmarSenha}
                   onChangeText={setConfirmarSenha}
@@ -259,7 +249,7 @@ export default function ClienteCadastro({ navigation }) {
                       mostrarConfirmarSenha ? "eye-off-outline" : "eye-outline"
                     }
                     size={20}
-                    color="#888"
+                    color={theme.colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -283,7 +273,7 @@ export default function ClienteCadastro({ navigation }) {
               <View style={styles.benefitCard}>
                 <LinearGradient
                   colors={[
-                    "rgba(255, 107, 0, 0.15)",
+                    theme.colors.primaryLight,
                     "rgba(255, 107, 0, 0.05)",
                   ]}
                   style={styles.benefitIconBg}
@@ -305,7 +295,7 @@ export default function ClienteCadastro({ navigation }) {
               <View style={styles.benefitCard}>
                 <LinearGradient
                   colors={[
-                    "rgba(255, 107, 0, 0.15)",
+                    theme.colors.primaryLight,
                     "rgba(255, 107, 0, 0.05)",
                   ]}
                   style={styles.benefitIconBg}
@@ -344,12 +334,39 @@ export default function ClienteCadastro({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={modalSucesso} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalIconWrapper}>
+              <MaterialCommunityIcons name="email-fast-outline" size={40} color={theme.colors.primary} />
+            </View>
+            <Text style={styles.modalTitle}>Quase lá!</Text>
+            <Text style={styles.modalText}>
+              Enviamos um link de confirmação para{"\n"}
+              <Text style={styles.modalEmail}>{email}</Text>{"\n\n"}
+              Verifique sua caixa de entrada e ative sua conta antes de fazer o login.
+            </Text>
+
+            <TouchableOpacity 
+              style={styles.modalBtn}
+              onPress={() => {
+                setModalSucesso(false);
+                navigation.navigate("ClienteLogin");
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalBtnText}>Ir para o Login</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: "#070707", position: "relative" },
+  mainContainer: { flex: 1, backgroundColor: theme.colors.background, position: "relative" },
   keyboardView: { flex: 1 },
 
   glowTopLeft: {
@@ -375,41 +392,45 @@ const styles = StyleSheet.create({
     blurRadius: 60,
   },
 
+  headerGlass: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
+    paddingBottom: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderColor: theme.colors.borderLight,
+    backgroundColor: Platform.OS === "android" ? "rgba(0,0,0,0.5)" : "transparent",
+    overflow: "hidden",
+  },
+  btnVoltar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.colors.surfaceLight,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.borderLight,
+  },
+
   scrollContent: {
     flexGrow: 1,
     padding: 24,
-    paddingTop: Platform.OS === "ios" ? 60 : 40,
+    paddingTop: Platform.OS === "ios" ? 130 : 110,
     paddingBottom: 40,
-    justifyContent: "space-between",
-  },
+  }, 
 
-  backButtonPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#121212",
-    alignSelf: "flex-start",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    marginBottom: 30,
-    borderWidth: 1,
-    borderColor: "#222",
-  },
-  backButtonText: {
-    color: "#CCC",
-    fontFamily: theme.fonts.body,
-    fontSize: 12,
-    marginLeft: 6,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-
-  header: { marginBottom: 35 },
+  headerTextContainer: { marginBottom: 35 },
   title: {
     fontFamily: theme.fonts.title,
     fontSize: 36,
-    color: "#FFF",
+    color: theme.colors.text,
     letterSpacing: -0.5,
     lineHeight: 42,
   },
@@ -417,7 +438,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: theme.fonts.body,
     fontSize: 15,
-    color: "#999",
+    color: theme.colors.textSecondary,
     marginTop: 12,
     lineHeight: 24,
   },
@@ -427,27 +448,22 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#121212",
+    backgroundColor: theme.colors.surface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#222",
+    borderColor: theme.colors.border,
     paddingLeft: 16,
     height: 64,
   },
   inputContainerFocused: {
     borderColor: theme.colors.primary,
-    backgroundColor: "rgba(255, 107, 0, 0.05)",
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
+    backgroundColor: theme.colors.primaryLight,
   },
   icon: { marginRight: 12 },
   eyeIcon: { paddingHorizontal: 16, height: "100%", justifyContent: "center" },
   input: {
     flex: 1,
-    color: "#FFF",
+    color: theme.colors.text,
     fontFamily: theme.fonts.body,
     fontSize: 16,
     height: "100%",
@@ -462,9 +478,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  benefitsHeaderLine: { flex: 1, height: 1, backgroundColor: "#222" },
+  benefitsHeaderLine: { flex: 1, height: 1, backgroundColor: theme.colors.border },
   benefitsTitle: {
-    color: "#888",
+    color: theme.colors.textSecondary,
     fontSize: 11,
     textTransform: "uppercase",
     fontWeight: "900",
@@ -475,12 +491,12 @@ const styles = StyleSheet.create({
   benefitCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0F0F0F",
+    backgroundColor: theme.colors.surface,
     padding: 18,
     borderRadius: 20,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#1A1A1A",
+    borderColor: theme.colors.border,
   },
   benefitIconBg: {
     width: 44,
@@ -493,13 +509,13 @@ const styles = StyleSheet.create({
   },
   benefitTextWrap: { flex: 1, marginLeft: 16 },
   benefitTitle: {
-    color: "#FFF",
+    color: theme.colors.text,
     fontSize: 15,
     fontWeight: "900",
     marginBottom: 4,
     letterSpacing: 0.5,
   },
-  benefitDesc: { color: "#888", fontSize: 13, lineHeight: 18 },
+  benefitDesc: { color: theme.colors.textSecondary, fontSize: 13, lineHeight: 18 },
 
   footer: {
     flexDirection: "row",
@@ -507,7 +523,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 40,
   },
-  footerText: { color: "#777", fontFamily: theme.fonts.body, fontSize: 15 },
+  footerText: { color: theme.colors.textSecondary, fontFamily: theme.fonts.body, fontSize: 15 },
   footerButton: { flexDirection: "row", alignItems: "center", paddingLeft: 8 },
   footerLink: {
     color: theme.colors.primary,
@@ -515,5 +531,71 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "bold",
     letterSpacing: 0.5,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalBox: {
+    backgroundColor: theme.colors.surface,
+    width: "100%",
+    borderRadius: 24,
+    padding: 32,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.borderLight,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalIconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: theme.colors.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 107, 0, 0.2)",
+  },
+  modalTitle: {
+    color: theme.colors.text,
+    fontSize: 26,
+    fontFamily: theme.fonts.title,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  modalText: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.fonts.body,
+    fontSize: 15,
+    textAlign: "center",
+    lineHeight: 24,
+    marginBottom: 30,
+  },
+  modalEmail: {
+    color: theme.colors.text,
+    fontWeight: "900",
+  },
+  modalBtn: {
+    backgroundColor: theme.colors.primary,
+    width: "100%",
+    height: 56,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalBtnText: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "900",
+    textTransform: "uppercase",
   },
 });

@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { useRef } from "react";
 import {
   Animated,
@@ -41,29 +41,19 @@ const ChoiceCard = ({ title, description, icon, primary, onPress }) => {
           { transform: [{ scale: scaleAnim }] },
         ]}
       >
-        <View style={[styles.iconWrapper, primary ? styles.iconWrapperPrimary : styles.iconWrapperSecondary]}>
+        <View style={styles.iconWrapper}>
           <Ionicons
             name={icon}
-            size={32}
-            color={primary ? theme.colors.primary : theme.colors.primary}
+            size={28}
+            color={theme.colors.primary}
           />
         </View>
         
         <View style={styles.textWrapper}>
-          <Text
-            style={[
-              styles.cardTitle,
-              primary ? { color: "#000" } : { color: "#FFF" },
-            ]}
-          >
+          <Text style={styles.cardTitle}>
             {title}
           </Text>
-          <Text
-            style={[
-              styles.cardDesc,
-              primary ? { color: "rgba(0,0,0,0.7)" } : { color: "#888" },
-            ]}
-          >
+          <Text style={styles.cardDesc}>
             {description}
           </Text>
         </View>
@@ -71,7 +61,7 @@ const ChoiceCard = ({ title, description, icon, primary, onPress }) => {
         <Ionicons 
           name="chevron-forward" 
           size={24} 
-          color={primary ? "rgba(0,0,0,0.5)" : "#555"} 
+          color={primary ? theme.colors.primary : theme.colors.textMuted} 
         />
       </Animated.View>
     </TouchableOpacity>
@@ -86,8 +76,24 @@ export default function ChoiceScreen({ navigation }) {
 
       <View style={styles.centralView}>
         <View style={styles.header}>
-          <Text style={styles.mainTitle}>Como você quer{"\n"}<Text style={styles.highlightTitle}>acessar o app?</Text></Text>
-          <Text style={styles.subtitle}>Escolha o seu perfil para continuar</Text>
+          <Text style={styles.mainTitle}>Sua evolução{"\n"}<Text style={styles.highlightTitle}>começa aqui</Text></Text>
+          
+          <Text style={styles.subtitle}>Encontre. Conecte. Evolua.</Text>
+        </View>
+
+        <View style={styles.ruleOfThreeRow}>
+          <View style={styles.ruleItem}>
+            <View style={styles.ruleIconBg}><FontAwesome5 name="fire" size={14} color={theme.colors.primary} /></View>
+            <Text style={styles.ruleText}>Match Exato</Text>
+          </View>
+          <View style={styles.ruleItem}>
+            <View style={styles.ruleIconBg}><Ionicons name="chatbubbles" size={14} color={theme.colors.primary} /></View>
+            <Text style={styles.ruleText}>Contato Direto</Text>
+          </View>
+          <View style={styles.ruleItem}>
+            <View style={styles.ruleIconBg}><FontAwesome5 name="dumbbell" size={12} color={theme.colors.primary} /></View>
+            <Text style={styles.ruleText}>Alta Performance</Text>
+          </View>
         </View>
 
         <View style={styles.cardsContainer}>
@@ -114,7 +120,7 @@ export default function ChoiceScreen({ navigation }) {
       </View>
 
       <Text style={styles.footerText}>
-        Ao continuar você aceita nossos Termos de Uso
+        Ao continuar você aceita nossos Termos de Uso e Privacidade
       </Text>
     </View>
   );
@@ -123,12 +129,12 @@ export default function ChoiceScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#070707",
+    backgroundColor: theme.colors.background,
     padding: 24,
     position: "relative",
   },
   
-  glowTopLeft: { position: 'absolute', top: -100, left: -50, width: 250, height: 250, borderRadius: 125, backgroundColor: theme.colors.primary, opacity: 0.15, blurRadius: 60 },
+  glowTopLeft: { position: 'absolute', top: -100, left: -50, width: 250, height: 250, borderRadius: 125, backgroundColor: theme.colors.primary, opacity: 0.12, blurRadius: 60 },
   glowBottomRight: { position: 'absolute', bottom: -100, right: -50, width: 300, height: 300, borderRadius: 150, backgroundColor: theme.colors.primary, opacity: 0.08, blurRadius: 80 },
 
   centralView: {
@@ -138,16 +144,15 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    marginBottom: 40,
-    marginTop: -20,
     alignItems: "center", 
+    marginBottom: 25,
   },
   mainTitle: {
     fontFamily: theme.fonts.title,
-    fontSize: 38,
-    color: "#FFF",
+    fontSize: 42, 
+    color: theme.colors.text,
     letterSpacing: -0.5,
-    lineHeight: 44,
+    lineHeight: 48,
     textAlign: "center", 
   },
   highlightTitle: {
@@ -156,9 +161,41 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: theme.fonts.body,
     fontSize: 16,
-    color: "#888",
+    fontWeight: 'bold',
+    color: theme.colors.textSecondary,
     marginTop: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
     textAlign: "center", 
+  },
+
+  ruleOfThreeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 40,
+    paddingHorizontal: 10,
+  },
+  ruleItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  ruleIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 0, 0.2)',
+  },
+  ruleText: {
+    color: theme.colors.textBody,
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    textTransform: 'uppercase',
   },
 
   cardsContainer: {
@@ -173,17 +210,19 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   cardPrimary: { 
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1.5,
+    borderColor: theme.colors.primary,
     shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 15,
     elevation: 8,
   },
   cardSecondary: {
-    backgroundColor: "#121212",
+    backgroundColor: theme.colors.surface,
     borderWidth: 1.5,
-    borderColor: "#222",
+    borderColor: theme.colors.border,
   },
 
   iconWrapper: {
@@ -193,14 +232,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
-  },
-  iconWrapperPrimary: {
-    backgroundColor: "#000",
-  },
-  iconWrapperSecondary: {
-    backgroundColor: "rgba(255, 107, 0, 0.1)",
+    backgroundColor: theme.colors.primaryLight,
     borderWidth: 1,
-    borderColor: "rgba(255, 107, 0, 0.2)",
+    borderColor: 'rgba(255, 107, 0, 0.2)',
   },
 
   textWrapper: {
@@ -208,20 +242,22 @@ const styles = StyleSheet.create({
   },
   cardTitle: { 
     fontFamily: theme.fonts.title, 
-    fontSize: 20,
+    fontSize: 22,
     letterSpacing: 0.5,
+    color: theme.colors.text,
   },
   cardDesc: {
     fontFamily: theme.fonts.body,
-    fontSize: 14,
+    fontSize: 13,
     marginTop: 4,
-    lineHeight: 20,
+    lineHeight: 18,
+    color: theme.colors.textSecondary,
   },
 
   footerText: {
     fontFamily: theme.fonts.body,
-    fontSize: 13,
-    color: "#555",
+    fontSize: 12,
+    color: theme.colors.textMuted,
     textAlign: "center",
     marginBottom: Platform.OS === 'ios' ? 20 : 10,
   },

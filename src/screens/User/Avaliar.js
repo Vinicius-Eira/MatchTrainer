@@ -24,7 +24,6 @@ export default function Avaliar({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const [sucesso, setSucesso] = useState(false);
 
-  // Animações
   const starScale = useRef(new Animated.Value(1)).current;
   const checkScale = useRef(new Animated.Value(0)).current;
 

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "PersonalMatch",
+    "name": "MatchTrainer",
     "slug": "PersonalMatch",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "personalmatch",
+    "scheme": "matchtrainer",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -25,7 +25,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.vsantzz.PersonalMatch",
+      "package": "com.vsantzz.MatchTrainer",
       "intentFilters": [
         {
           "action": "VIEW",

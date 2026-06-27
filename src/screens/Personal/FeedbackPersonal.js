@@ -69,7 +69,7 @@ export default function FeedbackPersonal({ navigation }) {
 
       Alert.alert(
         "Feedback Enviado!",
-        "Obrigado! Sua opinião vai direto para a equipe de desenvolvimento do PersonalMatch.",
+        "Obrigado! Sua opinião vai direto para a equipe de desenvolvimento do MatchTrainer.",
         [{ text: "Voltar ao Dashboard", onPress: () => navigation.goBack() }],
       );
     } catch (error) {
@@ -111,7 +111,7 @@ export default function FeedbackPersonal({ navigation }) {
                 size={40}
                 color={theme.colors.primary}
               />
-              <Text style={styles.title}>Ajude a melhorar o PersonalMatch</Text>
+              <Text style={styles.title}>Ajude a melhorar o MatchTrainer</Text>
               <Text style={styles.subtitle}>
                 Sua opinião como personal trainer é essencial para construirmos as
                 melhores ferramentas.

@@ -1,18 +1,18 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import {
-    Alert,
-    Dimensions,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { supabase } from "../../../services/supabase";
 import { theme } from "../../../theme/theme";
@@ -32,49 +32,48 @@ export default function ClienteLogin({ navigation }) {
     if (!email || !senha)
       return Alert.alert(
         "Atenção",
-        "Preencha seu e-mail e senha para continuar.",
+        "Preencha seu e-mail e senha para continuar."
       );
 
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password: senha,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password: senha,
+      });
 
-    if (error) {
-      setLoading(false);
-      return Alert.alert(
-        "Ops!",
-        "E-mail ou senha incorretos. Tente novamente.",
-      );
-    }
+      if (error) throw error;
 
-    if (data?.user) {
-      const { data: userData } = await supabase
-        .from("usuarios")
-        .select("nome, cidade, telefone, objetivo, nivel_experiencia")
-        .eq("id", data.user.id)
-        .single();
+      if (data?.user) {
+        const { data: userData } = await supabase
+          .from("usuarios")
+          .select("nome, cidade, telefone, preferencias") 
+          .eq("id", data.user.id)
+          .single();
 
-      setLoading(false);
-
-      if (userData) {
-        if (!userData.nome || !userData.cidade || !userData.telefone) {
-          navigation.reset({ index: 0, routes: [{ name: "ClienteSetup" }] });
-        } else if (!userData.objetivo || !userData.nivel_experiencia) {
-          navigation.reset({ index: 0, routes: [{ name: "SetupBuscaAluno" }] });
+        if (userData) {
+          if (!userData.nome || !userData.cidade || !userData.telefone || !userData.preferencias) {
+            navigation.reset({ index: 0, routes: [{ name: "ClienteSetup" }] });
+          } else {
+            navigation.replace("UsuarioTabs");
+          }
         } else {
-          navigation.replace("UsuarioTabs");
+          navigation.reset({ index: 0, routes: [{ name: "ClienteSetup" }] });
         }
-      } else {
-        navigation.reset({ index: 0, routes: [{ name: "ClienteSetup" }] });
       }
+    } catch (error) {
+      Alert.alert(
+        "Ops!",
+        "E-mail ou senha incorretos. Tente novamente."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <View style={styles.mainContainer}>
-      <StatusBar barStyle="light-content" backgroundColor="#070707" />
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
 
       <View style={styles.glowTopLeft} />
       <View style={styles.glowBottomRight} />
@@ -88,7 +87,7 @@ export default function ClienteLogin({ navigation }) {
           <Ionicons
             name="chevron-back"
             size={24}
-            color="#FFF"
+            color={theme.colors.text}
             style={{ marginLeft: -2 }}
           />
         </TouchableOpacity>
@@ -96,18 +95,20 @@ export default function ClienteLogin({ navigation }) {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined} 
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled" 
         >
           <View style={styles.innerContent}>
             <View style={styles.header}>
               <View style={styles.iconWrapper}>
                 <View style={styles.iconGlow} />
                 <LinearGradient
-                  colors={["rgba(255, 107, 0, 0.2)", "rgba(255, 107, 0, 0.02)"]}
+                  colors={[theme.colors.primaryLight, "rgba(255, 107, 0, 0.02)"]}
                   style={styles.iconCircle}
                 >
                   <Ionicons
@@ -133,7 +134,7 @@ export default function ClienteLogin({ navigation }) {
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color={focoEmail ? theme.colors.primary : "#666"}
+                  color={focoEmail ? theme.colors.primary : theme.colors.textMuted}
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -142,7 +143,7 @@ export default function ClienteLogin({ navigation }) {
                     Platform.OS === "web" && { outlineStyle: "none" },
                   ]}
                   placeholder="Seu e-mail"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={theme.colors.textMuted}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -161,7 +162,7 @@ export default function ClienteLogin({ navigation }) {
                 <Ionicons
                   name="lock-closed-outline"
                   size={20}
-                  color={focoSenha ? theme.colors.primary : "#666"}
+                  color={focoSenha ? theme.colors.primary : theme.colors.textMuted}
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -170,7 +171,7 @@ export default function ClienteLogin({ navigation }) {
                     Platform.OS === "web" && { outlineStyle: "none" },
                   ]}
                   placeholder="Sua senha"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={theme.colors.textMuted}
                   secureTextEntry={!mostrarSenha}
                   value={senha}
                   onChangeText={setSenha}
@@ -189,13 +190,14 @@ export default function ClienteLogin({ navigation }) {
                   <Ionicons
                     name={mostrarSenha ? "eye-off-outline" : "eye-outline"}
                     size={20}
-                    color="#888"
+                    color={theme.colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
 
               <TouchableOpacity
                 style={styles.forgotPassword}
+                onPress={() => navigation.navigate("EsqueciSenha")}
                 activeOpacity={0.7}
               >
                 <Text style={styles.forgotPasswordText}>Esqueceu a senha?</Text>
@@ -232,7 +234,7 @@ export default function ClienteLogin({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: "#070707", position: "relative" },
+  mainContainer: { flex: 1, backgroundColor: theme.colors.background, position: "relative" },
 
   glowTopLeft: {
     position: "absolute",
@@ -257,8 +259,8 @@ const styles = StyleSheet.create({
     blurRadius: 80,
   },
 
-  scrollContent: { flexGrow: 1, justifyContent: "center" },
-  innerContent: { padding: 24, paddingTop: 80, paddingBottom: 40 },
+  scrollContent: { flexGrow: 1 }, 
+  innerContent: { padding: 24, paddingTop: Platform.OS === "ios" ? 140 : 100, paddingBottom: 40 }, 
 
   headerAbsolute: {
     position: "absolute",
@@ -267,14 +269,14 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   btnVoltar: {
-    backgroundColor: "#121212",
+    backgroundColor: theme.colors.surface,
     width: 44,
     height: 44,
     borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#2A2A2A",
+    borderColor: theme.colors.borderLight,
   },
 
   header: { alignItems: "center", marginBottom: 45, marginTop: 20 },
@@ -306,7 +308,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: theme.fonts.title,
     fontSize: 38,
-    color: "#FFF",
+    color: theme.colors.text,
     letterSpacing: -0.5,
     lineHeight: 44,
     textAlign: "center",
@@ -315,7 +317,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: theme.fonts.body,
     fontSize: 15,
-    color: "#888",
+    color: theme.colors.textSecondary,
     marginTop: 12,
     lineHeight: 22,
     textAlign: "center",
@@ -326,17 +328,17 @@ const styles = StyleSheet.create({
   inputBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#121212",
+    backgroundColor: theme.colors.surface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#222",
+    borderColor: theme.colors.border,
     paddingLeft: 16,
     marginBottom: 16,
     height: 64,
   },
   inputBoxFocused: {
     borderColor: theme.colors.primary,
-    backgroundColor: "rgba(255, 107, 0, 0.03)",
+    backgroundColor: theme.colors.primaryLight,
     shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.2,
@@ -346,7 +348,7 @@ const styles = StyleSheet.create({
   inputIcon: { marginRight: 12 },
   input: {
     flex: 1,
-    color: "#FFF",
+    color: theme.colors.text,
     fontSize: 16,
     fontFamily: theme.fonts.body,
     height: "100%",
@@ -361,7 +363,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   forgotPasswordText: {
-    color: "#AAA",
+    color: theme.colors.textSecondary,
     fontFamily: theme.fonts.body,
     fontSize: 14,
     fontWeight: "700",
@@ -380,7 +382,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   btnPrimaryText: {
-    color: "#000",
+    color: theme.colors.backgroundPure,
     fontSize: 17,
     fontWeight: "900",
     letterSpacing: 0.5,
@@ -392,7 +394,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 45,
   },
-  footerText: { color: "#777", fontFamily: theme.fonts.body, fontSize: 15 },
+  footerText: { color: theme.colors.textSecondary, fontFamily: theme.fonts.body, fontSize: 15 },
   registerTextHighlight: {
     color: theme.colors.primary,
     fontFamily: theme.fonts.title,

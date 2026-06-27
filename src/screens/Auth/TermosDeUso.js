@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
-import { TruckElectricIcon } from "lucide-react";
 
 const { width } = Dimensions.get("window");
 
@@ -87,9 +86,9 @@ export default function TermosDeUso({ navigation }) {
         showsVerticalScrollIndicator={true}
       >
         <Text style={styles.termosText}>
-          Bem-vindo ao PersonalMatch. Ao usar este aplicativo você concorda com:
+          Bem-vindo ao MatchTrainer. Ao usar este aplicativo você concorda com:
           {"\n\n"}
-          <Text style={styles.bold}>1. USO DO SERVIÇO:</Text> O PersonalMatch
+          <Text style={styles.bold}>1. USO DO SERVIÇO:</Text> O MatchTrainer
           conecta clientes a personal trainers. Não somos responsáveis pela
           qualidade dos serviços prestados pelos profissionais cadastrados.
           {"\n\n"}
@@ -138,7 +137,7 @@ export default function TermosDeUso({ navigation }) {
 
         <TouchableOpacity
           onPress={() =>
-            Linking.openURL("https://personalmatch.com.br/privacidade")
+            Linking.openURL("https://matchtrainer.com.br/privacidade")
           }
           style={styles.linkContainer}
         >
