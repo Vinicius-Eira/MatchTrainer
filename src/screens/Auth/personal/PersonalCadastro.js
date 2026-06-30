@@ -63,7 +63,6 @@ export default function PersonalCadastro({ navigation }) {
 
       if (error) throw error;
 
-      // FORÇAMOS O MODAL A ABRIR
       setModalSucesso(true);
 
     } catch (error) {
@@ -98,8 +97,9 @@ export default function PersonalCadastro({ navigation }) {
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+        enabled={Platform.OS === "ios"}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
