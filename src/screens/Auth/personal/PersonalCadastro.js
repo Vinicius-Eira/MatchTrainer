@@ -96,10 +96,9 @@ export default function PersonalCadastro({ navigation }) {
       </BlurView>
 
       <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-        enabled={Platform.OS === "ios"}
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0} 
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
