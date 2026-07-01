@@ -64,7 +64,6 @@ export default function PersonalCadastro({ navigation }) {
       if (error) throw error;
 
       setModalSucesso(true);
-
     } catch (error) {
       Alert.alert(
         "Erro no Cadastro",
@@ -98,7 +97,7 @@ export default function PersonalCadastro({ navigation }) {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0} 
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -436,7 +435,6 @@ export default function PersonalCadastro({ navigation }) {
             >
               <Text style={styles.modalBtnText}>Ir para Login</Text>
             </TouchableOpacity>
-            
           </View>
         </View>
       </Modal>
@@ -542,11 +540,6 @@ const styles = StyleSheet.create({
   inputContainerFocused: {
     borderColor: theme.colors.primary,
     backgroundColor: theme.colors.primaryLight,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
   },
   icon: { marginRight: 12 },
   eyeIcon: { paddingHorizontal: 16, height: "100%", justifyContent: "center" },

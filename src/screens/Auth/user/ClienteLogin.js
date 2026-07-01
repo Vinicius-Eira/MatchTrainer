@@ -339,11 +339,6 @@ const styles = StyleSheet.create({
   inputBoxFocused: {
     borderColor: theme.colors.primary,
     backgroundColor: theme.colors.primaryLight,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
   },
   inputIcon: { marginRight: 12 },
   input: {
