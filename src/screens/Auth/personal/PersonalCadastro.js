@@ -57,14 +57,13 @@ export default function PersonalCadastro({ navigation }) {
             cref: cref.trim(),
             tipo: "personal",
           },
-          emailRedirectTo: "exp://192.168.15.26:8081/--/PersonalLogin",
+          emailRedirectTo: 'matchtrainer://PersonalLogin'
         },
       });
 
       if (error) throw error;
 
       setModalSucesso(true);
-
     } catch (error) {
       Alert.alert(
         "Erro no Cadastro",
@@ -96,10 +95,9 @@ export default function PersonalCadastro({ navigation }) {
       </BlurView>
 
       <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-        enabled={Platform.OS === "ios"}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -437,7 +435,6 @@ export default function PersonalCadastro({ navigation }) {
             >
               <Text style={styles.modalBtnText}>Ir para Login</Text>
             </TouchableOpacity>
-            
           </View>
         </View>
       </Modal>
@@ -543,11 +540,6 @@ const styles = StyleSheet.create({
   inputContainerFocused: {
     borderColor: theme.colors.primary,
     backgroundColor: theme.colors.primaryLight,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
   },
   icon: { marginRight: 12 },
   eyeIcon: { paddingHorizontal: 16, height: "100%", justifyContent: "center" },

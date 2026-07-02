@@ -95,9 +95,8 @@ export default function ClienteLogin({ navigation }) {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"} 
-        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-        enabled={Platform.OS === "ios"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0} 
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -340,11 +339,6 @@ const styles = StyleSheet.create({
   inputBoxFocused: {
     borderColor: theme.colors.primary,
     backgroundColor: theme.colors.primaryLight,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
   },
   inputIcon: { marginRight: 12 },
   input: {

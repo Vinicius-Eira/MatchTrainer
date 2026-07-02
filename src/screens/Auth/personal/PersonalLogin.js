@@ -82,7 +82,10 @@ export default function PersonalLogin({ navigation }) {
 
   return (
     <View style={styles.mainContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={theme.colors.background}
+      />
 
       <View style={styles.glowTopLeft} />
       <View style={styles.glowBottomRight} />
@@ -104,9 +107,8 @@ export default function PersonalLogin({ navigation }) {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-        enabled={Platform.OS === "ios"} 
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -118,7 +120,10 @@ export default function PersonalLogin({ navigation }) {
               <View style={styles.iconWrapper}>
                 <View style={styles.iconGlow} />
                 <LinearGradient
-                  colors={[theme.colors.primaryLight, "rgba(255, 107, 0, 0.02)"]}
+                  colors={[
+                    theme.colors.primaryLight,
+                    "rgba(255, 107, 0, 0.02)",
+                  ]}
                   style={styles.iconCircle}
                 >
                   <Ionicons
@@ -144,7 +149,9 @@ export default function PersonalLogin({ navigation }) {
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color={focoEmail ? theme.colors.primary : theme.colors.textMuted}
+                  color={
+                    focoEmail ? theme.colors.primary : theme.colors.textMuted
+                  }
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -172,7 +179,9 @@ export default function PersonalLogin({ navigation }) {
                 <Ionicons
                   name="lock-closed-outline"
                   size={20}
-                  color={focoSenha ? theme.colors.primary : theme.colors.textMuted}
+                  color={
+                    focoSenha ? theme.colors.primary : theme.colors.textMuted
+                  }
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -249,7 +258,11 @@ export default function PersonalLogin({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: theme.colors.background, position: "relative" },
+  mainContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    position: "relative",
+  },
 
   glowTopLeft: {
     position: "absolute",
@@ -274,8 +287,12 @@ const styles = StyleSheet.create({
     blurRadius: 80,
   },
 
-  scrollContent: { flexGrow: 1 }, 
-  innerContent: { padding: 24, paddingTop: Platform.OS === "ios" ? 140 : 100, paddingBottom: 40 }, 
+  scrollContent: { flexGrow: 1 },
+  innerContent: {
+    padding: 24,
+    paddingTop: Platform.OS === "ios" ? 140 : 100,
+    paddingBottom: 40,
+  },
 
   headerAbsolute: {
     position: "absolute",
@@ -355,11 +372,6 @@ const styles = StyleSheet.create({
   inputBoxFocused: {
     borderColor: theme.colors.primary,
     backgroundColor: theme.colors.primaryLight,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
   },
   inputIcon: { marginRight: 12 },
   input: {
@@ -410,7 +422,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 45,
   },
-  footerText: { color: theme.colors.textSecondary, fontFamily: theme.fonts.body, fontSize: 15 },
+  footerText: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.fonts.body,
+    fontSize: 15,
+  },
   footerButton: { flexDirection: "row", alignItems: "center", paddingLeft: 8 },
   registerTextHighlight: {
     color: theme.colors.primary,
