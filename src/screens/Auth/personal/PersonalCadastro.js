@@ -57,7 +57,7 @@ export default function PersonalCadastro({ navigation }) {
             cref: cref.trim(),
             tipo: "personal",
           },
-          emailRedirectTo: "exp://192.168.15.26:8081/--/PersonalLogin",
+          emailRedirectTo: 'matchtrainer://PersonalLogin'
         },
       });
 
