@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../services/supabase';
 import { theme } from '../../theme/theme';
 
-export default function ConversasAluno({ navigation }) {
+export default function Conversas({ navigation }) {
   const [conversas, setConversas] = useState([]);
   const [loading, setLoading] = useState(true);
 

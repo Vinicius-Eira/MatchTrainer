@@ -35,9 +35,11 @@ import Avaliar from "./src/screens/User/Avaliar";
 import AvaliarPersonal from "./src/screens/User/AvaliarPersonal";
 
 import Chat from "./src/screens/Shared/Chat";
-import ConversasAluno from "./src/screens/Shared/ConversasAluno";
+import ConversasAluno from "./src/screens/Shared/Conversas";
 import EsqueciSenha from "./src/screens/Auth/EsqueciSenha";
 import RedefinirSenha from "./src/screens/Auth/RedefinirSenha";
+import AtivarConvite from "./src/screens/Auth/user/AtivarConta";
+import MeusAlunos from "./src/screens/Personal/MeusAlunos";
 
 const Stack = createNativeStackNavigator();
 const FeedStack = createNativeStackNavigator();
@@ -209,6 +211,7 @@ export default function App() {
         <RootStack.Screen name="TermosDeUso" component={TermosDeUso} />
         <RootStack.Screen name="EsqueciSenha" component={EsqueciSenha} options={{ headerShown: false }} />
         <RootStack.Screen name="RedefinirSenha" component={RedefinirSenha} options={{ headerShown: false }} />
+        <RootStack.Screen name="AtivarConvite" component={AtivarConvite} options={{ headerShown: false }} />
 
         <RootStack.Screen name="VisaoAluno" component={VisaoAluno} />
         <RootStack.Screen name="Chat" component={Chat} />
@@ -217,6 +220,7 @@ export default function App() {
         <RootStack.Screen name="PersonalLogin" component={PersonalLogin} />
         <RootStack.Screen name="PersonalCadastro" component={PersonalCadastro} />
         <RootStack.Screen name="PersonalSetup" component={PersonalSetup} />
+        <RootStack.Screen name="MeusAlunos" component={MeusAlunos} options={{ headerShown: false }} />
         <RootStack.Screen name="PersonalDashboard" component={PersonalDashboard} />
         <RootStack.Screen name="FeedbackPersonal" component={FeedbackPersonal} />
         <RootStack.Screen name="Avaliacoes" component={Avaliacoes} />

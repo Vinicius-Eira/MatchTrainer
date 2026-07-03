@@ -50,19 +50,20 @@ export default function ClienteCadastro({ navigation }) {
       const { error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: senha,
-        options: {
+        options: { 
           data: { nome: nome.trim(), tipo: "cliente" },
-          emailRedirectTo: "matchtrainer://ClienteLogin",
+           emailRedirectTo: 'exp://192.168.15.26:8081/--/ClienteLogin'
         },
       });
 
       if (error) throw error;
 
       setModalSucesso(true);
+
     } catch (error) {
       Alert.alert(
         "Erro no Cadastro",
-        error.message || "Não foi possível concluir o cadastro.",
+        error.message || "Não foi possível concluir o cadastro."
       );
     } finally {
       setLoading(false);
@@ -75,7 +76,7 @@ export default function ClienteCadastro({ navigation }) {
       <View style={styles.glowBottomRight} />
 
       <BlurView
-        intensity={Platform.OS === "ios" ? 70 : 100}
+        intensity={Platform.OS === 'ios' ? 70 : 100}
         tint="dark"
         experimentalBlurMethod="dimezisBlurView"
         style={styles.headerGlass}
@@ -92,7 +93,7 @@ export default function ClienteCadastro({ navigation }) {
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0} 
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -111,6 +112,19 @@ export default function ClienteCadastro({ navigation }) {
               </Text>
             </View>
 
+            <TouchableOpacity 
+              style={styles.vipButton}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate("AtivarConvite")}
+            >
+              <MaterialCommunityIcons name="ticket-confirmation-outline" size={26} color={theme.colors.primary} />
+              <View style={styles.vipButtonTextWrap}>
+                <Text style={styles.vipButtonTitle}>Já tenho um Personal</Text>
+                <Text style={styles.vipButtonDesc}>Tenho um código de convite</Text>
+              </View>
+              <Ionicons name="arrow-forward" size={20} color={theme.colors.primary} />
+            </TouchableOpacity>
+
             <View style={styles.form}>
               <View
                 style={[
@@ -121,11 +135,7 @@ export default function ClienteCadastro({ navigation }) {
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color={
-                    inputFocado === "nome"
-                      ? theme.colors.primary
-                      : theme.colors.textMuted
-                  }
+                  color={inputFocado === "nome" ? theme.colors.primary : theme.colors.textMuted}
                   style={styles.icon}
                 />
                 <TextInput
@@ -153,9 +163,7 @@ export default function ClienteCadastro({ navigation }) {
                   name="mail-outline"
                   size={20}
                   color={
-                    inputFocado === "email"
-                      ? theme.colors.primary
-                      : theme.colors.textMuted
+                    inputFocado === "email" ? theme.colors.primary : theme.colors.textMuted
                   }
                   style={styles.icon}
                 />
@@ -185,9 +193,7 @@ export default function ClienteCadastro({ navigation }) {
                   name="lock-closed-outline"
                   size={20}
                   color={
-                    inputFocado === "senha"
-                      ? theme.colors.primary
-                      : theme.colors.textMuted
+                    inputFocado === "senha" ? theme.colors.primary : theme.colors.textMuted
                   }
                   style={styles.icon}
                 />
@@ -227,9 +233,7 @@ export default function ClienteCadastro({ navigation }) {
                   name="shield-checkmark-outline"
                   size={20}
                   color={
-                    inputFocado === "confirmar"
-                      ? theme.colors.primary
-                      : theme.colors.textMuted
+                    inputFocado === "confirmar" ? theme.colors.primary : theme.colors.textMuted
                   }
                   style={styles.icon}
                 />
@@ -348,22 +352,16 @@ export default function ClienteCadastro({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <View style={styles.modalIconWrapper}>
-              <MaterialCommunityIcons
-                name="email-fast-outline"
-                size={40}
-                color={theme.colors.primary}
-              />
+              <MaterialCommunityIcons name="email-fast-outline" size={40} color={theme.colors.primary} />
             </View>
             <Text style={styles.modalTitle}>Quase lá!</Text>
             <Text style={styles.modalText}>
               Enviamos um link de confirmação para{"\n"}
-              <Text style={styles.modalEmail}>{email}</Text>
-              {"\n\n"}
-              Verifique sua caixa de entrada e ative sua conta antes de fazer o
-              login.
+              <Text style={styles.modalEmail}>{email}</Text>{"\n\n"}
+              Verifique sua caixa de entrada e ative sua conta antes de fazer o login.
             </Text>
 
-            <TouchableOpacity
+            <TouchableOpacity 
               style={styles.modalBtn}
               onPress={() => {
                 setModalSucesso(false);
@@ -381,11 +379,7 @@ export default function ClienteCadastro({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    position: "relative",
-  },
+  mainContainer: { flex: 1, backgroundColor: theme.colors.background, position: "relative" },
   keyboardView: { flex: 1 },
 
   glowTopLeft: {
@@ -424,8 +418,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderColor: theme.colors.borderLight,
-    backgroundColor:
-      Platform.OS === "android" ? "rgba(0,0,0,0.5)" : "transparent",
+    backgroundColor: Platform.OS === "android" ? "rgba(0,0,0,0.5)" : "transparent",
     overflow: "hidden",
   },
   btnVoltar: {
@@ -444,9 +437,9 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingTop: Platform.OS === "ios" ? 130 : 110,
     paddingBottom: 40,
-  },
+  }, 
 
-  headerTextContainer: { marginBottom: 35 },
+  headerTextContainer: { marginBottom: 25 }, 
   title: {
     fontFamily: theme.fonts.title,
     fontSize: 36,
@@ -461,6 +454,34 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     marginTop: 12,
     lineHeight: 24,
+  },
+
+  vipButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 107, 0, 0.08)', 
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    marginBottom: 28,
+  },
+  vipButtonTextWrap: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  vipButtonTitle: {
+    color: theme.colors.text,
+    fontSize: 16,
+    fontFamily: theme.fonts.title,
+    fontWeight: 'bold',
+  },
+  vipButtonDesc: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.fonts.body,
+    fontSize: 13,
+    marginTop: 2,
   },
 
   form: { width: "100%", gap: 16 },
@@ -498,11 +519,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  benefitsHeaderLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: theme.colors.border,
-  },
+  benefitsHeaderLine: { flex: 1, height: 1, backgroundColor: theme.colors.border },
   benefitsTitle: {
     color: theme.colors.textSecondary,
     fontSize: 11,
@@ -539,11 +556,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     letterSpacing: 0.5,
   },
-  benefitDesc: {
-    color: theme.colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 18,
-  },
+  benefitDesc: { color: theme.colors.textSecondary, fontSize: 13, lineHeight: 18 },
 
   footer: {
     flexDirection: "row",
@@ -551,11 +564,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 40,
   },
-  footerText: {
-    color: theme.colors.textSecondary,
-    fontFamily: theme.fonts.body,
-    fontSize: 15,
-  },
+  footerText: { color: theme.colors.textSecondary, fontFamily: theme.fonts.body, fontSize: 15 },
   footerButton: { flexDirection: "row", alignItems: "center", paddingLeft: 8 },
   footerLink: {
     color: theme.colors.primary,
