@@ -1,11 +1,19 @@
-import React, { useState, useEffect } from "react";
-import {
-  View, Text, StyleSheet, TouchableOpacity, FlatList,
-  Image, ActivityIndicator, ScrollView, StatusBar, Dimensions,
-  Platform
-} from "react-native";
-import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
 
@@ -17,7 +25,7 @@ export default function PersonalDashboard({ navigation }) {
   const [personal, setPersonal] = useState(null);
   
   const [emContato, setEmContato] = useState([]);
-  const [ativos, setAtivos] = useState([]);
+  const [ativos, setAtivos] = useState([]); // Agora puxa da tabela oficial de usuários vinculados
   
   const [notaMedia, setNotaMedia] = useState(0);
   const [naoLidas, setNaoLidas] = useState({});
@@ -33,10 +41,12 @@ export default function PersonalDashboard({ navigation }) {
     if (!session?.user) return;
 
     try {
-      const [perfilRes, conexoesRes, mediaRes] = await Promise.all([
+      // Busca simultânea otimizada para o novo fluxo VIP + Match antigo
+      const [perfilRes, conexoesRes, mediaRes, ativosRes] = await Promise.all([
         supabase.from("personals").select("*").eq("id", session.user.id).single(),
-        supabase.from("conexoes").select("*, usuarios(*)").eq("personal_id", session.user.id).in("status", ["pendente", "em_contato", "lead", "aceito_personal", "aluno_ativo"]),
+        supabase.from("conexoes").select("*, usuarios(*)").eq("personal_id", session.user.id).in("status", ["pendente", "em_contato", "lead", "aceito_personal"]),
         supabase.rpc("get_media_avaliacoes", { p_id: session.user.id }),
+        supabase.from("usuarios").select("*").eq("personal_id", session.user.id).eq("tipo", "cliente") // Nova busca oficial!
       ]);
 
       if (!perfilRes.error) setPersonal(perfilRes.data);
@@ -53,10 +63,8 @@ export default function PersonalDashboard({ navigation }) {
       }));
       setNaoLidas(contagemNaoLidas);
 
-      setEmContato(data.filter((c) => ["pendente", "em_contato", "lead", "aceito_personal"].includes(c.status)));
-      
-      setAtivos(data.filter((c) => c.status === "aluno_ativo"));
-      
+      setEmContato(data);
+      setAtivos(ativosRes.data || []); // Popula a lista com os alunos reais
       setNotaMedia(mediaRes.data || 0);
 
     } catch (error) {
@@ -67,28 +75,36 @@ export default function PersonalDashboard({ navigation }) {
   };
 
   const renderAlunoCard = ({ item }) => {
-    const temMensagemNaoLida = naoLidas[item.id] > 0;
-    const status = item.status;
+    // Normalização: identifica se o dado vem da tabela de usuarios ou da conexoes
+    const isAtivo = activeTab === "aluno_ativo";
+    const status = isAtivo ? "aluno_ativo" : item.status;
     const isNovo = status === "pendente"; 
-    const isAtivo = status === "aluno_ativo";
+    const userData = isAtivo ? item : item.usuarios;
+    
+    // Alunos via convite não usam o chat do match imediatamente, então não têm conexao_id
+    const conexaoId = isAtivo ? null : item.id; 
+    const temMensagemNaoLida = !isAtivo && (naoLidas[item.id] > 0);
 
-    const prefs = item.usuarios?.preferencias || {};
-    const pesoStr = item.usuarios?.peso ? `${item.usuarios.peso}kg` : '--';
+    const prefs = userData?.preferencias || {};
+    const pesoStr = userData?.peso ? `${userData.peso}kg` : '--';
     const freqStr = prefs.frequencia ? prefs.frequencia.split('-')[0] + 'x' : '--';
 
     return (
       <TouchableOpacity 
         style={[styles.alunoCard, isNovo && styles.alunoCardNovo, isAtivo && styles.alunoCardAtivo]}
         activeOpacity={0.8}
-        onPress={() => navigation.navigate("VisaoAluno", { 
-          conexaoId: item.id, 
-          aluno: item.usuarios, 
-          statusAtual: status,
-          personalInfo: personal 
-        })}
+        onPress={() => {
+          // Aqui no futuro enviaremos para o painel de montagem de treino
+          navigation.navigate("VisaoAluno", { 
+            conexaoId: conexaoId, 
+            aluno: userData, 
+            statusAtual: status,
+            personalInfo: personal 
+          })
+        }}
       >
         <View style={styles.cardAvatarContainer}>
-          <Image source={{ uri: item.usuarios?.foto_url || 'https://via.placeholder.com/150' }} style={styles.alunoAvatar} />
+          <Image source={{ uri: userData?.foto_url || 'https://via.placeholder.com/150' }} style={styles.alunoAvatar} />
           
           {temMensagemNaoLida ? (
             <View style={styles.notificationDot} />
@@ -98,7 +114,7 @@ export default function PersonalDashboard({ navigation }) {
         </View>
         
         <View style={styles.cardInfo}>
-          <Text style={styles.alunoNome} numberOfLines={1}>{item.usuarios?.nome || 'Novo Aluno'}</Text>
+          <Text style={styles.alunoNome} numberOfLines={1}>{userData?.nome || 'Novo Aluno'}</Text>
           
           {isAtivo ? (
             <View style={styles.infoRowBiometria}>
@@ -116,7 +132,7 @@ export default function PersonalDashboard({ navigation }) {
             <View style={styles.infoRow}>
               <Ionicons name="location-outline" size={12} color={theme.colors.textSecondary} />
               <Text style={styles.infoText} numberOfLines={1}>
-                {item.usuarios?.cidade || 'Local não informado'}
+                {userData?.cidade || 'Local não informado'}
               </Text>
             </View>
           )}
@@ -124,7 +140,7 @@ export default function PersonalDashboard({ navigation }) {
           <View style={styles.tagsContainer}>
             <View style={styles.tagObjetivo}>
               <FontAwesome5 name="fire" size={10} color={theme.colors.primary} style={{ marginRight: 6 }} />
-              <Text style={styles.tagText}>{item.usuarios?.preferencias?.objetivo || 'Não definido'}</Text>
+              <Text style={styles.tagText}>{userData?.objetivo_principal || prefs?.objetivo || 'Não definido'}</Text>
             </View>
 
             {status === "pendente" && (
@@ -157,6 +173,8 @@ export default function PersonalDashboard({ navigation }) {
           <View style={[styles.actionIcon, isNovo ? styles.actionIconPrimary : styles.actionIconSecondary]}>
             {isNovo ? (
               <Ionicons name="person-add" size={16} color={theme.colors.backgroundPure} />
+            ) : isAtivo ? (
+              <Ionicons name="barbell-outline" size={16} color={theme.colors.text} />
             ) : (
               <Ionicons name="chatbubbles" size={16} color={theme.colors.text} />
             )}
@@ -221,7 +239,20 @@ export default function PersonalDashboard({ navigation }) {
         
         <View style={styles.crmHeader}>
           <Text style={styles.sectionTitle}>Gestão de Alunos</Text>
-          <Ionicons name="people-circle-outline" size={28} color={theme.colors.textMuted} />
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.actionHeaderBtn} 
+              onPress={() => navigation.navigate("MeusAlunos")}
+            >
+              <Ionicons name="list" size={20} color={theme.colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.actionHeaderBtn, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]} 
+              onPress={() => navigation.navigate("AdicionarAluno")}
+            >
+              <Ionicons name="person-add" size={20} color="#000" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.segmentControl}>
@@ -260,7 +291,7 @@ export default function PersonalDashboard({ navigation }) {
               <Text style={styles.emptyText}>
                 {activeTab === "em_contato" 
                   ? "Sua vitrine está online! Quando novos alunos se interessarem pelo seu perfil, eles aparecerão aqui." 
-                  : "Você ainda não possui alunos ativos. Feche negócios na aba de 'Novos Leads'."}
+                  : "Você ainda não possui alunos ativos. Adicione um aluno clicando no botão '+' acima."}
               </Text>
             </View>
           }
@@ -297,6 +328,8 @@ const styles = StyleSheet.create({
   
   crmHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, marginTop: 15 },
   sectionTitle: { color: theme.colors.text, fontSize: 22, fontFamily: theme.fonts.title },
+  headerActions: { flexDirection: 'row', gap: 10 },
+  actionHeaderBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: theme.colors.surface, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: theme.colors.borderLight },
 
   segmentControl: { flexDirection: "row", backgroundColor: theme.colors.surface, borderRadius: 20, padding: 6, marginBottom: 24, borderWidth: 1, borderColor: theme.colors.border },
   segmentBtn: { flex: 1, paddingVertical: 14, borderRadius: 16, alignItems: "center" },
