@@ -57,8 +57,7 @@ const OPCOES_LOCAL = [
 const OPCOES_INVESTIMENTO = [
   { id: "base", titulo: "R$ 90 a 110 / aula", icon: "wallet-outline" },
   { id: "mid", titulo: "R$ 120 a 150 / aula", icon: "star-outline" },
-  { id: "premium", titulo: "A partir de R$ 160", icon: "diamond-outline" },
-  { id: "pacote", titulo: "Pacote Mensal", icon: "briefcase-outline" },
+  { id: "premium", titulo: "A partir de R$ 160", icon: "diamond-outline" }
 ];
 
 // --- SUB-OPÇÕES COM ÍCONES ---

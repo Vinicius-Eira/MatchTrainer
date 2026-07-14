@@ -32,10 +32,7 @@ export default function AtivarConvite({ navigation }) {
     }
 
     if (senha.length < 6) {
-      return Alert.alert(
-        "Atenção",
-        "Sua senha deve ter no minímo 6 caracteres",
-      );
+      return Alert.alert("Atenção", "Sua senha deve ter no mínimo 6 caracteres.");
     }
 
     setLoading(true);
@@ -46,19 +43,25 @@ export default function AtivarConvite({ navigation }) {
         .select("*")
         .eq("email", email.trim().toLowerCase())
         .eq("codigo_convite", codigo.trim())
+        .eq("status", "pendente")
         .single();
 
       if (fetchError || !convite) {
-        throw new Error(
-          "Convite não encontrado, inválido ou já utilizado. Verifique o código com seu Personal.",
-        );
+        throw new Error("Convite não encontrado ou já utilizado.");
       }
 
-      const { error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: senha,
-        options: {
-          data: {
+      });
+
+      if (authError) throw authError;
+
+      if (authData?.user) {
+        const { error: insertError } = await supabase.from('usuarios').insert([
+          {
+            id: authData.user.id,
+            email: email.trim().toLowerCase(),
             nome: convite.nome,
             tipo: "cliente",
             criado_pelo_personal: true,
@@ -67,11 +70,13 @@ export default function AtivarConvite({ navigation }) {
             objetivo_principal: convite.objetivo_principal,
             valor_mensalidade: convite.valor_mensalidade,
             dia_vencimento: convite.dia_vencimento,
-          },
-        },
-      });
+            setup_completo: true,
+            data_vinculo_personal: new Date().toISOString() 
+          }
+        ]);
 
-      if (authError) throw authError;
+        if (insertError) throw insertError;
+      }
 
       await supabase
         .from("convites_alunos")
@@ -80,19 +85,10 @@ export default function AtivarConvite({ navigation }) {
 
       Alert.alert(
         "Conta Ativada! 🎉",
-        "Seu perfil foi vinculado com sucesso ao seu Personal Trainer.",
-        [
-          { 
-            text: "Ir para o Painel", 
-            onPress: () => {
-              navigation.reset({ 
-                index: 0, 
-                routes: [{ name: "UsuarioTabs" }] 
-              });
-            }
-          }
-        ]
+        "Seu perfil foi vinculado com sucesso. Você será redirecionado ao seu painel.",
+        [{ text: "Entrar", onPress: () => navigation.navigate("ClienteLogin") }] 
       );
+
     } catch (error) {
       Alert.alert("Ops!", error.message);
     } finally {

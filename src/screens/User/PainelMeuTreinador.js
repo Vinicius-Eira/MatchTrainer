@@ -1,10 +1,23 @@
-import React, { useState, useEffect } from "react";
-import {
-  View, Text, StyleSheet, Image, TouchableOpacity, ScrollView,
-  ActivityIndicator, StatusBar, Alert, Dimensions, Platform, KeyboardAvoidingView, Linking, Modal, TextInput
-} from "react-native";
-import { Ionicons, MaterialCommunityIcons, FontAwesome5, Feather } from "@expo/vector-icons";
+import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Image, 
+} from "react-native";
 import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
 
@@ -18,6 +31,7 @@ export default function PainelMeuTreinador({ route, navigation }) {
 
   const [diasTreino, setDiasTreino] = useState(1);
   const [progressoBarra, setProgressoBarra] = useState(0);
+  const [estaNoPeriodoTeste, setEstaNoPeriodoTeste] = useState(false);
 
   const [modalAvaliacaoVisible, setModalAvaliacaoVisible] = useState(false);
   const [notaSelecionada, setNotaSelecionada] = useState(0);
@@ -49,6 +63,8 @@ export default function PainelMeuTreinador({ route, navigation }) {
       setDiasTreino(diasLimitados);
       setProgressoBarra((diasLimitados / 60) * 100);
 
+      setEstaNoPeriodoTeste(diasCorridos <= 7);
+
       const { data: avalData } = await supabase
         .from('avaliacoes')
         .select('*')
@@ -64,10 +80,29 @@ export default function PainelMeuTreinador({ route, navigation }) {
 
     } catch (error) {
       Alert.alert("Erro", "Não foi possível carregar o painel.");
-      navigation.reset({ index: 0, routes: [{ name: 'HomeAluno' }] });
+      navigation.reset({ index: 0, routes: [{ name: 'UsuarioTabs' }] });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      "Sair da Conta",
+      "Deseja realmente sair do aplicativo?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sair",
+          style: "destructive",
+          onPress: async () => {
+            setLoading(true);
+            await supabase.auth.signOut();
+            navigation.reset({ index: 0, routes: [{ name: 'ChoiceScreen' }] }); 
+          }
+        }
+      ]
+    );
   };
 
   const handleWhatsApp = () => {
@@ -92,44 +127,82 @@ export default function PainelMeuTreinador({ route, navigation }) {
     );
   };
 
-  const handleSolicitarEncerramento = () => {
-    if (diasTreino <= 60) {
+  const handleAcaoEncerramento = () => {
+    const dataInicio = new Date(conexao?.atualizado_em || conexao?.criado_em || Date.now());
+    const hoje = new Date();
+    const diffHoras = Math.abs(hoje.getTime() - dataInicio.getTime()) / (1000 * 60 * 60);
+
+    if (diffHoras < 24) {
+      const horasRestantes = Math.ceil(24 - diffHoras);
       return Alert.alert(
-        "Ciclo em Andamento",
-        `O método do seu treinador exige constância para gerar resultados. Você poderá solicitar o encerramento da parceria em ${61 - diasTreino} dias, após o fim do ciclo de adaptação.`
+        "Recém Chegado! 🛑",
+        `Você acabou de iniciar esta consultoria. Para evitar spam e cancelamentos acidentais, aguarde pelo menos ${horasRestantes} hora(s) antes de solicitar o desvinculamento.`
       );
     }
 
-    Alert.alert(
-      "Solicitar Encerramento",
-      "Deseja enviar um aviso ao seu professor solicitando o fim da parceria? Ele receberá uma notificação e fará a liberação do seu perfil no sistema.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sim, Enviar Pedido", onPress: async () => {
-            setLoading(true);
-            try {
-              const { data: { user } } = await supabase.auth.getUser();
-              await supabase.from("mensagens").insert([{
-                conexao_id: conexaoId,
-                remetente_id: user.id,
-                tipo_remetente: 'aluno',
-                conteudo: "⚠️ Olá. Gostaria de solicitar o encerramento da nossa parceria de treinos. Pode liberar meu perfil no sistema, por favor?"
-              }]);
-
-              Alert.alert(
-                "Solicitação Enviada!", 
-                "Seu treinador foi notificado. Assim que ele confirmar, suas metas serão destravadas e você voltará para a tela de buscas."
-              );
-            } catch (error) {
-              Alert.alert("Erro", "Falha ao enviar a solicitação.");
-            } finally {
-              setLoading(false);
+    if (estaNoPeriodoTeste) {
+      Alert.alert(
+        "Desfazer Vínculo",
+        "Como você está no período de teste de 7 dias, pode desfazer o vínculo imediatamente. Deseja cancelar a parceria e voltar a buscar treinadores?",
+        [
+          { text: "Não, quero continuar", style: "cancel" },
+          {
+            text: "Sim, Cancelar Vínculo", 
+            style: "destructive",
+            onPress: async () => {
+              setLoading(true);
+              try {
+                await supabase.from('conexoes').delete().eq('id', conexaoId);
+                
+                Alert.alert("Vínculo Cancelado", "Você está livre para buscar novos treinadores.");
+                navigation.reset({ index: 0, routes: [{ name: 'UsuarioTabs' }] });
+              } catch (error) {
+                Alert.alert("Erro", "Não foi possível cancelar o vínculo no momento.");
+                setLoading(false);
+              }
             }
           }
-        }
-      ]
-    );
+        ]
+      );
+    } else {
+      if (diasTreino <= 60) {
+        return Alert.alert(
+          "Ciclo em Andamento",
+          `O método do seu treinador exige constância para gerar resultados. Você poderá solicitar o encerramento da parceria em ${61 - diasTreino} dias, após o fim do ciclo de adaptação.`
+        );
+      }
+
+      Alert.alert(
+        "Solicitar Encerramento",
+        "Deseja enviar um aviso ao seu professor solicitando o fim da parceria? Ele receberá uma notificação e fará a liberação do seu perfil no sistema.",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Sim, Enviar Pedido", onPress: async () => {
+              setLoading(true);
+              try {
+                const { data: { user } } = await supabase.auth.getUser();
+                await supabase.from("mensagens").insert([{
+                  conexao_id: conexaoId,
+                  remetente_id: user.id,
+                  tipo_remetente: 'aluno',
+                  conteudo: "⚠️ Olá. Gostaria de solicitar o encerramento da nossa parceria de treinos. Pode liberar meu perfil no sistema, por favor?"
+                }]);
+
+                Alert.alert(
+                  "Solicitação Enviada!", 
+                  "Seu treinador foi notificado. Assim que ele confirmar, suas metas serão destravadas e você voltará para a tela de buscas."
+                );
+              } catch (error) {
+                Alert.alert("Erro", "Falha ao enviar a solicitação.");
+              } finally {
+                setLoading(false);
+              }
+            }
+          }
+        ]
+      );
+    }
   };
 
   const handleEnviarAvaliacao = async () => {
@@ -180,8 +253,12 @@ export default function PainelMeuTreinador({ route, navigation }) {
           <LinearGradient colors={['#1A0B00', '#070707']} style={styles.heroGradient} />
           
           <View style={styles.headerTop}>
-            <View style={{ width: 44 }} />
+            <TouchableOpacity style={styles.btnLogout} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} />
+            </TouchableOpacity>
+            
             <Text style={styles.headerTitleGlow}>MEU TREINADOR</Text>
+            
             <TouchableOpacity style={styles.btnSettings} onPress={irParaMeuPerfil}>
               <Ionicons name="person-outline" size={20} color="#FFF" />
             </TouchableOpacity>
@@ -189,7 +266,15 @@ export default function PainelMeuTreinador({ route, navigation }) {
 
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
-              <Image source={{ uri: personal?.foto_url || 'https://via.placeholder.com/150' }} style={styles.trainerAvatar} />
+              <View style={[styles.trainerAvatar, { overflow: 'hidden' }]}>
+                {personal?.foto_url ? (
+                  <Image source={{ uri: personal.foto_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                ) : (
+                  <View style={{ flex: 1, backgroundColor: '#333', justifyContent: 'center', alignItems: 'center' }}>
+                     <Ionicons name="person" size={40} color="#666" />
+                  </View>
+                )}
+              </View>
             </View>
 
             <Text style={styles.trainerName}>{personal?.nome}</Text>
@@ -331,8 +416,13 @@ export default function PainelMeuTreinador({ route, navigation }) {
         </View>
 
         <View style={styles.footerRow}>
-          <TouchableOpacity style={styles.btnDangerOutline} onPress={handleSolicitarEncerramento}>
-            <Text style={styles.btnDangerText}>Solicitar Encerramento da Parceria</Text>
+          <TouchableOpacity 
+            style={estaNoPeriodoTeste ? styles.btnWarningOutline : styles.btnDangerOutline} 
+            onPress={handleAcaoEncerramento}
+          >
+            <Text style={estaNoPeriodoTeste ? styles.btnWarningText : styles.btnDangerText}>
+              {estaNoPeriodoTeste ? "Desfazer Vínculo (Período de Teste)" : "Solicitar Encerramento da Parceria"}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -404,6 +494,8 @@ const styles = StyleSheet.create({
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 20 },
   headerTitleGlow: { color: theme.colors.primary, fontSize: 16, fontFamily: theme.fonts.title, letterSpacing: 3, textShadowColor: theme.colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 },
   btnSettings: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  
+  btnLogout: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,59,48,0.1)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,59,48,0.3)' },
 
   profileSection: { alignItems: 'center', paddingHorizontal: 20 },
   avatarContainer: { position: 'relative', marginBottom: 15 },
@@ -466,6 +558,9 @@ const styles = StyleSheet.create({
   footerRow: { alignItems: 'center', paddingHorizontal: 20, marginBottom: 20 },
   btnDangerOutline: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,59,48,0.3)' },
   btnDangerText: { color: '#FF3B30', fontSize: 13, fontWeight: 'bold' },
+  
+  btnWarningOutline: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.primary, backgroundColor: 'rgba(255, 107, 0, 0.1)' },
+  btnWarningText: { color: theme.colors.primary, fontSize: 13, fontWeight: 'bold' },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { width: '100%', backgroundColor: '#121212', borderRadius: 28, padding: 25, borderWidth: 1, borderColor: '#2A2A2A', alignItems: 'center', shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.8, shadowRadius: 30, elevation: 20 },

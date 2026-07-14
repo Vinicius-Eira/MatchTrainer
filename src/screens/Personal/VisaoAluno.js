@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur'; // IMPORTAÇÃO DO EFEITO DE DESFOQUE
+import { BlurView } from 'expo-blur'; 
 import { supabase } from '../../services/supabase';
 import { theme } from '../../theme/theme';
 
@@ -93,11 +93,14 @@ export default function VisaoAluno({ route, navigation }) {
       
       setStatus(novoStatus);
       if (novoStatus === 'inativo') {
-        Alert.alert("Parceria Encerrada", "O aluno foi removido da sua lista de treinos ativos.");
+        Alert.alert("Ciclo Encerrado", "O aluno foi movido para o seu arquivo de alunos inativos.");
         navigation.goBack();
       } else if (novoStatus === 'recusado') {
-        Alert.alert("Sucesso", "Status atualizado!");
+        Alert.alert("Sucesso", "Solicitação recusada.");
         navigation.goBack();
+      } else if (novoStatus === 'aluno_ativo') {
+        Alert.alert("Parceria Fechada! 🎉", "O aluno foi aceito e já está na sua lista de treinos ativos.");
+        navigation.goBack(); 
       } else {
         Alert.alert("Sucesso", "Status atualizado!");
       }
@@ -113,7 +116,7 @@ export default function VisaoAluno({ route, navigation }) {
     if (alunoSolicitouSaida) {
       Alert.alert(
         "Confirmar Encerramento",
-        "O aluno solicitou o fim da parceria. Tem certeza que deseja encerrar o vínculo e liberar o perfil dele?",
+        "O aluno solicitou o fim da parceria. Tem certeza que deseja encerrar o vínculo e enviar a ficha para o arquivo?",
         [
           { text: "Cancelar", style: "cancel" },
           { text: "Sim, Encerrar", onPress: () => atualizarStatus('inativo') }
@@ -134,7 +137,7 @@ export default function VisaoAluno({ route, navigation }) {
 
       Alert.alert(
         "Encerrar Parceria",
-        "Tem certeza que deseja encerrar o treinamento com este aluno? Ele será removido da sua lista e ficará livre no aplicativo.",
+        "Tem certeza que deseja encerrar o treinamento com este aluno? O perfil dele será movido para a sua aba de Inativos (Arquivo).",
         [
           { text: "Cancelar", style: "cancel" },
           { text: "Sim, Encerrar", onPress: () => atualizarStatus('inativo') }
@@ -184,7 +187,12 @@ export default function VisaoAluno({ route, navigation }) {
           <View style={styles.avatarWrapper}>
             <View style={styles.avatarGlow} />
             <Image source={{ uri: aluno.foto_url || 'https://via.placeholder.com/150' }} style={styles.avatar} />
-            <View style={styles.onlineBadge}><View style={styles.onlineBadgeInner} /></View>
+            {status === 'aluno_ativo' && <View style={styles.onlineBadge}><View style={styles.onlineBadgeInner} /></View>}
+            {status === 'inativo' && (
+               <View style={[styles.onlineBadge, {backgroundColor: theme.colors.background, borderColor: theme.colors.textMuted}]}>
+                 <Ionicons name="archive" size={14} color={theme.colors.textMuted} />
+               </View>
+            )}
           </View>
           
           <Text style={styles.studentName}>{aluno.nome}</Text>
@@ -335,35 +343,45 @@ export default function VisaoAluno({ route, navigation }) {
             <TouchableOpacity style={styles.btnDangerOutline} onPress={handlePersonalEncerraParceria}>
               <Text style={styles.btnDangerText}>Encerrar Parceria com Aluno</Text>
             </TouchableOpacity>
-            <Text style={styles.dangerZoneHelp}>Isto irá remover o aluno da sua gestão e destravar as edições de perfil dele.</Text>
+            <Text style={styles.dangerZoneHelp}>Isto irá remover o aluno da sua gestão ativa e enviá-lo para a aba de arquivos.</Text>
           </View>
         )}
 
       </ScrollView>
 
-      <View style={styles.floatingActionBar}>
-        {status === 'pendente' ? (
-          <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.btnDecline} onPress={() => atualizarStatus('recusado')} disabled={loading} activeOpacity={0.8}>
-              <Feather name="x" size={24} color={theme.colors.danger} />
-            </TouchableOpacity>
+      {status !== 'inativo' && (
+        <View style={styles.floatingActionBar}>
+          {status === 'pendente' || status === 'aguardando_personal' ? (
+            <View style={styles.actionColumn}>
+              {/* NOVO BOTÃO: Permite o Personal conversar antes de aceitar */}
+              <TouchableOpacity style={styles.btnChatOutline} onPress={abrirChat} activeOpacity={0.8}>
+                <Ionicons name="chatbubbles-outline" size={20} color={theme.colors.primary} />
+                <Text style={styles.btnChatOutlineText}>Conversar com Aluno</Text>
+              </TouchableOpacity>
+              
+              <View style={styles.actionRow}>
+                <TouchableOpacity style={styles.btnDecline} onPress={() => atualizarStatus('recusado')} disabled={loading} activeOpacity={0.8}>
+                  <Feather name="x" size={24} color={theme.colors.danger} />
+                </TouchableOpacity>
 
-            <TouchableOpacity style={styles.btnAccept} onPress={() => atualizarStatus('aceito_personal')} disabled={loading} activeOpacity={0.85}>
-              {loading ? <ActivityIndicator color={theme.colors.backgroundPure} /> : (
-                <>
-                  <Text style={styles.btnAcceptText}>Aceitar Contato</Text>
-                  <Feather name="check" size={22} color={theme.colors.backgroundPure} style={{ marginLeft: 4 }} />
-                </>
-              )}
+                <TouchableOpacity style={styles.btnAccept} onPress={() => atualizarStatus('aluno_ativo')} disabled={loading} activeOpacity={0.85}>
+                  {loading ? <ActivityIndicator color={theme.colors.backgroundPure} /> : (
+                    <>
+                      <Text style={styles.btnAcceptText}>Aceitar Aluno</Text>
+                      <Feather name="check" size={22} color={theme.colors.backgroundPure} style={{ marginLeft: 6 }} />
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.btnChat} onPress={abrirChat} activeOpacity={0.85}>
+              <Ionicons name="chatbubbles" size={22} color={theme.colors.backgroundPure} />
+              <Text style={styles.btnChatText}>Abrir Conversa</Text>
             </TouchableOpacity>
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.btnChat} onPress={abrirChat} activeOpacity={0.85}>
-            <Ionicons name="chatbubbles" size={22} color={theme.colors.backgroundPure} />
-            <Text style={styles.btnChatText}>Abrir Conversa</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -383,7 +401,7 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     borderBottomWidth: 1, 
     borderColor: 'rgba(255,255,255,0.05)',
-    backgroundColor: Platform.OS === 'android' ? 'rgba(0,0,0,0.5)' : 'transparent', // Força transparência no Android
+    backgroundColor: Platform.OS === 'android' ? 'rgba(0,0,0,0.5)' : 'transparent', 
     overflow: 'hidden',
   },
   iconButton: { 
@@ -396,7 +414,7 @@ const styles = StyleSheet.create({
   
   scrollContent: { 
     paddingTop: Platform.OS === 'ios' ? 120 : 100, 
-    paddingBottom: 160 
+    paddingBottom: 220 
   }, 
 
   bannerDesistencia: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.warning, padding: 20, marginHorizontal: 20, marginTop: 10, borderRadius: 16 },
@@ -408,8 +426,8 @@ const styles = StyleSheet.create({
   avatarWrapper: { position: 'relative', marginBottom: 20, justifyContent: 'center', alignItems: 'center' },
   avatarGlow: { position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: theme.colors.primary, opacity: 0.2, blurRadius: 25 },
   avatar: { width: 130, height: 130, borderRadius: 65, borderWidth: 3, borderColor: theme.colors.primary, backgroundColor: theme.colors.surface, zIndex: 2 },
-  onlineBadge: { position: 'absolute', bottom: 4, right: 8, width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.background, justifyContent: 'center', alignItems: 'center', zIndex: 3 },
-  onlineBadgeInner: { width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success },
+  onlineBadge: { position: 'absolute', bottom: 4, right: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.background, justifyContent: 'center', alignItems: 'center', zIndex: 3 },
+  onlineBadgeInner: { width: 18, height: 18, borderRadius: 9, backgroundColor: theme.colors.success },
   
   studentName: { color: theme.colors.text, fontSize: 28, fontFamily: theme.fonts.title, marginBottom: 4, textAlign: 'center', letterSpacing: 0.5 },
   studentGoal: { color: theme.colors.primary, fontSize: 13, fontWeight: '900', marginBottom: 20, textTransform: 'uppercase', letterSpacing: 1.5 },
@@ -478,6 +496,11 @@ const styles = StyleSheet.create({
   dangerZoneHelp: { color: theme.colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 10 },
 
   floatingActionBar: { position: 'absolute', bottom: Platform.OS === 'ios' ? 35 : 25, left: 20, right: 20, backgroundColor: theme.colors.background, borderRadius: 24, padding: 12, borderWidth: 1, borderColor: theme.colors.borderLight, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 10 },
+  
+  actionColumn: { flexDirection: 'column', gap: 12 },
+  btnChatOutline: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.surfaceLight, paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.primary, gap: 8 },
+  btnChatOutlineText: { color: theme.colors.primary, fontSize: 15, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.5 },
+  
   actionRow: { flexDirection: 'row', gap: 12 },
   btnDecline: { width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(255,59,48,0.1)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,59,48,0.3)' },
   btnAccept: { flex: 1, backgroundColor: theme.colors.primary, height: 64, borderRadius: 20, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },

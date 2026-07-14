@@ -132,7 +132,8 @@ export default function FeedPersonal({ navigation }) {
 
       if (personalsData) {
         const processados = await Promise.all(personalsData.map(async (p) => {
-          const { data: nota } = await supabase.rpc("get_media_avaliacoes", { personal_id: p.id });
+          
+          const { data: nota } = await supabase.rpc("get_media_avaliacoes", { p_id: p.id });
           
           let distCalculada = calcularDistanciaGPS(uData?.latitude, uData?.longitude, p.latitude, p.longitude);
           
@@ -166,7 +167,6 @@ export default function FeedPersonal({ navigation }) {
   };
 
   const aplicarFiltros = (lista, maxKm) => {
-    // A GUILHOTINA: Apenas Match >= 80% e dentro da distância
     let filtrados = lista.filter(p => p.distanciaReal <= maxKm && p.matchPercentual >= 80);
 
     filtrados.sort((a, b) => {
@@ -192,6 +192,25 @@ export default function FeedPersonal({ navigation }) {
     setModalVisible(true);
   };
 
+  const handleLogout = async () => {
+    Alert.alert(
+      "Sair da Conta",
+      "Deseja realmente sair?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sair",
+          style: "destructive",
+          onPress: async () => {
+            setCarregando(true);
+            await supabase.auth.signOut();
+            navigation.reset({ index: 0, routes: [{ name: 'ChoiceScreen' }] });
+          }
+        }
+      ]
+    );
+  };
+
   const renderCard = ({ item }) => {
     const idade = item.data_nascimento ? calcularIdade(item.data_nascimento) : null;
     const distanciaStr = item.distanciaReal !== Infinity ? `${item.distanciaReal.toFixed(1)} km` : "";
@@ -199,7 +218,6 @@ export default function FeedPersonal({ navigation }) {
 
     return (
       <View style={styles.premiumCardContainer}>
-        
         <View style={styles.cardImageHeader}>
           <Image source={{ uri: item.foto_url || "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=600" }} style={styles.cardCover} resizeMode="cover" />
           <LinearGradient colors={["transparent", "rgba(0,0,0,0.5)", theme.colors.surface]} locations={[0.5, 0.8, 1]} style={StyleSheet.absoluteFillObject} />
@@ -227,7 +245,6 @@ export default function FeedPersonal({ navigation }) {
         </View>
 
         <View style={styles.cardContentBox}>
-          
           <View style={styles.bioWrapper}>
             <MaterialCommunityIcons name="format-quote-open" size={24} color={theme.colors.borderLight} style={styles.quoteIcon} />
             <Text style={styles.bioText} numberOfLines={3}>
@@ -272,7 +289,6 @@ export default function FeedPersonal({ navigation }) {
             <Text style={styles.btnPremiumCTAText}>Ver perfil completo</Text>
             <Ionicons name="arrow-forward" size={18} color={theme.colors.backgroundPure} />
           </TouchableOpacity>
-
         </View>
       </View>
     );
@@ -289,6 +305,9 @@ export default function FeedPersonal({ navigation }) {
           <Ionicons name="people" size={26} color={theme.colors.primary} style={styles.headerIcon} />
           <Text style={styles.headerTitle}>MATCH<Text style={{ color: theme.colors.primary }}>TRAINER</Text></Text>
         </View>
+        <TouchableOpacity style={styles.btnLogout} onPress={handleLogout} activeOpacity={0.7}>
+          <Ionicons name="log-out-outline" size={24} color={theme.colors.danger} />
+        </TouchableOpacity>
       </View>
       
       <FlatList
@@ -360,7 +379,6 @@ export default function FeedPersonal({ navigation }) {
           </View>
         </View>
       </Modal>
-
     </LinearGradient>
   );
 }
@@ -369,10 +387,11 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   centerContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background },
   
-  headerFeed: { alignItems: "center", justifyContent: "center", paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 20, borderBottomWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceLight },
+  headerFeed: { alignItems: "center", justifyContent: "center", paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 20, borderBottomWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceLight, position: 'relative' },
   logoRow: { flexDirection: "row", alignItems: "center" },
   headerIcon: { marginRight: 8 },
   headerTitle: { fontFamily: theme.fonts.title, fontSize: 24, color: theme.colors.text, letterSpacing: 1.5 },
+  btnLogout: { position: 'absolute', right: 20, top: Platform.OS === 'ios' ? 60 : 40, padding: 5 },
   
   listPadding: { paddingHorizontal: 20, paddingTop: 15, paddingBottom: 40 },
   
