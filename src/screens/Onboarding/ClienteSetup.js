@@ -63,11 +63,9 @@ const OPCOES_LOCAL = [
 const OPCOES_INVESTIMENTO = [
   { id: "base", titulo: "R$ 90 a R$ 110 / aula", desc: "Valor inicial para excelentes profissionais.", icon: "wallet-outline" },
   { id: "mid", titulo: "R$ 120 a R$ 150 / aula", desc: "Profissionais especialistas e com alta procura.", icon: "star-outline" },
-  { id: "premium", titulo: "A partir de R$ 160 / aula", desc: "Treinadores Elite e atendimento super VIP.", icon: "diamond-outline" },
-  { id: "pacote", titulo: "Prefiro Pacote Mensal", desc: "Quero negociar um valor fixo por mês.", icon: "briefcase-outline" },
+  { id: "premium", titulo: "A partir de R$ 160 / aula", desc: "Treinadores Elite e atendimento super VIP.", icon: "diamond-outline" }
 ];
 
-// --- SUB-OPÇÕES AGORA COM ÍCONES ---
 const SUB_SAUDE = [
   { titulo: "Melhorar Postura", icon: "body-outline" },
   { titulo: "Dores nas Costas", icon: "bandage-outline" },

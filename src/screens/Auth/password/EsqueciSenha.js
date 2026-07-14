@@ -1,36 +1,51 @@
-import React, { useState } from 'react';
-import { 
-  View, Text, StyleSheet, TextInput, TouchableOpacity, 
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert, StatusBar, ScrollView
-} from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { supabase } from '../../services/supabase';
-import { theme } from '../../theme/theme';
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import { useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { supabase } from "../../../services/supabase";
+import { theme } from "../../../theme/theme";
 
 export default function EsqueciSenha({ navigation }) {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [inputFocado, setInputFocado] = useState(false);
 
   const handleRecuperarSenha = async () => {
     if (!email.trim()) {
-      return Alert.alert('Atenção', 'Por favor, digite seu e-mail cadastrado.');
+      return Alert.alert("Atenção", "Por favor, digite seu e-mail cadastrado.");
     }
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: 'exp://192.168.15.26:8081/--/redefinir-senha',
-      });
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        {
+          redirectTo: "exp://192.168.15.26:8081/--/redefinir-senha",
+        },
+      );
 
       if (error) throw error;
-      
+
       setEnviado(true);
     } catch (error) {
-      Alert.alert('Erro', error.message || 'Não foi possível enviar o e-mail de recuperação.');
+      Alert.alert(
+        "Erro",
+        error.message || "Não foi possível enviar o e-mail de recuperação.",
+      );
     } finally {
       setLoading(false);
     }
@@ -43,33 +58,37 @@ export default function EsqueciSenha({ navigation }) {
       <View style={styles.glowTopLeft} />
       <View style={styles.glowBottomRight} />
 
-      <BlurView 
-        intensity={Platform.OS === 'ios' ? 70 : 100} 
-        tint="dark" 
-        experimentalBlurMethod="dimezisBlurView" 
+      <BlurView
+        intensity={Platform.OS === "ios" ? 70 : 100}
+        tint="dark"
+        experimentalBlurMethod="dimezisBlurView"
         style={styles.headerGlass}
       >
-        <TouchableOpacity 
-          style={styles.btnVoltar} 
-          onPress={() => navigation.goBack()} 
+        <TouchableOpacity
+          style={styles.btnVoltar}
+          onPress={() => navigation.goBack()}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={24} color="#FFF" style={{ marginLeft: -2 }} />
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color="#FFF"
+            style={{ marginLeft: -2 }}
+          />
         </TouchableOpacity>
       </BlurView>
 
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
       >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent} 
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.innerContent}>
-            
             <View style={styles.headerTextContainer}>
               <View style={styles.iconWrapper}>
                 <View style={styles.iconGlow} />
@@ -77,7 +96,11 @@ export default function EsqueciSenha({ navigation }) {
                   colors={["rgba(255, 107, 0, 0.2)", "rgba(255, 107, 0, 0.02)"]}
                   style={styles.iconCircle}
                 >
-                  <MaterialCommunityIcons name="lock-reset" size={38} color={theme.colors.primary} />
+                  <MaterialCommunityIcons
+                    name="lock-reset"
+                    size={38}
+                    color={theme.colors.primary}
+                  />
                 </LinearGradient>
               </View>
 
@@ -90,18 +113,27 @@ export default function EsqueciSenha({ navigation }) {
             {!enviado ? (
               <View style={styles.form}>
                 <Text style={styles.subtitle}>
-                  Não se preocupe! Digite o e-mail associado à sua conta e enviaremos um link seguro para você criar uma nova senha.
+                  Não se preocupe! Digite o e-mail associado à sua conta e
+                  enviaremos um link seguro para você criar uma nova senha.
                 </Text>
 
-                <View style={[styles.inputBox, inputFocado && styles.inputBoxFocused]}>
-                  <Ionicons 
-                    name="mail-outline" 
-                    size={20} 
-                    color={inputFocado ? theme.colors.primary : "#666"} 
-                    style={styles.inputIcon} 
+                <View
+                  style={[
+                    styles.inputBox,
+                    inputFocado && styles.inputBoxFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="mail-outline"
+                    size={20}
+                    color={inputFocado ? theme.colors.primary : "#666"}
+                    style={styles.inputIcon}
                   />
                   <TextInput
-                    style={[styles.input, Platform.OS === "web" && { outlineStyle: "none" }]}
+                    style={[
+                      styles.input,
+                      Platform.OS === "web" && { outlineStyle: "none" },
+                    ]}
                     placeholder="Seu e-mail cadastrado"
                     placeholderTextColor="#666"
                     keyboardType="email-address"
@@ -116,16 +148,18 @@ export default function EsqueciSenha({ navigation }) {
                   />
                 </View>
 
-                <TouchableOpacity 
-                  style={[styles.btnPrimary, loading && { opacity: 0.7 }]} 
-                  onPress={handleRecuperarSenha} 
+                <TouchableOpacity
+                  style={[styles.btnPrimary, loading && { opacity: 0.7 }]}
+                  onPress={handleRecuperarSenha}
                   disabled={loading}
                   activeOpacity={0.8}
                 >
                   {loading ? (
                     <ActivityIndicator size="small" color="#000" />
                   ) : (
-                    <Text style={styles.btnPrimaryText}>Enviar Link de Recuperação</Text>
+                    <Text style={styles.btnPrimaryText}>
+                      Enviar Link de Recuperação
+                    </Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -133,26 +167,33 @@ export default function EsqueciSenha({ navigation }) {
               <View style={styles.successBox}>
                 <View style={styles.successIconWrapper}>
                   <View style={styles.successIconGlow} />
-                  <Ionicons name="checkmark-circle" size={60} color={theme.colors.success} style={{ zIndex: 2 }} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={60}
+                    color={theme.colors.success}
+                    style={{ zIndex: 2 }}
+                  />
                 </View>
-                
+
                 <Text style={styles.successTitle}>E-mail Enviado!</Text>
                 <Text style={styles.successText}>
                   As instruções foram enviadas para {"\n"}
-                  <Text style={styles.successEmailHighlight}>{email}</Text>{"\n\n"}
+                  <Text style={styles.successEmailHighlight}>{email}</Text>
+                  {"\n\n"}
                   Verifique sua caixa de entrada e a pasta de spam.
                 </Text>
-                
-                <TouchableOpacity 
-                  style={styles.btnVoltarLogin} 
+
+                <TouchableOpacity
+                  style={styles.btnVoltarLogin}
                   onPress={() => navigation.goBack()}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.btnVoltarLoginText}>Voltar para o Login</Text>
+                  <Text style={styles.btnVoltarLoginText}>
+                    Voltar para o Login
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
-
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -199,7 +240,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderColor: "rgba(255,255,255,0.05)",
-    backgroundColor: Platform.OS === "android" ? "rgba(0,0,0,0.5)" : "transparent",
+    backgroundColor:
+      Platform.OS === "android" ? "rgba(0,0,0,0.5)" : "transparent",
     overflow: "hidden",
   },
   btnVoltar: {
@@ -214,7 +256,11 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: { flexGrow: 1 },
-  innerContent: { padding: 24, paddingTop: Platform.OS === "ios" ? 140 : 120, paddingBottom: 40 },
+  innerContent: {
+    padding: 24,
+    paddingTop: Platform.OS === "ios" ? 140 : 120,
+    paddingBottom: 40,
+  },
 
   headerTextContainer: { alignItems: "center", marginBottom: 35 },
   iconWrapper: {
@@ -322,13 +368,13 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   successIconWrapper: {
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 20,
   },
   successIconGlow: {
-    position: 'absolute',
+    position: "absolute",
     width: 50,
     height: 50,
     borderRadius: 25,
@@ -369,5 +415,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "bold",
     letterSpacing: 0.5,
-  }
+  },
 });
