@@ -20,9 +20,9 @@ export default function MeusAlunos({ navigation }) {
   const [loading, setLoading] = useState(true);
   
   const [busca, setBusca] = useState("");
-  const [abaAtiva, setAbaAtiva] = useState("ativos"); // 'ativos' ou 'pendentes'
-  const [filtroTipo, setFiltroTipo] = useState("todos"); // 'todos', 'consultoria', 'presencial'
-  const [ordemAZ, setOrdemAZ] = useState(true); // true = A-Z, false = Z-A
+  const [abaAtiva, setAbaAtiva] = useState("ativos"); 
+  const [filtroTipo, setFiltroTipo] = useState("todos"); 
+  const [ordemAZ, setOrdemAZ] = useState(true);
 
   useFocusEffect(
     useCallback(() => {

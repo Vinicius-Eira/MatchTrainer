@@ -48,7 +48,6 @@ export default function Avaliar({ route, navigation }) {
 
   const handleSelecionarNota = (valor) => {
     setNota(valor);
-    // Animação de "pulo" ao selecionar a estrela
     starScale.setValue(0.8);
     Animated.spring(starScale, {
       toValue: 1,

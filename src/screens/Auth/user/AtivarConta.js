@@ -100,11 +100,9 @@ export default function AtivarConvite({ navigation }) {
     <View style={styles.mainContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#070707" />
 
-      {/* LUZES NEON DE FUNDO */}
       <View style={styles.glowTopLeft} />
       <View style={styles.glowBottomRight} />
 
-      {/* CABEÇALHO COM EFEITO VIDRO FOSCO */}
       <BlurView 
         intensity={Platform.OS === 'ios' ? 70 : 100} 
         tint="dark" 
@@ -134,7 +132,6 @@ export default function AtivarConvite({ navigation }) {
         >
           <View style={styles.innerContent}>
             
-            {/* ÍCONE E TEXTOS DE CABEÇALHO */}
             <View style={styles.headerTextContainer}>
               <View style={styles.iconWrapper}>
                 <View style={styles.iconGlow} />
@@ -156,7 +153,6 @@ export default function AtivarConvite({ navigation }) {
               </Text>
             </View>
 
-            {/* FORMULÁRIO */}
             <View style={styles.form}>
               <View
                 style={[
@@ -273,7 +269,6 @@ export default function AtivarConvite({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            {/* SEÇÃO INFORMATIVA PREENCHENDO O ESPAÇO */}
             <View style={styles.infoWrapper}>
               <Text style={styles.infoSectionTitle}>O que acontece agora?</Text>
               
