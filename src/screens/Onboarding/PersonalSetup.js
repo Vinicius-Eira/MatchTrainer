@@ -226,7 +226,7 @@ export default function PersonalSetup({ navigation }) {
         publico: publicoAtendido,
         locais: locaisAtendidos, 
         diferenciais: diferenciais.trim(),
-        aceitaNegociacao: false // Mantido como false definitivo
+        aceitaNegociacao: false 
       };
 
       const { error } = await supabase.from("personals").upsert({
