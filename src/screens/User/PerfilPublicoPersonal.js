@@ -10,7 +10,7 @@ import { BlurView } from "expo-blur";
 import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const formatarLocalizacaoPremium = (cidade, bairro) => {
   if (!cidade && !bairro) return "LOCAL NÃO DEFINIDO";
@@ -19,48 +19,61 @@ const formatarLocalizacaoPremium = (cidade, bairro) => {
   return cidade.trim();
 };
 
-const calcularPorcentagemMatch = (alunoPrefs, personalEspecs) => {
+const calcularPorcentagemMatch = (alunoPrefs, personalEspecs, precoAvaliar, matchType) => {
   let score = 0; 
   let motivos = [];
 
   if (!alunoPrefs || !personalEspecs) return { percentual: 50, motivos: ["Faltam dados para análise exata."] };
 
   if (alunoPrefs.objetivo && personalEspecs.objetivos?.includes(alunoPrefs.objetivo)) {
-    score += 35;
-    motivos.push(`Especialista no seu objetivo: ${alunoPrefs.objetivo}`);
+    score += 40;
+    motivos.push(`Especialista no seu objetivo principal: ${alunoPrefs.objetivo}`);
+  } else {
+    score += 10;
   }
 
   if (alunoPrefs.limitacao && alunoPrefs.limitacao !== 'nenhuma') {
     if (personalEspecs.limitacoes?.includes(alunoPrefs.limitacao)) {
-      score += 15;
-      motivos.push(`Preparado para: ${alunoPrefs.limitacao}`);
-      if (alunoPrefs.sub_limitacao && alunoPrefs.sub_limitacao.length > 0) {
-        const trataDor = alunoPrefs.sub_limitacao.some(dor => personalEspecs.subs?.includes(dor));
-        if (trataDor) {
-          score += 10;
-          motivos.push(`Foco na sua necessidade: ${alunoPrefs.sub_limitacao[0]}`);
-        }
-      } else { score += 10; }
+      score += 25;
+      motivos.push(`Preparado para lidar com: ${alunoPrefs.limitacao}`);
     }
-  } else { score += 25; }
+  } else {
+    score += 25; 
+  }
 
   if (alunoPrefs.perfil_treinador && personalEspecs.perfil === alunoPrefs.perfil_treinador) {
     score += 20;
-    motivos.push("A didática é exatamente o que você busca.");
+    motivos.push("A didática dele(a) é exatamente o que você busca.");
+  } else {
+    score += 5;
   }
 
-  if (alunoPrefs.investimento && personalEspecs.investimento === alunoPrefs.investimento) {
-    score += 10;
-    motivos.push("Encaixa perfeitamente no seu orçamento.");
-  } else { score += 5; }
+  let priceMatch = false;
+  if (alunoPrefs.investimento && precoAvaliar) {
+    if (alunoPrefs.investimento === "base" && precoAvaliar <= 110) priceMatch = true;
+    else if (alunoPrefs.investimento === "mid" && precoAvaliar >= 110 && precoAvaliar <= 150) priceMatch = true;
+    else if (alunoPrefs.investimento === "premium" && precoAvaliar >= 150) priceMatch = true;
+  }
 
-  if (alunoPrefs.frequencia && personalEspecs.frequencia === alunoPrefs.frequencia) {
-    score += 10;
-    motivos.push("Disponibilidade ideal para sua rotina.");
-  } else { score += 5; }
+  if (priceMatch) {
+    score += 15;
+    motivos.push(`Encaixa perfeitamente no seu orçamento para ${matchType}.`);
+  } else {
+    score += 5; 
+  }
 
-  if(motivos.length === 0) motivos.push("Possui perfil compatível com sua região.");
+  if(motivos.length === 0) motivos.push("Possui perfil altamente compatível com você.");
+  
   return { percentual: Math.min(99, score), motivos };
+};
+
+const getMotivoStyle = (texto) => {
+  const t = texto.toLowerCase();
+  if (t.includes('objetivo')) return { icon: 'bullseye', color: '#0A84FF', title: 'Objetivo Alinhado', bg: 'rgba(10, 132, 255, 0.1)' };
+  if (t.includes('lidar com') || t.includes('necessidade')) return { icon: 'heartbeat', color: '#FF3B30', title: 'Saúde Protegida', bg: 'rgba(255, 59, 48, 0.1)' };
+  if (t.includes('didática') || t.includes('perfil')) return { icon: 'user-graduate', color: '#FFD60A', title: 'Perfil de Ensino Ideal', bg: 'rgba(255, 214, 10, 0.1)' };
+  if (t.includes('orçamento')) return { icon: 'wallet', color: '#32ADE6', title: 'Investimento Compatível', bg: 'rgba(50, 173, 230, 0.1)' };
+  return { icon: 'check-circle', color: '#00E676', title: 'Afinidade Geral', bg: 'rgba(0, 230, 118, 0.1)' };
 };
 
 const getEspecialidadeInfo = (tag) => {
@@ -71,13 +84,12 @@ const getEspecialidadeInfo = (tag) => {
   if (t.includes('performance') || t.includes('rendimento')) return { icon: 'bolt', title: 'Performance', desc: 'Treinamento focado em alto rendimento e superação de limites.' };
   if (t.includes('gestante') || t.includes('gravidez')) return { icon: 'baby', title: 'Gestantes', desc: 'Acompanhamento seguro e adaptado para todas as fases da gravidez.' };
   if (t.includes('idoso') || t.includes('terceira') || t.includes('envelhecimento')) return { icon: 'walking', title: 'Terceira Idade', desc: 'Atenção especial à mobilidade, fortalecimento e longevidade.' };
-  if (t.includes('lesão') || t.includes('lesao') || t.includes('dor') || t.includes('reabilitação') || t.includes('reabilitacao')) return { icon: 'band-aid', title: 'Reabilitação Física', desc: 'Cuidado técnico focado na prevenção e fortalecimento de lesões.' };
-  if (t.includes('médica') || t.includes('medica') || t.includes('clínica') || t.includes('clinica') || t.includes('patologia')) return { icon: 'notes-medical', title: 'Acompanhamento Clínico', desc: 'Treino 100% alinhado com recomendações médicas específicas.' };
+  if (t.includes('lesão') || t.includes('lesao') || t.includes('dor') || t.includes('reabilitação')) return { icon: 'band-aid', title: 'Reabilitação Física', desc: 'Cuidado técnico focado na prevenção e fortalecimento de lesões.' };
+  if (t.includes('médica') || t.includes('medica') || t.includes('clínica')) return { icon: 'notes-medical', title: 'Acompanhamento Clínico', desc: 'Treino 100% alinhado com recomendações médicas específicas.' };
   if (t.includes('cardio') || t.includes('coração')) return { icon: 'heart-broken', title: 'Cardiopatias', desc: 'Prescrição de exercícios monitorada para a saúde do coração.' };
   if (t.includes('hiperten') || t.includes('pressão')) return { icon: 'tachometer-alt', title: 'Hipertensão', desc: 'Controle de intensidade focado na estabilidade pressórica.' };
-  if (t.includes('diabet') || t.includes('glicemia')) return { icon: 'tint', title: 'Diabetes', desc: 'Manejo glicêmico através do exercício físico bem estruturado.' };
+  if (t.includes('diabet') || t.includes('glicemia')) return { icon: 'tint', title: 'Diabetes', desc: 'Manejo glicêmico através do exercício físico.' };
   if (t.includes('postura') || t.includes('coluna')) return { icon: 'child', title: 'Correção Postural', desc: 'Trabalho focado em core, flexibilidade e alinhamento biomecânico.' };
-
   return { icon: 'bullseye', title: tag.charAt(0).toUpperCase() + tag.slice(1), desc: 'Acompanhamento especializado com foco total nesta necessidade.' };
 };
 
@@ -90,6 +102,9 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
   
   const [matchData, setMatchData] = useState(null);
   const [modalMatchVisivel, setModalMatchVisivel] = useState(false);
+  
+  const [precoExibido, setPrecoExibido] = useState("--");
+  const [labelPrecoExibido, setLabelPrecoExibido] = useState("Valor");
 
   useEffect(() => { carregarPerfilCompleto(); }, [personalId]);
 
@@ -99,11 +114,7 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
 
       const [reqPersonal, reqNota, reqAvaliacoes] = await Promise.all([
         supabase.from("personals").select("*").eq("id", personalId).single(),
-        
-        // CORREÇÃO: Utilizando p_id para casar com a função RPC do Supabase
         supabase.rpc("get_media_avaliacoes", { p_id: personalId }), 
-        
-        // CORREÇÃO: Busca as avaliações estruturadas e por ordem da mais recente
         supabase.from("avaliacoes")
           .select("id, nota, comentario, criado_em, usuarios(nome)")
           .eq("personal_id", personalId)
@@ -119,9 +130,25 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
 
       if (user) {
         const { data: uData } = await supabase.from("usuarios").select("preferencias").eq("id", user.id).single();
+        const alunoPrefs = uData?.preferencias || {};
+        
         let specs = null;
         try { specs = typeof prof.especialidades === 'string' ? JSON.parse(prof.especialidades) : prof.especialidades; } catch(e){}
-        const matchCalculado = calcularPorcentagemMatch(uData?.preferencias, specs);
+        
+        const modalidadeAluno = alunoPrefs.modalidade || "ambos";
+        const modalidadesPersonal = prof.modalidades || ["Consultoria", "Presencial"];
+        
+        let matchType = "Ambos";
+        if (modalidadeAluno === "consultoria" && modalidadesPersonal.includes("Consultoria")) matchType = "Consultoria";
+        else if (modalidadeAluno === "presencial" && modalidadesPersonal.includes("Presencial")) matchType = "Presencial";
+
+        let precoA = matchType === "Consultoria" ? prof.preco_consultoria : prof.preco_presencial;
+        if (!precoA) precoA = prof.preco_medio;
+
+        setPrecoExibido(precoA);
+        setLabelPrecoExibido(matchType === "Consultoria" ? "Mensalidade" : "Por Aula");
+
+        const matchCalculado = calcularPorcentagemMatch(alunoPrefs, specs, precoA, matchType);
         setMatchData(matchCalculado);
       }
 
@@ -155,12 +182,10 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
           if (['pendente', 'em_contato', 'aguardando_personal', 'aceito_personal', 'aluno_ativo', 'lead'].includes(conn.status)) {
             conexaoAtivaOuPendente = conn;
           }
-
           if (conn.status === 'inativo' || conn.status === 'recusado') {
             const dataCancelamento = new Date(conn.atualizado_em || conn.criado_em);
             const hoje = new Date();
             const diffHoras = Math.abs(hoje - dataCancelamento) / 36e5;
-
             if (diffHoras < 24) {
               bloqueado = true;
               horasRestantes = Math.ceil(24 - diffHoras);
@@ -172,12 +197,13 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
       if (bloqueado) {
         Alert.alert(
           "Ação Bloqueada 🛑",
-          `Você encerrou a parceria com este profissional recentemente.\n\nPara evitar spam no aplicativo, aguarde ${horasRestantes} hora(s) antes de tentar enviar uma nova solicitação para ele.`
+          `Você encerrou a parceria com este profissional recentemente.\n\nPara evitar spam, aguarde ${horasRestantes} hora(s) antes de tentar enviar uma nova solicitação.`
         );
         return; 
       }
 
       let conexaoId = null;
+      setModalMatchVisivel(false);
 
       if (tipo === "whatsapp") {
         if (!conexaoAtivaOuPendente) {
@@ -193,17 +219,14 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
             .insert([{ usuario_id: user.id, personal_id: personal.id, status: 'em_contato' }])
             .select('id')
             .single();
-            
           if (erroCriar) throw erroCriar;
           conexaoId = novaConexao.id;
         } else {
           conexaoId = conexaoAtivaOuPendente.id;
         }
-        
         navigation.navigate('Chat', { conexaoId: conexaoId, nomeOutro: personal.nome, fotoOutro: personal.foto_url, tipoUsuarioLogado: 'aluno' });
       }
     } catch (error) { 
-      console.error("Erro no handleContato:", error);
       Alert.alert("Erro", "Não foi possível iniciar o contato. Tente novamente."); 
     }
   };
@@ -229,6 +252,7 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
   
   const temGaleria = personal.galeria_fotos && Array.isArray(personal.galeria_fotos) && personal.galeria_fotos.length > 0;
   const fotoPerfil = personal.foto_url || "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=600";
+  const modalidadesAtendidas = personal.modalidades || ["Consultoria", "Presencial"];
 
   return (
     <View style={styles.container}>
@@ -252,11 +276,13 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
             
             {matchData && (
               <TouchableOpacity style={styles.matchBadgeFloat} activeOpacity={0.9} onPress={() => setModalMatchVisivel(true)}>
-                <LinearGradient colors={['#FF6B00', '#FF8C00']} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.matchBadgeGradient}>
-                  <FontAwesome5 name="fire-alt" size={12} color="#000" />
-                  <Text style={styles.matchBadgeText}>{matchData.percentual}% MATCH</Text>
-                  <Octicons name="info" size={12} color="rgba(0,0,0,0.6)" />
-                </LinearGradient>
+                <BlurView intensity={80} tint="dark" style={styles.matchBadgeGlass}>
+                  <FontAwesome5 name="fire-alt" size={14} color={theme.colors.primary} />
+                  <Text style={styles.matchBadgeText}>{matchData.percentual}% COMPATÍVEL</Text>
+                  <View style={styles.matchBadgeIconBg}>
+                    <Ionicons name="chevron-forward" size={12} color="#FFF" />
+                  </View>
+                </BlurView>
               </TouchableOpacity>
             )}
           </View>
@@ -279,6 +305,15 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
               <Text style={styles.crefNeonText}>CREF {personal.cref}</Text>
             </View>
           )}
+
+          <View style={styles.modalidadesRow}>
+            {modalidadesAtendidas.map(mod => (
+              <View key={mod} style={styles.modalityTag}>
+                <Ionicons name={mod === "Consultoria" ? "phone-portrait" : "barbell"} size={12} color="#000" />
+                <Text style={styles.modalityTagText}>{mod}</Text>
+              </View>
+            ))}
+          </View>
 
           {(personal.instagram) && (
             <View style={styles.socialDockContainer}>
@@ -306,8 +341,8 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
           
           <View style={styles.statFloatCard}>
             <MaterialCommunityIcons name="wallet-outline" size={22} color={theme.colors.primary} style={styles.statFloatIcon} />
-            <Text style={styles.statFloatValue}>R$ {personal.preco_medio || "--"}</Text>
-            <Text style={styles.statFloatLabel}>Por Aula</Text>
+            <Text style={styles.statFloatValue}>R$ {precoExibido}</Text>
+            <Text style={styles.statFloatLabel}>{labelPrecoExibido}</Text>
           </View>
         </View>
 
@@ -471,26 +506,49 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
       </BlurView>
 
       <Modal visible={modalMatchVisivel} transparent={true} animationType="fade" onRequestClose={() => setModalMatchVisivel(false)}>
-        <BlurView intensity={90} tint="dark" style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <View style={styles.modalBadgeBg}>
-                <FontAwesome5 name="fire-alt" size={28} color={theme.colors.primary} />
+        <BlurView intensity={100} tint="dark" style={styles.modalMatchOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setModalMatchVisivel(false)} />
+          
+          <View style={styles.matchReportCard}>
+            
+            <View style={styles.matchReportHeader}>
+              <View style={styles.scoreCircle}>
+                <LinearGradient colors={['#FF8C00', '#FF3B30']} style={StyleSheet.absoluteFill} borderRadius={50} opacity={0.2} />
+                <Text style={styles.scoreText}>{matchData?.percentual}%</Text>
+                <Text style={styles.scoreLabel}>MATCH</Text>
               </View>
-              <Text style={styles.modalTitle}>{matchData?.percentual}% Compatível</Text>
-              <Text style={styles.modalSubtitle}>Por que {personal.nome?.split(' ')[0]} é ideal para você?</Text>
+              <Text style={styles.matchReportTitle}>Análise de Compatibilidade</Text>
+              <Text style={styles.matchReportSubtitle}>
+                Por que <Text style={{color: '#FFF'}}>{personal?.nome?.split(' ')[0]}</Text> é o treinador ideal para você?
+              </Text>
             </View>
-            <View style={styles.modalBody}>
-              {matchData?.motivos?.map((motivo, index) => (
-                <View key={index} style={styles.motivoRow}>
-                  <Ionicons name="checkmark-circle" size={22} color={theme.colors.primary} style={{marginTop: 2}} />
-                  <Text style={styles.motivoText}>{motivo}</Text>
-                </View>
-              ))}
+
+            <ScrollView style={styles.matchReasonsScroll} showsVerticalScrollIndicator={false}>
+              {matchData?.motivos?.map((motivo, index) => {
+                const styleInfo = getMotivoStyle(motivo);
+                return (
+                  <View key={index} style={styles.reasonCard}>
+                    <View style={[styles.reasonIconBox, { backgroundColor: styleInfo.bg }]}>
+                      <FontAwesome5 name={styleInfo.icon} size={16} color={styleInfo.color} />
+                    </View>
+                    <View style={styles.reasonTextWrap}>
+                      <Text style={[styles.reasonTitle, { color: styleInfo.color }]}>{styleInfo.title}</Text>
+                      <Text style={styles.reasonText}>{motivo}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            <View style={styles.matchReportFooter}>
+              <TouchableOpacity style={styles.btnReportClose} onPress={() => setModalMatchVisivel(false)} activeOpacity={0.8}>
+                <Text style={styles.btnReportCloseText}>Fechar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.btnReportAction} onPress={() => handleContato("chat")} activeOpacity={0.8}>
+                <Ionicons name="chatbubbles" size={18} color="#000" style={{marginRight: 6}} />
+                <Text style={styles.btnReportActionText}>Conversar</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.modalBtnClose} onPress={() => setModalMatchVisivel(false)} activeOpacity={0.8}>
-              <Text style={styles.modalBtnText}>Fechar Análise</Text>
-            </TouchableOpacity>
           </View>
         </BlurView>
       </Modal>
@@ -500,8 +558,8 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000000" },
-  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000" },
+  container: { flex: 1, backgroundColor: "#050505" },
+  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#050505" },
   scrollContent: { paddingBottom: 180 }, 
 
   headerAbsolute: { position: "absolute", top: Platform.OS === "ios" ? 55 : 40, left: 20, zIndex: 100 },
@@ -514,9 +572,10 @@ const styles = StyleSheet.create({
   avatarBorderGlow: { padding: 4, borderRadius: 100, backgroundColor: "#000", shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.6, shadowRadius: 25, elevation: 20 },
   avatarImage: { width: 160, height: 160, borderRadius: 80, borderWidth: 2, borderColor: "rgba(255,107,0,0.5)" },
   
-  matchBadgeFloat: { position: 'absolute', bottom: -12, alignSelf: 'center' },
-  matchBadgeGradient: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", shadowColor: "#FF6B00", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
-  matchBadgeText: { color: "#000", fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
+  matchBadgeFloat: { position: 'absolute', bottom: -12, alignSelf: 'center', borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: "rgba(255,107,0,0.4)" },
+  matchBadgeGlass: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 14, paddingRight: 6, paddingVertical: 6 },
+  matchBadgeText: { color: "#FFF", fontSize: 12, fontWeight: '900', letterSpacing: 0.5 },
+  matchBadgeIconBg: { backgroundColor: theme.colors.primary, width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginLeft: 4 },
 
   nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 6, marginTop: 15 },
   nomeText: { fontFamily: theme.fonts.title, fontSize: 32, color: "#FFF", textAlign: "center", letterSpacing: -0.5 },
@@ -527,6 +586,10 @@ const styles = StyleSheet.create({
   crefPillCentered: { flexDirection: 'row', alignItems: 'center', alignSelf: 'center', backgroundColor: "#111", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,107,0,0.4)", marginBottom: 20, gap: 6 },
   crefNeonText: { color: "#FFF", fontSize: 12, fontWeight: '700', letterSpacing: 1 },
   
+  modalidadesRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 20 },
+  modalityTag: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, gap: 6 },
+  modalityTagText: { color: "#000", fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
+
   socialDockContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14 },
   btnSocialDock: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#111", justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: "#222", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 5 },
 
@@ -584,15 +647,25 @@ const styles = StyleSheet.create({
   btnActionSolidText: { color: "#000", fontSize: 16, fontWeight: "900", letterSpacing: 0.5, textTransform: "uppercase" },
   footerHint: { color: "#888", fontSize: 12, textAlign: 'center', fontWeight: '600', marginBottom: 12, letterSpacing: 0.5 },
 
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent: { width: '100%', backgroundColor: "#0A0A0A", borderRadius: 32, padding: 24, borderWidth: 1, borderColor: "#222", alignItems: 'center', shadowColor: "#000", shadowOffset: { width: 0, height: 20 }, shadowOpacity: 1, shadowRadius: 40 },
-  modalHeader: { alignItems: 'center', marginBottom: 25 },
-  modalBadgeBg: { width: 70, height: 70, borderRadius: 35, backgroundColor: "rgba(255, 107, 0, 0.1)", justifyContent: 'center', alignItems: 'center', marginBottom: 15, borderWidth: 1, borderColor: "rgba(255,107,0,0.3)" },
-  modalTitle: { color: "#FFF", fontSize: 26, fontFamily: theme.fonts.title, marginBottom: 8, textAlign: 'center' },
-  modalSubtitle: { color: "#888", fontSize: 14, textAlign: 'center' },
-  modalBody: { width: '100%', backgroundColor: "#111", borderRadius: 20, padding: 20, marginBottom: 25, borderWidth: 1, borderColor: "#222" },
-  motivoRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16 },
-  motivoText: { color: "#CCC", fontSize: 14, fontWeight: '500', marginLeft: 12, flex: 1, lineHeight: 22 },
-  modalBtnClose: { backgroundColor: "rgba(255,255,255,0.05)", width: '100%', height: 60, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
-  modalBtnText: { color: "#FFF", fontSize: 15, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.5 }
-});                                                                                                                                                                  
+  modalMatchOverlay: { flex: 1, justifyContent: 'flex-end' },
+  matchReportCard: { width: '100%', backgroundColor: "#0F0F0F", borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, borderWidth: 1, borderColor: "#222", shadowColor: "#000", shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.8, shadowRadius: 30, elevation: 20, maxHeight: height * 0.85 },
+  matchReportHeader: { alignItems: 'center', marginBottom: 25 },
+  scoreCircle: { width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: theme.colors.primary, justifyContent: 'center', alignItems: 'center', marginBottom: 16, position: 'relative', overflow: 'hidden' },
+  scoreText: { color: "#FFF", fontSize: 32, fontFamily: theme.fonts.title },
+  scoreLabel: { color: theme.colors.primary, fontSize: 10, fontWeight: '900', letterSpacing: 1, marginTop: -4 },
+  matchReportTitle: { color: "#FFF", fontSize: 24, fontFamily: theme.fonts.title, marginBottom: 8, letterSpacing: -0.5 },
+  matchReportSubtitle: { color: "#888", fontSize: 14, textAlign: 'center', paddingHorizontal: 20, lineHeight: 20 },
+  
+  matchReasonsScroll: { width: '100%', marginBottom: 20 },
+  reasonCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: "#1A1A1A", padding: 16, borderRadius: 20, marginBottom: 12, borderWidth: 1, borderColor: "#2A2A2A" },
+  reasonIconBox: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+  reasonTextWrap: { flex: 1 },
+  reasonTitle: { fontSize: 13, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  reasonText: { color: "#AAA", fontSize: 14, lineHeight: 20 },
+
+  matchReportFooter: { flexDirection: 'row', gap: 12, marginTop: 10 },
+  btnReportClose: { flex: 1, height: 56, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.05)", justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  btnReportCloseText: { color: "#FFF", fontSize: 15, fontWeight: 'bold' },
+  btnReportAction: { flex: 1, height: 56, borderRadius: 16, backgroundColor: theme.colors.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10 },
+  btnReportActionText: { color: "#000", fontSize: 15, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 }
+});

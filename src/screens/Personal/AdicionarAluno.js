@@ -13,26 +13,53 @@ import {
   ActivityIndicator
 } from "react-native";
 import * as Clipboard from 'expo-clipboard';
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
 
+const OPCOES_SERVICOS = ["Consultoria", "Presencial", "Avaliação Física", "Mentoria", "Grupo de Corrida", "Reabilitação"];
+
 export default function AdicionarAluno({ navigation }) {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [tipo, setTipo] = useState("consultoria"); 
+  const [servicosInclusos, setServicosInclusos] = useState(["Consultoria"]); 
+  const [frequencia, setFrequencia] = useState("Mensal"); 
   const [objetivo, setObjetivo] = useState("hipertrofia"); 
   const [mensalidade, setMensalidade] = useState("");
-  const [vencimento, setVencimento] = useState("");
+  const [vencimento, setVencimento] = useState("10");
+  const [observacoes, setObservacoes] = useState("");
   const [loading, setLoading] = useState(false);
-
   const [inputFocado, setInputFocado] = useState(null);
+
+  const handleMoneyChange = (text) => {
+    let numericValue = text.replace(/[^0-9]/g, '');
+    if (numericValue) {
+      numericValue = (parseInt(numericValue) / 100).toFixed(2);
+      setMensalidade(numericValue.replace('.', ','));
+    } else {
+      setMensalidade('');
+    }
+  };
+
+  const toggleServico = (servico) => {
+    if (servicosInclusos.includes(servico)) {
+      setServicosInclusos(servicosInclusos.filter(s => s !== servico));
+    } else {
+      setServicosInclusos([...servicosInclusos, servico]);
+    }
+  };
 
   const handleAdicionarAluno = async () => {
     if (!nome || !email) {
       return Alert.alert("Atenção", "Nome e E-mail são obrigatórios.");
+    }
+    if (servicosInclusos.length === 0) {
+      return Alert.alert("Atenção", "Selecione pelo menos um serviço para o pacote deste aluno.");
+    }
+    if (!mensalidade) {
+      return Alert.alert("Atenção", "O Valor do contrato é obrigatório.");
     }
 
     let diaInt = null;
@@ -50,6 +77,7 @@ export default function AdicionarAluno({ navigation }) {
       if (!user) throw new Error("Sessão do profissional não encontrada.");
 
       const codigoGerado = Math.floor(100000 + Math.random() * 900000).toString();
+      const valorFloat = mensalidade ? parseFloat(mensalidade.replace(',', '.')) : 0;
 
       const { error: insertError } = await supabase
         .from('convites_alunos')
@@ -59,10 +87,12 @@ export default function AdicionarAluno({ navigation }) {
             codigo_convite: codigoGerado,
             personal_id: user.id,
             nome: nome.trim(),
-            tipo_acompanhamento: tipo,
+            servicos_inclusos: servicosInclusos,
             objetivo_principal: objetivo,
-            valor_mensalidade: parseFloat(mensalidade) || 0,
+            frequencia_pagamento: frequencia,
+            valor_mensalidade: valorFloat,
             dia_vencimento: diaInt,
+            observacoes: observacoes.trim(), 
             status: 'pendente'
           }
         ]);
@@ -70,15 +100,15 @@ export default function AdicionarAluno({ navigation }) {
       if (insertError) throw insertError;
 
       const copiarEVoltar = async () => {
-        const mensagem = `Fala ${nome.split(' ')[0]}! Baixe o MatchTrainer e clique em "Já tenho um Personal".\n\nUse o código VIP abaixo para ativar nossa consultoria:\n🎟️ Código: ${codigoGerado}`;
+        const mensagem = `Fala ${nome.split(' ')[0]}! Baixe o MatchTrainer e clique em "Já tenho um Personal".\n\nUse o código VIP abaixo para ativar nosso contrato:\n🎟️ Código: ${codigoGerado}`;
         await Clipboard.setStringAsync(mensagem);
         Alert.alert("Copiado! ✅", "O texto foi copiado. É só colar no WhatsApp do aluno.");
         navigation.goBack();
       };
 
       Alert.alert(
-        "Convite Gerado! 🎉",
-        `O aluno foi pré-cadastrado na sua lista.\n\nCódigo: ${codigoGerado}`,
+        "Contrato Digital Gerado! 🎉",
+        `O aluno foi pré-cadastrado.\nAssim que ele inserir o código no app, a cobrança começará a rodar no painel de Recebimentos.\n\nCódigo: ${codigoGerado}`,
         [
           { text: "Copiar e Enviar", onPress: copiarEVoltar },
           { text: "Apenas Sair", onPress: () => navigation.goBack(), style: "cancel" }
@@ -92,15 +122,30 @@ export default function AdicionarAluno({ navigation }) {
     }
   };
 
+  const frequenciaList = [
+    { id: "Avulso", label: "Avulso" },
+    { id: "Mensal", label: "Mensal" },
+    { id: "Trimestral", label: "Trimestral" },
+    { id: "Semestral", label: "Semestral" },
+    { id: "Anual", label: "Anual" }
+  ];
+
+  const objetivosList = [
+    { id: "hipertrofia", label: "Hipertrofia", icon: "dumbbell" },
+    { id: "emagrecimento", label: "Emagrecimento", icon: "fire" },
+    { id: "saude", label: "Saúde & Qualidade", icon: "heartbeat" },
+    { id: "performance", label: "Performance", icon: "bolt" }
+  ];
+
   return (
     <View style={styles.mainContainer}>
-      <StatusBar barStyle="light-content" backgroundColor="#070707" />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
       <View style={styles.glowTopLeft} />
       <View style={styles.glowBottomRight} />
 
       <BlurView 
-        intensity={Platform.OS === 'ios' ? 70 : 100} 
+        intensity={Platform.OS === 'ios' ? 80 : 100} 
         tint="dark" 
         experimentalBlurMethod="dimezisBlurView" 
         style={styles.headerGlass}
@@ -108,7 +153,7 @@ export default function AdicionarAluno({ navigation }) {
         <TouchableOpacity style={styles.btnVoltar} onPress={() => navigation.goBack()} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={24} color="#FFF" style={{ marginLeft: -2 }} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Novo Aluno</Text>
+        <Text style={styles.headerTitle}>NOVO CONTRATO</Text>
         <View style={{ width: 44 }} />
       </BlurView>
 
@@ -127,18 +172,26 @@ export default function AdicionarAluno({ navigation }) {
             <View style={styles.headerTextContainer}>
               <View style={styles.iconWrapper}>
                 <View style={styles.iconGlow} />
-                <LinearGradient colors={["rgba(255, 107, 0, 0.2)", "rgba(255, 107, 0, 0.02)"]} style={styles.iconCircle}>
-                  <MaterialCommunityIcons name="account-plus-outline" size={38} color={theme.colors.primary} />
+                <LinearGradient colors={["rgba(255, 107, 0, 0.25)", "rgba(255, 107, 0, 0.05)"]} style={styles.iconCircle}>
+                  <MaterialCommunityIcons name="file-sign" size={38} color={theme.colors.primary} />
                 </LinearGradient>
               </View>
-              <Text style={styles.title}>Convidar <Text style={styles.titleHighlight}>Aluno.</Text></Text>
-              <Text style={styles.subtitle}>Gere um código de acesso exclusivo para o seu aluno entrar na plataforma já vinculado a você.</Text>
+              <Text style={styles.title}>Vincular <Text style={styles.titleHighlight}>Aluno.</Text></Text>
+              <Text style={styles.subtitle}>Configure as regras financeiras e escopo de trabalho para gerar a credencial VIP do seu novo aluno.</Text>
             </View>
 
-            <Text style={styles.sectionTitle}>Dados do Aluno</Text>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Ionicons name="person-circle" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.sectionTitle}>Dados Cadastrais</Text>
+              </View>
+              <Text style={styles.sectionDesc}>Informações básicas para identificação no sistema.</Text>
+            </View>
             
             <View style={[styles.inputBox, inputFocado === "nome" && styles.inputBoxFocused]}>
-              <Ionicons name="person-outline" size={20} color={inputFocado === "nome" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+              <View style={[styles.inputIconWrapper, inputFocado === "nome" && styles.inputIconWrapperFocused]}>
+                <Ionicons name="person" size={16} color={inputFocado === "nome" ? theme.colors.primary : "#888"} />
+              </View>
               <TextInput
                 style={[styles.input, Platform.OS === "web" && { outlineStyle: "none" }]}
                 placeholder="Nome completo do aluno"
@@ -154,10 +207,12 @@ export default function AdicionarAluno({ navigation }) {
             </View>
 
             <View style={[styles.inputBox, inputFocado === "email" && styles.inputBoxFocused]}>
-              <Ionicons name="mail-outline" size={20} color={inputFocado === "email" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+              <View style={[styles.inputIconWrapper, inputFocado === "email" && styles.inputIconWrapperFocused]}>
+                <Ionicons name="mail" size={16} color={inputFocado === "email" ? theme.colors.primary : "#888"} />
+              </View>
               <TextInput
                 style={[styles.input, Platform.OS === "web" && { outlineStyle: "none" }]}
-                placeholder="E-mail do aluno"
+                placeholder="E-mail principal"
                 placeholderTextColor="#666"
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -170,68 +225,117 @@ export default function AdicionarAluno({ navigation }) {
               />
             </View>
 
-            <Text style={styles.sectionTitle}>Modalidade de Treino</Text>
-            <View style={styles.selectorRow}>
-              {["consultoria", "presencial", "apenas_personal"].map((item) => {
-                const isActive = tipo === item;
-                const labels = { "consultoria": "Consultoria", "presencial": "Presencial", "apenas_personal": "Só Personal" };
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Ionicons name="layers" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.sectionTitle}>Escopo do Serviço (Pacote)</Text>
+              </View>
+              <Text style={styles.sectionDesc}>Selecione todos os serviços que estão inclusos neste contrato.</Text>
+            </View>
+
+            <View style={styles.servicosContainer}>
+              {OPCOES_SERVICOS.map(servico => {
+                const isSelected = servicosInclusos.includes(servico);
                 return (
-                  <TouchableOpacity
-                    key={item}
-                    style={[styles.selectorButton, isActive && styles.selectorButtonActive]}
-                    onPress={() => setTipo(item)}
-                    activeOpacity={0.7}
+                  <TouchableOpacity 
+                    key={servico} 
+                    style={[styles.servicoChip, isSelected && styles.servicoChipActive]} 
+                    onPress={() => toggleServico(servico)} 
+                    activeOpacity={0.8}
                   >
-                    <Text style={[styles.selectorText, isActive && styles.selectorTextActive]}>
-                      {labels[item]}
-                    </Text>
+                    <Ionicons 
+                      name={isSelected ? "checkmark-circle" : "add-circle-outline"} 
+                      size={16} 
+                      color={isSelected ? theme.colors.primary : "#666"} 
+                      style={{ marginRight: 6 }} 
+                    />
+                    <Text style={[styles.servicoChipText, isSelected && styles.servicoChipTextActive]}>{servico}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            <Text style={styles.sectionTitle}>Objetivo Principal</Text>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Ionicons name="flag" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.sectionTitle}>Foco de Treino Principal</Text>
+              </View>
+            </View>
+
             <View style={styles.selectorGrid}>
-              {["hipertrofia", "emagrecimento", "saude", "performance"].map((item) => {
-                const isActive = objetivo === item;
+              {objetivosList.map((item) => {
+                const isActive = objetivo === item.id;
                 return (
                   <TouchableOpacity
-                    key={item}
+                    key={item.id}
                     style={[styles.gridButton, isActive && styles.gridButtonActive]}
-                    onPress={() => setObjetivo(item)}
+                    onPress={() => setObjetivo(item.id)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.selectorText, isActive && styles.selectorTextActive]}>
-                      {item.charAt(0).toUpperCase() + item.slice(1)}
+                    {isActive && <LinearGradient colors={["rgba(255, 107, 0, 0.08)", "transparent"]} style={StyleSheet.absoluteFill} borderRadius={20} />}
+                    <View style={[styles.gridIconBox, isActive && styles.gridIconBoxActive]}>
+                      <FontAwesome5 name={item.icon} size={16} color={isActive ? theme.colors.primary : "#888"} />
+                    </View>
+                    <Text style={[styles.selectorText, isActive && styles.selectorTextActive, { fontSize: 13, marginTop: 8 }]}>
+                      {item.label}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            <Text style={styles.sectionTitle}>Acordo Financeiro (Opcional)</Text>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Ionicons name="wallet" size={20} color="#FF6B00" style={{ marginRight: 8 }} />
+                <Text style={styles.sectionTitle}>Detalhes Financeiros</Text>
+              </View>
+              <Text style={styles.sectionDesc}>Defina o valor e a periodicidade das cobranças.</Text>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.freqScrollContainer}>
+              {frequenciaList.map((item) => {
+                const isActive = frequencia === item.id;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[styles.freqChip, isActive && styles.freqChipActive]}
+                    onPress={() => setFrequencia(item.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.freqChipText, isActive && styles.freqChipTextActive]}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
             <View style={styles.rowInputs}>
-              <View style={[styles.inputBox, { flex: 1, marginRight: 8 }, inputFocado === "valor" && styles.inputBoxFocused]}>
-                <Ionicons name="wallet-outline" size={20} color={inputFocado === "valor" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+              <View style={[styles.inputBox, { flex: 1.2, marginRight: 8 }, inputFocado === "valor" && styles.inputBoxFocusedFinance]}>
+                <View style={[styles.inputIconWrapper, { backgroundColor: "rgba(0, 230, 118, 0.1)", borderColor: "rgba(0, 230, 118, 0.2)" }]}>
+                  <MaterialCommunityIcons name="currency-brl" size={18} color="#00E676" />
+                </View>
                 <TextInput
                   style={[styles.input, Platform.OS === "web" && { outlineStyle: "none" }]}
-                  placeholder="Mensalidade"
+                  placeholder="0,00"
                   placeholderTextColor="#666"
                   keyboardType="numeric"
                   value={mensalidade}
-                  onChangeText={setMensalidade}
+                  onChangeText={handleMoneyChange}
                   onFocus={() => setInputFocado("valor")}
                   onBlur={() => setInputFocado(null)}
-                  cursorColor={theme.colors.primary}
+                  cursorColor="#00E676"
                   keyboardAppearance="dark"
                 />
               </View>
 
-              <View style={[styles.inputBox, { flex: 1, marginLeft: 8 }, inputFocado === "vencimento" && styles.inputBoxFocused]}>
-                <Ionicons name="calendar-outline" size={20} color={inputFocado === "vencimento" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+              <View style={[styles.inputBox, { flex: 0.8, marginLeft: 8 }, inputFocado === "vencimento" && styles.inputBoxFocusedFinance]}>
+                <View style={[styles.inputIconWrapper, { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.6)" }]}>
+                  <Ionicons name="calendar" size={18} color="#FF6B00" />
+                </View>
                 <TextInput
                   style={[styles.input, Platform.OS === "web" && { outlineStyle: "none" }]}
-                  placeholder="Dia Venc."
+                  placeholder="Venc."
                   placeholderTextColor="#666"
                   keyboardType="numeric"
                   maxLength={2}
@@ -239,46 +343,70 @@ export default function AdicionarAluno({ navigation }) {
                   onChangeText={setVencimento}
                   onFocus={() => setInputFocado("vencimento")}
                   onBlur={() => setInputFocado(null)}
-                  cursorColor={theme.colors.primary}
+                  cursorColor="#00E676"
                   keyboardAppearance="dark"
                 />
               </View>
+            </View>
+
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Ionicons name="document-text" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.sectionTitle}>Termos e Condições</Text>
+              </View>
+            </View>
+
+            <View style={[styles.inputBoxArea, inputFocado === "obs" && styles.inputBoxFocused]}>
+               <TextInput
+                 style={[styles.inputArea, Platform.OS === "web" && { outlineStyle: "none" }]}
+                 placeholder="Insira as regras do contrato (Ex: Atrasos maiores de 15min cancelam a aula, reagendamentos com 24h de aviso...)"
+                 placeholderTextColor="#666"
+                 multiline
+                 value={observacoes}
+                 onChangeText={setObservacoes}
+                 onFocus={() => setInputFocado("obs")}
+                 onBlur={() => setInputFocado(null)}
+                 cursorColor={theme.colors.primary}
+                 keyboardAppearance="dark"
+               />
             </View>
 
             <TouchableOpacity
               style={[styles.btnPrimary, loading && { opacity: 0.7 }]}
               onPress={handleAdicionarAluno}
               disabled={loading}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
-              {loading ? (
-                <ActivityIndicator size="small" color="#000" />
-              ) : (
-                <>
-                  <Ionicons name="paper-plane" size={20} color="#000" style={{ marginRight: 8 }} />
-                  <Text style={styles.btnPrimaryText}>Gerar Convite de Acesso</Text>
-                </>
-              )}
+              <LinearGradient colors={["#00E676", "#00B259"]} style={styles.btnGradient}>
+                {loading ? (
+                  <ActivityIndicator size="small" color="#000" />
+                ) : (
+                  <>
+                    <Ionicons name="shield-checkmark" size={20} color="#000" style={{ marginRight: 10 }} />
+                    <Text style={styles.btnPrimaryText}>Firmar Contrato Digital</Text>
+                  </>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
 
             <View style={styles.infoContainer}>
-              <View style={styles.infoWrapper}>
-                <View style={styles.infoIconBox}>
-                  <Ionicons name="information-circle" size={24} color={theme.colors.primary} />
+              <View style={styles.infoCard}>
+                <View style={[styles.infoIconBox, { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.2)" }]}>
+                  <Ionicons name="sync" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.infoTitle}>Como funciona?</Text>
-                  <Text style={styles.infoDesc}>Ao gerar o convite, um código de 6 dígitos será criado para você compartilhar com o aluno.</Text>
+                  <Text style={styles.infoTitle}>Automação Financeira</Text>
+                  <Text style={styles.infoDesc}>Assim que o aluno validar o código, o seu painel de Recebimentos será atualizado com esta nova previsão de cobrança.</Text>
                 </View>
               </View>
 
-              <View style={styles.infoWrapper}>
-                <View style={[styles.infoIconBox, { backgroundColor: "rgba(0, 191, 255, 0.1)", borderColor: "rgba(0, 191, 255, 0.2)" }]}>
-                  <Ionicons name="rocket" size={24} color="#00BFFF" />
+              <View style={styles.infoCard}>
+                <View style={[styles.infoIconBox, { backgroundColor: "rgba(0, 230, 118, 0.1)", borderColor: "rgba(0, 230, 118, 0.2)" }]}>
+                  <Ionicons name="cellular" size={20} color="#00E676" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.infoTitle}>Acesso Imediato</Text>
-                  <Text style={styles.infoDesc}>Assim que o aluno inserir o código, o perfil dele será vinculado ao seu painel automaticamente.</Text>
+                  <Text style={styles.infoTitle}>Sincronização de Painel</Text>
+                  <Text style={styles.infoDesc}>O aluno será inserido no seu Dashboard já com as tags {servicosInclusos.length > 0 ? `[${servicosInclusos.join(', ')}]` : ''} definidas.</Text>
                 </View>
               </View>
             </View>
@@ -291,10 +419,10 @@ export default function AdicionarAluno({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: "#070707", position: "relative" },
+  mainContainer: { flex: 1, backgroundColor: "#000000", position: "relative" },
 
-  glowTopLeft: { position: "absolute", top: -100, left: -50, width: 250, height: 250, borderRadius: 125, backgroundColor: theme.colors.primary, opacity: 0.12, blurRadius: 60 },
-  glowBottomRight: { position: "absolute", bottom: -50, right: -100, width: 300, height: 300, borderRadius: 150, backgroundColor: theme.colors.primary, opacity: 0.08, blurRadius: 80 },
+  glowTopLeft: { position: "absolute", top: -100, left: -50, width: 300, height: 300, borderRadius: 150, backgroundColor: theme.colors.primary, opacity: 0.12, blurRadius: 90 },
+  glowBottomRight: { position: "absolute", bottom: -50, right: -100, width: 350, height: 350, borderRadius: 175, backgroundColor: "#00E676", opacity: 0.08, blurRadius: 100 },
 
   headerGlass: {
     position: "absolute",
@@ -310,50 +438,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderColor: "rgba(255,255,255,0.05)",
-    backgroundColor: Platform.OS === "android" ? "rgba(0,0,0,0.5)" : "transparent",
-    overflow: "hidden",
   },
-  btnVoltar: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.08)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
-  headerTitle: { fontFamily: theme.fonts.title, fontSize: 16, color: "#FFF", letterSpacing: 0.5, textTransform: "uppercase" },
+  btnVoltar: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.05)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  headerTitle: { fontFamily: theme.fonts.title, fontSize: 14, color: "#FFF", letterSpacing: 1.5, textTransform: "uppercase" },
 
   scrollContent: { flexGrow: 1 },
   innerContent: { padding: 24, paddingTop: Platform.OS === "ios" ? 130 : 110, paddingBottom: 40 },
 
-  headerTextContainer: { alignItems: "center", marginBottom: 30 },
+  headerTextContainer: { alignItems: "center", marginBottom: 35 },
   iconWrapper: { position: "relative", marginBottom: 25, justifyContent: "center", alignItems: "center" },
-  iconGlow: { position: "absolute", width: 70, height: 70, borderRadius: 35, backgroundColor: theme.colors.primary, opacity: 0.3, blurRadius: 20 },
-  iconCircle: { width: 74, height: 74, borderRadius: 37, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.4)" },
+  iconGlow: { position: "absolute", width: 80, height: 80, borderRadius: 40, backgroundColor: theme.colors.primary, opacity: 0.4, blurRadius: 25 },
+  iconCircle: { width: 84, height: 84, borderRadius: 42, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.6)" },
   
   title: { fontFamily: theme.fonts.title, fontSize: 34, color: "#FFF", letterSpacing: -0.5, lineHeight: 40, textAlign: "center" },
   titleHighlight: { color: theme.colors.primary },
-  subtitle: { fontFamily: theme.fonts.body, fontSize: 14, color: "#888", marginTop: 10, lineHeight: 22, textAlign: "center", paddingHorizontal: 10 },
+  subtitle: { fontFamily: theme.fonts.body, fontSize: 15, color: "#AAA", marginTop: 12, lineHeight: 24, textAlign: "center", paddingHorizontal: 10 },
 
-  sectionTitle: { color: theme.colors.textSecondary, fontSize: 12, textTransform: "uppercase", fontWeight: "900", letterSpacing: 1.2, marginTop: 10, marginBottom: 12, marginLeft: 4 },
+  sectionHeader: { marginBottom: 16, marginTop: 10 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  sectionTitle: { color: "#FFF", fontSize: 18, fontFamily: theme.fonts.title, letterSpacing: 0.2 },
+  sectionDesc: { color: "#888", fontSize: 13, lineHeight: 20, paddingLeft: 28 },
   
-  inputBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#121212", borderRadius: 16, borderWidth: 1, borderColor: "#222", paddingLeft: 16, marginBottom: 16, height: 60 },
+  inputBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#111", borderRadius: 20, borderWidth: 1, borderColor: "#222", paddingLeft: 12, marginBottom: 16, height: 64, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 },
   inputBoxFocused: { borderColor: theme.colors.primary, backgroundColor: "rgba(255, 107, 0, 0.05)" },
-  inputIcon: { marginRight: 12 },
+  inputBoxFocusedFinance: { borderColor: "#00E676", backgroundColor: "rgba(0, 230, 118, 0.05)" },
+  
+  inputIconWrapper: { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.03)", justifyContent: "center", alignItems: "center", marginRight: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
+  inputIconWrapperFocused: { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.2)" },
+  
   input: { flex: 1, color: "#FFF", fontSize: 16, fontFamily: theme.fonts.body, height: "100%", backgroundColor: "transparent" },
 
-  selectorRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15 },
-  selectorButton: { flex: 1, height: 50, backgroundColor: "#121212", borderRadius: 14, justifyContent: "center", alignItems: "center", marginHorizontal: 4, borderWidth: 1, borderColor: "#222" },
-  selectorButtonActive: { backgroundColor: "rgba(255, 107, 0, 0.15)", borderColor: theme.colors.primary },
-  
-  selectorGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: 5 },
-  gridButton: { width: "48%", height: 50, backgroundColor: "#121212", borderRadius: 14, justifyContent: "center", alignItems: "center", marginBottom: 12, borderWidth: 1, borderColor: "#222" },
-  gridButtonActive: { backgroundColor: "rgba(255, 107, 0, 0.15)", borderColor: theme.colors.primary },
-  
-  selectorText: { color: "#888", fontWeight: "700", fontSize: 13, letterSpacing: 0.3 },
+  inputBoxArea: { backgroundColor: "#111", borderRadius: 20, borderWidth: 1, borderColor: "#222", padding: 16, height: 120, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 },
+  inputArea: { flex: 1, color: "#FFF", fontSize: 15, fontFamily: theme.fonts.body, textAlignVertical: 'top', backgroundColor: "transparent", lineHeight: 22 },
+
+  servicosContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingLeft: 2 },
+  servicoChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: "#111", paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, borderWidth: 1, borderColor: "#222", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 5 },
+  servicoChipActive: { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: theme.colors.primary },
+  servicoChipText: { color: "#888", fontSize: 13, fontWeight: "bold", letterSpacing: 0.3 },
+  servicoChipTextActive: { color: theme.colors.primary, fontWeight: "900" },
+
+  selectorGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: 15 },
+  gridButton: { width: "48%", height: 100, backgroundColor: "#111", borderRadius: 20, justifyContent: "center", alignItems: "center", marginBottom: 15, borderWidth: 1, borderColor: "#222", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 4, position: 'relative', overflow: 'hidden' },
+  gridButtonActive: { borderColor: theme.colors.primary, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6 },
+  gridIconBox: { width: 40, height: 40, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.03)", justifyContent: 'center', alignItems: 'center', marginBottom: 6 },
+  gridIconBoxActive: { backgroundColor: "rgba(255, 107, 0, 0.15)" },
+
+  freqScrollContainer: { flexDirection: 'row', gap: 12, marginBottom: 20, paddingHorizontal: 2, paddingVertical: 4 },
+  freqChip: { paddingHorizontal: 20, paddingVertical: 14, borderRadius: 16, backgroundColor: "#111", borderWidth: 1, borderColor: "#222", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
+  freqChipActive: { backgroundColor: "rgba(0, 230, 118, 0.1)", borderColor: "#00E676" },
+  freqChipText: { color: "#888", fontSize: 13, fontWeight: "800", letterSpacing: 0.5 },
+  freqChipTextActive: { color: "#00E676", fontWeight: "900" },
+
+  selectorText: { color: "#888", fontWeight: "700", fontSize: 14, letterSpacing: 0.3 },
   selectorTextActive: { color: theme.colors.primary, fontWeight: "900" },
 
   rowInputs: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
 
-  btnPrimary: { flexDirection: "row", backgroundColor: theme.colors.primary, height: 64, borderRadius: 18, justifyContent: "center", alignItems: "center", marginTop: 25, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 },
+  btnPrimary: { marginTop: 35, borderRadius: 22, shadowColor: "#00E676", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 10 },
+  btnGradient: { flexDirection: "row", height: 64, borderRadius: 22, justifyContent: "center", alignItems: "center" },
   btnPrimaryText: { color: "#000", fontSize: 16, fontWeight: "900", letterSpacing: 0.5, textTransform: "uppercase" },
 
-  infoContainer: { marginTop: 35, gap: 12 },
-  infoWrapper: { flexDirection: "row", backgroundColor: "rgba(255, 255, 255, 0.03)", borderRadius: 16, padding: 20, borderWidth: 1, borderColor: "rgba(255, 255, 255, 0.05)", alignItems: "center" },
-  infoIconBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: "rgba(255, 107, 0, 0.1)", justifyContent: "center", alignItems: "center", marginRight: 16, borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.2)" },
-  infoTitle: { color: "#FFF", fontSize: 14, fontWeight: "bold", marginBottom: 4 },
-  infoDesc: { color: "#888", fontSize: 12, lineHeight: 18 },
+  infoContainer: { marginTop: 40, gap: 14 },
+  infoCard: { flexDirection: "row", backgroundColor: "#111", borderRadius: 20, padding: 20, borderWidth: 1, borderColor: "#222", alignItems: "center" },
+  infoIconBox: { width: 48, height: 48, borderRadius: 16, justifyContent: "center", alignItems: "center", marginRight: 16, borderWidth: 1 },
+  infoTitle: { color: "#FFF", fontSize: 15, fontWeight: "bold", marginBottom: 6, letterSpacing: 0.3 },
+  infoDesc: { color: "#888", fontSize: 13, lineHeight: 22 },
 });

@@ -76,7 +76,7 @@ export default function Chat({ route, navigation }) {
           if (novaMsg.remetente_id !== myUserId) {
             marcarComoLida(novaMsg.id);
           }
-        },
+        }
       )
       .on(
         "postgres_changes",
@@ -88,7 +88,7 @@ export default function Chat({ route, navigation }) {
         },
         (payload) => {
           setStatusConexao(payload.new.status);
-        },
+        }
       )
       .subscribe();
 
@@ -123,7 +123,7 @@ export default function Chat({ route, navigation }) {
 
       if (msgs && msgs.length > 0) {
         const naoLidas = msgs.filter(
-          (m) => !m.lida && m.remetente_id !== user.id,
+          (m) => !m.lida && m.remetente_id !== user.id
         );
         naoLidas.forEach((m) => marcarComoLida(m.id));
       }
@@ -190,45 +190,11 @@ export default function Chat({ route, navigation }) {
               await enviarMensagem("🚀 Gostei da proposta! Enviei uma solicitação oficial para iniciarmos nossa parceria.");
             } catch (err) {
               console.error("Erro Supabase:", err);
-              Alert.alert("Erro", "Não foi possível enviar a solicitação. Verifique se o vínculo antigo foi completamente resetado.");
+              Alert.alert("Erro", "Não foi possível enviar a solicitação. Tente novamente.");
             }
           },
         },
-      ],
-    );
-  };
-
-  const handlePersonalAceita = async () => {
-    try {
-      await supabase
-        .from("conexoes")
-        .update({ status: "aluno_ativo" })
-        .eq("id", conexaoId);
-        
-      setStatusConexao("aluno_ativo");
-      await enviarMensagem("✅ Solicitação aceita! Parceria fechada de forma oficial. Vamos com tudo buscar seus resultados! 💪🚀");
-      Alert.alert("Sucesso! 🎉", "Parceria oficializada. O aluno já foi adicionado à sua lista de ativos.");
-      navigation.goBack(); 
-    } catch (error) {
-      Alert.alert("Erro", "Não foi possível aceitar a solicitação.");
-    }
-  };
-
-  const handlePersonalRecusa = () => {
-    Alert.alert(
-      "Recusar Aluno",
-      "Tem certeza que deseja recusar essa solicitação? A conexão será arquivada.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sim, Recusar",
-          style: "destructive",
-          onPress: async () => {
-            await supabase.from("conexoes").update({ status: "recusado" }).eq("id", conexaoId);
-            navigation.goBack();
-          },
-        },
-      ],
+      ]
     );
   };
 
@@ -263,28 +229,21 @@ export default function Chat({ route, navigation }) {
           <View style={styles.premiumProposalCard}>
             <View style={styles.proposalBadgeRow}>
               <View style={styles.proposalBadge}>
-                <Text style={styles.proposalBadgeText}>NOVO ALUNO</Text>
+                <Text style={styles.proposalBadgeText}>ALUNO AGUARDANDO</Text>
               </View>
             </View>
 
             <Text style={styles.proposalTitle}>
-              <Text style={{color: theme.colors.primary}}>{nomeOutro?.split(" ")[0]}</Text> quer treinar com você!
+              <Text style={{color: theme.colors.primary}}>{nomeOutro?.split(" ")[0]}</Text> solicitou a parceria!
             </Text>
             <Text style={styles.proposalSubtitle}>
-              O aluno enviou a solicitação de parceria. Aceite para oficializar o vínculo e liberar o painel de treinos.
+              Nenhum aluno entra na sua carteira sem um contrato financeiro. Defina as regras de cobrança para ativar este aluno.
             </Text>
 
-            <View style={styles.proposalBtnContainer}>
-              <TouchableOpacity style={styles.btnProposalDecline} onPress={handlePersonalRecusa} activeOpacity={0.7}>
-                <Ionicons name="close" size={18} color="#FF4444" />
-                <Text style={styles.btnProposalDeclineText}>Recusar</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.btnProposalAccept} onPress={handlePersonalAceita} activeOpacity={0.8}>
-                <Ionicons name="checkmark-circle" size={20} color="#000" style={{marginRight: 6}} />
-                <Text style={styles.btnProposalAcceptText}>Aceitar Aluno</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.btnProposalAccept} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+              <Ionicons name="document-text" size={20} color="#000" style={{marginRight: 6}} />
+              <Text style={styles.btnProposalAcceptText}>Ir para Contrato</Text>
+            </TouchableOpacity>
           </View>
         </View>
       );
@@ -295,7 +254,7 @@ export default function Chat({ route, navigation }) {
         <View style={styles.pillContainer}>
           <View style={styles.pillWaiting}>
             <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: 8 }} />
-            <Text style={styles.pillText}>Sua proposta foi criada, agora aguarde o personal confirmar.</Text>
+            <Text style={styles.pillText}>Sua proposta foi criada, agora aguarde o personal criar seu contrato.</Text>
           </View>
         </View>
       );
@@ -470,11 +429,8 @@ const styles = StyleSheet.create({
   proposalBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: "rgba(255,215,0,0.1)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,215,0,0.3)", gap: 4 },
   proposalBadgeText: { color: "#FFD700", fontSize: 10, fontWeight: "900", letterSpacing: 0.5 },
   proposalTitle: { color: "#FFF", fontSize: 20, fontFamily: theme.fonts.title, marginBottom: 6, letterSpacing: 0.2 },
-  proposalSubtitle: { color: "#888", fontSize: 13, lineHeight: 20, marginBottom: 24 },
-  proposalBtnContainer: { flexDirection: 'row', gap: 12 },
-  btnProposalDecline: { flex: 0.8, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: "rgba(255,68,68,0.1)", paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,68,68,0.2)", gap: 4 },
-  btnProposalDeclineText: { color: "#FF4444", fontWeight: "bold", fontSize: 14 },
-  btnProposalAccept: { flex: 1.2, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.primary, paddingVertical: 14, borderRadius: 16, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  proposalSubtitle: { color: "#888", fontSize: 13, lineHeight: 20, marginBottom: 20 },
+  btnProposalAccept: { width: "100%", flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.primary, paddingVertical: 16, borderRadius: 16, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
   btnProposalAcceptText: { color: "#000", fontWeight: "900", fontSize: 15, textTransform: 'uppercase', letterSpacing: 0.5 },
 
   pillContainer: { alignItems: "center", paddingVertical: 12, backgroundColor: theme.colors.backgroundPure },
@@ -502,10 +458,10 @@ const styles = StyleSheet.create({
   icebreakerTitle: { color: theme.colors.primary, fontSize: 16, fontWeight: "bold", textTransform: "uppercase" },
   icebreakerSubtitle: { color: theme.colors.textSecondary, fontSize: 13, textAlign: "center", marginBottom: 20 },
   btnSugestao: { backgroundColor: theme.colors.surfaceLight, padding: 16, borderRadius: 16, marginBottom: 10, borderWidth: 1, borderColor: theme.colors.borderLight },
-  btnSugestaoText: { color: theme.colors.text, fontSize: 14, fontStyle: "italic", textAlign: "center" },
+  btnSugestaoText: { color: theme.colors.text, fontSize: 14, fontStyle: "italic", textAlign: "center", outlineStyle: "none" },
   
   inputArea: { backgroundColor: theme.colors.surface, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 35 : 15, borderTopWidth: 1, borderTopColor: theme.colors.border },
   inputWrapper: { flexDirection: "row", alignItems: "flex-end", backgroundColor: theme.colors.surfaceLight, borderRadius: 24, paddingLeft: 18, paddingRight: 6, paddingVertical: 6, borderWidth: 1, borderColor: theme.colors.borderLight },
-  input: { flex: 1, color: theme.colors.text, fontSize: 15, paddingTop: 12, paddingBottom: 12 },
+  input: { flex: 1, color: theme.colors.text, fontSize: 15, paddingTop: 12, paddingBottom: 12, outlineStyle: "none" },
   btnSend: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.primary, justifyContent: "center", alignItems: "center", marginBottom: 2, borderWidth: 1, borderColor: theme.colors.primary },
 });

@@ -14,12 +14,25 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  StatusBar,
+  Dimensions
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
+
+const { width } = Dimensions.get("window");
+
+const OPCOES_SERVICOS = [
+  { id: "Consultoria", titulo: "Consultoria no App", icon: "phone-portrait-outline", desc: "Planilhas e suporte" },
+  { id: "Presencial", titulo: "Personal Presencial", icon: "barbell-outline", desc: "1 a 1" },
+  { id: "Avaliação Física", titulo: "Avaliação Física", icon: "body-outline", desc: "Antropometria" },
+  { id: "Mentoria", titulo: "Mentoria de Vida", icon: "bulb-outline", desc: "Coaching" },
+  { id: "Grupo de Corrida", titulo: "Grupo de Corrida", icon: "walk-outline", desc: "Coletivos" },
+  { id: "Reabilitação", titulo: "Reabilitação", icon: "medkit-outline", desc: "Clínico e Lesões" }
+];
 
 const OPCOES_OBJETIVO = [
   { id: "emagrecimento", titulo: "Emagrecimento", icon: "flame-outline" },
@@ -76,6 +89,11 @@ export default function PersonalSetup({ navigation }) {
   const [longitude, setLongitude] = useState(null);
   const [buscandoLocalizacao, setBuscandoLocalizacao] = useState(false);
 
+  const [servicosOferecidos, setServicosOferecidos] = useState(["Consultoria"]); 
+  
+  const [precoConsultoria, setPrecoConsultoria] = useState(150);
+  const [precoPresencial, setPrecoPresencial] = useState(100);
+
   const [experiencia, setExperiencia] = useState("");
   const [publicoAtendido, setPublicoAtendido] = useState([]);
   const [diferenciais, setDiferenciais] = useState("");
@@ -89,7 +107,6 @@ export default function PersonalSetup({ navigation }) {
   const [perfilTreinador, setPerfilTreinador] = useState(""); 
   const [locaisAtendidos, setLocaisAtendidos] = useState([]);
 
-  const [precoMedio, setPrecoMedio] = useState(150);
   const [instagram, setInstagram] = useState("");
   const [tiktok, setTiktok] = useState("");
 
@@ -116,7 +133,18 @@ export default function PersonalSetup({ navigation }) {
         if (data.bairro) setBairro(data.bairro);
         if (data.latitude) setLatitude(data.latitude);
         if (data.longitude) setLongitude(data.longitude);
-        if (data.preco_medio) setPrecoMedio(Number(data.preco_medio));
+        
+        // --- LEITURA DA NOVA ARQUITETURA ---
+        if (data.servicos_oferecidos && data.servicos_oferecidos.length > 0) {
+          setServicosOferecidos(data.servicos_oferecidos);
+        } else if (data.modalidades) {
+          setServicosOferecidos(data.modalidades);
+        }
+
+        if (data.preco_consultoria) setPrecoConsultoria(Number(data.preco_consultoria));
+        if (data.preco_presencial) setPrecoPresencial(Number(data.preco_presencial));
+        if (!data.preco_consultoria && data.preco_medio) setPrecoConsultoria(Number(data.preco_medio));
+
         if (data.tempo_experiencia) setExperiencia(data.tempo_experiencia);
         if (data.foto_url) setFotoUri(data.foto_url);
         if (data.instagram) setInstagram(data.instagram);
@@ -140,7 +168,7 @@ export default function PersonalSetup({ navigation }) {
           setDiferenciais(p.diferenciais || "");
         }
       }
-    } catch (error) { console.log("Erro ao carregar:", error); } 
+    } catch (error) {} 
     finally { setLoadingDados(false); }
   };
 
@@ -207,6 +235,9 @@ export default function PersonalSetup({ navigation }) {
     if (!cref?.trim() || !telefone?.trim() || !cidade?.trim() || !nome?.trim()) {
       return Alert.alert("Atenção", "Preencha os dados obrigatórios (*). A localização também é obrigatória.");
     }
+    if (servicosOferecidos.length === 0) {
+      return Alert.alert("Atenção", "Selecione pelo menos um Serviço que você oferece.");
+    }
     if (objetivosAtendidos.length === 0 || !perfilTreinador || locaisAtendidos.length === 0) {
       return Alert.alert("Atenção", "Selecione seu Estilo, Locais e pelo menos um Foco de Treino.");
     }
@@ -230,12 +261,30 @@ export default function PersonalSetup({ navigation }) {
       };
 
       const { error } = await supabase.from("personals").upsert({
-        id: user.id, email: user.email, nome: nome.trim(), cref: cref.trim(),
-        telefone: telefone.trim(), cidade: cidade.trim(), bairro: bairro.trim(),
-        latitude: latitude, longitude: longitude, tempo_experiencia: experiencia,
-        preco_medio: parseInt(precoMedio) || 0, descricao: bio?.trim() || "",
-        foto_url: fotoUri, instagram: instagram.trim(), tiktok: tiktok.trim(), galeria_fotos: galeria,
-        especialidades: especialidadesEstruturadas, ativo: true,
+        id: user.id, 
+        email: user.email, 
+        nome: nome.trim(), 
+        cref: cref.trim(),
+        telefone: telefone.trim(), 
+        cidade: cidade.trim(), 
+        bairro: bairro.trim(),
+        latitude: latitude, 
+        longitude: longitude, 
+        tempo_experiencia: experiencia,
+        
+        servicos_oferecidos: servicosOferecidos,
+        
+        preco_consultoria: servicosOferecidos.includes("Consultoria") ? parseInt(precoConsultoria) : null,
+        preco_presencial: servicosOferecidos.includes("Presencial") ? parseInt(precoPresencial) : null,
+        preco_medio: servicosOferecidos.includes("Consultoria") ? parseInt(precoConsultoria) : parseInt(precoPresencial),
+        
+        descricao: bio?.trim() || "",
+        foto_url: fotoUri, 
+        instagram: instagram.trim(), 
+        tiktok: tiktok.trim(), 
+        galeria_fotos: galeria,
+        especialidades: especialidadesEstruturadas, 
+        ativo: true,
       }, { onConflict: 'id' });
 
       if (error) throw error;
@@ -253,7 +302,7 @@ export default function PersonalSetup({ navigation }) {
         return (
           <TouchableOpacity 
             key={opcao} 
-            style={[styles.chip, ativo && styles.neonAtivo]} 
+            style={[styles.chip, ativo && styles.chipAtivo]} 
             onPress={() => isSingle ? setStateArray(opcao) : toggleArrayItem(opcao, stateArray, setStateArray)} 
             activeOpacity={0.7}
           >
@@ -271,13 +320,16 @@ export default function PersonalSetup({ navigation }) {
         return (
           <TouchableOpacity 
             key={opt.id} 
-            style={[styles.gridItemWithIcon, ativo && styles.neonAtivo]} 
+            style={[styles.gridItemWithIcon, ativo && styles.gridItemAtivo]} 
             onPress={() => isSingle ? setStateArray(opt.id) : toggleArrayItem(opt.id, stateArray, setStateArray)} 
             activeOpacity={0.8}
           >
-            <Ionicons name={opt.icon} size={32} color={ativo ? theme.colors.primary : theme.colors.textMuted} style={{marginBottom: 8}} />
+            {ativo && (
+              <LinearGradient colors={["rgba(255, 107, 0, 0.1)", "transparent"]} style={StyleSheet.absoluteFill} borderRadius={20} />
+            )}
+            <Ionicons name={opt.icon} size={28} color={ativo ? theme.colors.primary : "#666"} style={{marginBottom: 8}} />
             <Text style={[styles.gridItemText, ativo && styles.gridItemTextAtivo]}>{opt.titulo}</Text>
-            {opt.desc && <Text style={[styles.gridItemDesc, ativo && {color: theme.colors.primary}]}>{opt.desc}</Text>}
+            {opt.desc && <Text style={[styles.gridItemDesc, ativo && {color: "#AAA"}]}>{opt.desc}</Text>}
           </TouchableOpacity>
         )
       })}
@@ -288,125 +340,146 @@ export default function PersonalSetup({ navigation }) {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+      <View style={styles.glowTopLeft} />
+      <View style={styles.glowBottomRight} />
       
-      <BlurView intensity={Platform.OS === 'ios' ? 70 : 100} tint="dark" experimentalBlurMethod="dimezisBlurView" style={styles.header}>
+      <BlurView intensity={Platform.OS === 'ios' ? 80 : 100} tint="dark" experimentalBlurMethod="dimezisBlurView" style={styles.headerAbsolute}>
         <TouchableOpacity style={styles.btnVoltar} onPress={() => navigation.navigate("PersonalDashboard")} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+          <Ionicons name="chevron-back" size={24} color="#FFF" style={{ marginLeft: -2 }} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEditing ? "EDITAR PERFIL" : "CONFIGURAR PERFIL"}</Text>
         <View style={{ width: 44 }} />
       </BlurView>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.mainTitle}>Personalize sua <Text style={styles.titleHighlight}>Vitrine.</Text></Text>
+          <Text style={styles.subTitle}>Estes dados alimentam a IA do app para conectar você aos alunos ideais.</Text>
+        </View>
+
         <View style={styles.photoSection}>
           <TouchableOpacity onPress={selecionarFotoPrincipal} style={styles.avatarContainer} activeOpacity={0.8}>
-            <LinearGradient colors={[theme.colors.primary, theme.colors.primaryLight]} style={styles.avatarRing}>
-              <Image source={{ uri: fotoUri || 'https://via.placeholder.com/150' }} style={styles.avatarImage} />
-            </LinearGradient>
-            <View style={styles.cameraBadge}><Ionicons name="camera" size={16} color={theme.colors.backgroundPure} /></View>
-          </TouchableOpacity>
-          <Text style={styles.photoHintText}>Toque para alterar a foto</Text>
-        </View>
-
-        <View style={styles.cardGeral}>
-          <View style={styles.cardHeaderBox}>
-            <View style={styles.iconWrapper}><Ionicons name="person-circle-outline" size={20} color={theme.colors.primary} /></View>
-            <Text style={styles.cardHeaderTitle}>Apresentação Básica</Text>
-          </View>
-
-          <View style={styles.formGroup}>
-            <View style={styles.labelRow}>
-              <Ionicons name="person" size={14} color={theme.colors.primary} />
-              <Text style={styles.label}>Nome Público *</Text>
-            </View>
-            <View style={[styles.inputContainer, inputFocado === "nome" && styles.inputFocused]}>
-              <Ionicons name="person-outline" size={20} color={inputFocado === "nome" ? theme.colors.primary : theme.colors.textMuted} style={styles.inputIcon} />
-              <TextInput 
-                style={styles.input} placeholder="Ex: Personal João Silva" placeholderTextColor={theme.colors.textMuted} 
-                value={nome} onChangeText={setNome} onFocus={() => setInputFocado("nome")} onBlur={() => setInputFocado(null)}
-              />
-            </View>
-          </View>
-
-          <View style={styles.formGroup}>
-            <View style={styles.labelRow}>
-              <Ionicons name="book" size={14} color={theme.colors.primary} />
-              <Text style={styles.label}>Biografia Profissional</Text>
-            </View>
-            <View style={[styles.inputContainerArea, inputFocado === "bio" && styles.inputFocused]}>
-              <TextInput 
-                style={[styles.input, styles.textArea]} placeholder="Descreva sua metodologia e sua paixão pelo que faz..." placeholderTextColor={theme.colors.textMuted} 
-                multiline maxLength={400} value={bio} onChangeText={setBio} textAlignVertical="top" 
-                onFocus={() => setInputFocado("bio")} onBlur={() => setInputFocado(null)}
-              />
-            </View>
-          </View>
-
-          <View style={styles.formGroup}>
-            <View style={styles.labelRow}>
-              <MaterialCommunityIcons name="card-account-details" size={14} color={theme.colors.primary} />
-              <Text style={styles.label}>CREF *</Text>
-            </View>
-            <View style={[styles.inputContainer, inputFocado === "cref" && styles.inputFocused]}>
-              <MaterialCommunityIcons name="card-account-details-outline" size={20} color={inputFocado === "cref" ? theme.colors.primary : theme.colors.textMuted} style={styles.inputIcon} />
-              <TextInput 
-                style={styles.input} placeholder="Ex: 0000-G/SP" placeholderTextColor={theme.colors.textMuted} 
-                value={cref} onChangeText={setCref} onFocus={() => setInputFocado("cref")} onBlur={() => setInputFocado(null)}
-              />
-            </View>
-          </View>
-
-          <View style={styles.formGroup}>
-            <View style={styles.labelRow}>
-              <MaterialCommunityIcons name="whatsapp" size={14} color={theme.colors.primary} />
-              <Text style={styles.label}>WhatsApp para Contato *</Text>
-            </View>
-            <View style={[styles.inputContainer, inputFocado === "wpp" && styles.inputFocused]}>
-              <MaterialCommunityIcons name="whatsapp" size={20} color={inputFocado === "wpp" ? theme.colors.whatsapp : theme.colors.textMuted} style={styles.inputIcon} />
-              <TextInput 
-                style={styles.input} placeholder="(11) 99999-9999" placeholderTextColor={theme.colors.textMuted} keyboardType="phone-pad" 
-                value={telefone} onChangeText={formatarWhatsApp} onFocus={() => setInputFocado("wpp")} onBlur={() => setInputFocado(null)}
-              />
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.cardGeral}>
-          <View style={styles.cardHeaderBox}>
-            <View style={styles.iconWrapper}><Ionicons name="location-outline" size={20} color={theme.colors.primary} /></View>
-            <Text style={styles.cardHeaderTitle}>Área de Atendimento</Text>
-          </View>
-          <Text style={styles.cardSubtitle}>Sincronize seu radar para que alunos da sua região encontrem seu perfil rapidamente.</Text>
-          
-          <TouchableOpacity style={styles.btnLocationPremium} onPress={obterLocalizacaoAtual} disabled={buscandoLocalizacao} activeOpacity={0.85}>
-            {buscandoLocalizacao ? <ActivityIndicator size="small" color={theme.colors.backgroundPure} /> : (
-              <>
-                <MaterialCommunityIcons name="radar" size={22} color={theme.colors.backgroundPure} />
-                <Text style={styles.btnLocationText}>Sincronizar Radar GPS</Text>
-              </>
+            {fotoUri ? (
+              <Image source={{ uri: fotoUri }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Ionicons name="person" size={50} color="#444" />
+              </View>
             )}
-          </TouchableOpacity>
-          
-          {(cidade || bairro) ? (
-            <View style={styles.locationResultBox}>
-              <Ionicons name="checkmark-circle" size={18} color={theme.colors.success} />
-              <Text style={styles.locationResultText}>{cidade}{bairro ? `, ${bairro}` : ''}</Text>
+            <View style={styles.cameraBadge}>
+              <Ionicons name="camera" size={16} color="#FFF" />
             </View>
-          ) : null}
+          </TouchableOpacity>
         </View>
 
         <View style={styles.sectionHeader}>
-          <View style={styles.iconWrapper}><MaterialCommunityIcons name="target-account" size={22} color={theme.colors.primary} /></View>
-          <Text style={styles.sectionTitle}>Motor de Match (O Algoritmo)</Text>
+          <View style={styles.sectionAccent} />
+          <Text style={styles.sectionTitle}>Apresentação Básica</Text>
         </View>
 
-        <View style={styles.preferenceCard}>
+        <View style={styles.formGroup}>
+          <Text style={styles.inputLabel}>Nome Público *</Text>
+          <View style={[styles.inputBox, inputFocado === "nome" && styles.inputBoxFocused]}>
+            <View style={styles.inputIconWrapper}>
+              <Ionicons name="person" size={16} color={inputFocado === "nome" ? theme.colors.primary : "#888"} />
+            </View>
+            <TextInput style={styles.inputPremium} placeholder="Ex: Personal João Silva" placeholderTextColor="#666" value={nome} onChangeText={setNome} onFocus={() => setInputFocado("nome")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
+          </View>
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.inputLabel}>Biografia Profissional</Text>
+          <View style={[styles.inputBoxArea, inputFocado === "bio" && styles.inputBoxFocused]}>
+            <TextInput style={styles.textAreaPremium} placeholder="Descreva sua metodologia e conquistas..." placeholderTextColor="#666" multiline maxLength={400} value={bio} onChangeText={setBio} textAlignVertical="top" onFocus={() => setInputFocado("bio")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
+            <Text style={styles.inputLabel}>CREF *</Text>
+            <View style={[styles.inputBox, inputFocado === "cref" && styles.inputBoxFocused]}>
+              <View style={styles.inputIconWrapper}>
+                <MaterialCommunityIcons name="card-account-details" size={16} color={inputFocado === "cref" ? theme.colors.primary : "#888"} />
+              </View>
+              <TextInput style={styles.inputPremium} placeholder="0000-G/SP" placeholderTextColor="#666" value={cref} onChangeText={setCref} onFocus={() => setInputFocado("cref")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
+            </View>
+          </View>
+          <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
+            <Text style={styles.inputLabel}>WhatsApp *</Text>
+            <View style={[styles.inputBox, inputFocado === "wpp" && styles.inputBoxFocused]}>
+              <View style={[styles.inputIconWrapper, inputFocado === "wpp" && { backgroundColor: "rgba(37, 211, 102, 0.1)", borderColor: "rgba(37, 211, 102, 0.2)" }]}>
+                <MaterialCommunityIcons name="whatsapp" size={16} color={inputFocado === "wpp" ? "#25D366" : "#888"} />
+              </View>
+              <TextInput style={styles.inputPremium} placeholder="(00) 00000" placeholderTextColor="#666" keyboardType="phone-pad" value={telefone} onChangeText={formatarWhatsApp} onFocus={() => setInputFocado("wpp")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionAccent} />
+          <Text style={styles.sectionTitle}>Serviços Oferecidos</Text>
+        </View>
+        
+        {renderNeonGrid(OPCOES_SERVICOS, servicosOferecidos, setServicosOferecidos)}
+
+        {servicosOferecidos.includes("Consultoria") && (
+          <View style={styles.priceContainer}>
+            <Text style={styles.inputLabel}>Preço Médio - Consultoria Mensal</Text>
+            <Text style={styles.priceValue}>R$ {precoConsultoria}</Text>
+            <Slider 
+              style={styles.slider} minimumValue={50} maximumValue={600} step={10} 
+              minimumTrackTintColor={theme.colors.primary} maximumTrackTintColor="#333" 
+              thumbTintColor={theme.colors.primary} value={precoConsultoria} onValueChange={setPrecoConsultoria} 
+            />
+          </View>
+        )}
+
+        {servicosOferecidos.includes("Presencial") && (
+          <View style={styles.priceContainer}>
+            <Text style={styles.inputLabel}>Preço Médio - Presencial (Aula/Mês)</Text>
+            <Text style={styles.priceValue}>R$ {precoPresencial}</Text>
+            <Slider 
+              style={styles.slider} minimumValue={50} maximumValue={1500} step={10} 
+              minimumTrackTintColor={theme.colors.primary} maximumTrackTintColor="#333" 
+              thumbTintColor={theme.colors.primary} value={precoPresencial} onValueChange={setPrecoPresencial} 
+            />
+          </View>
+        )}
+
+        <View style={[styles.sectionHeader, { marginTop: 25 }]}>
+          <View style={styles.sectionAccent} />
+          <Text style={styles.sectionTitle}>Área de Atendimento</Text>
+        </View>
+        
+        <TouchableOpacity style={styles.btnGpsRadar} onPress={obterLocalizacaoAtual} disabled={buscandoLocalizacao} activeOpacity={0.85}>
+          {buscandoLocalizacao ? <ActivityIndicator size="small" color="#000" /> : (
+            <>
+              <MaterialCommunityIcons name="radar" size={20} color="#000" />
+              <Text style={styles.btnGpsRadarText}>Sincronizar Radar GPS</Text>
+            </>
+          )}
+        </TouchableOpacity>
+        
+        {(cidade || bairro) ? (
+          <View style={styles.locationResultBox}>
+            <Ionicons name="location" size={18} color="#00E676" />
+            <Text style={styles.locationResultText}>{cidade}{bairro ? `, ${bairro}` : ''}</Text>
+          </View>
+        ) : null}
+
+        <View style={[styles.sectionHeader, { marginTop: 35 }]}>
+          <View style={styles.sectionAccent} />
+          <Text style={styles.sectionTitle}>Motor de Match (A IA)</Text>
+        </View>
+
+        <View style={styles.cardGeral}>
           <Text style={styles.cardHeaderTitleSub}>Focos Principais de Treino</Text>
           {renderNeonGrid(OPCOES_OBJETIVO, objetivosAtendidos, setObjetivosAtendidos)}
           
           {objetivosAtendidos.includes("outro") && (
-            <TextInput style={styles.inputPremiumSmall} placeholder="Digite sua especialidade..." placeholderTextColor={theme.colors.textMuted} value={outroObjetivoTexto} onChangeText={setOutroObjetivoTexto} />
+            <TextInput style={styles.inputPremiumSmall} placeholder="Digite sua especialidade..." placeholderTextColor="#666" value={outroObjetivoTexto} onChangeText={setOutroObjetivoTexto} keyboardAppearance="dark" />
           )}
           {objetivosAtendidos.includes("saude") && (
             <View style={styles.subBox}><Text style={styles.subBoxTitle}>Público de Saúde:</Text>{renderNeonChips(SUB_SAUDE, subsAtendidos, setSubsAtendidos)}</View>
@@ -415,11 +488,11 @@ export default function PersonalSetup({ navigation }) {
             <View style={styles.subBox}><Text style={styles.subBoxTitle}>Prepara para:</Text>{renderNeonChips(SUB_ESPORTE, subsAtendidos, setSubsAtendidos)}</View>
           )}
 
-          <Text style={[styles.cardHeaderTitleSub, {marginTop: 35}]}>Atende Restrições ou Necessidades?</Text>
+          <Text style={[styles.cardHeaderTitleSub, {marginTop: 35}]}>Atende Restrições?</Text>
           {renderNeonGrid(OPCOES_LIMITACAO, limitacoesAtendidas, setLimitacoesAtendidas)}
 
           {limitacoesAtendidas.includes("outra") && (
-            <TextInput style={styles.inputPremiumSmall} placeholder="Digite a necessidade..." placeholderTextColor={theme.colors.textMuted} value={outraLimitacaoTexto} onChangeText={setOutraLimitacaoTexto} />
+            <TextInput style={styles.inputPremiumSmall} placeholder="Digite a necessidade..." placeholderTextColor="#666" value={outraLimitacaoTexto} onChangeText={setOutraLimitacaoTexto} keyboardAppearance="dark" />
           )}
           {limitacoesAtendidas.includes("lesao") && (
             <View style={styles.subBox}><Text style={styles.subBoxTitle}>Reabilitação focada em:</Text>{renderNeonChips(SUB_LESAO, subsAtendidos, setSubsAtendidos)}</View>
@@ -428,21 +501,21 @@ export default function PersonalSetup({ navigation }) {
             <View style={styles.subBox}><Text style={styles.subBoxTitle}>Controle de:</Text>{renderNeonChips(SUB_CLINICA, subsAtendidos, setSubsAtendidos)}</View>
           )}
 
-          <Text style={[styles.cardHeaderTitleSub, {marginTop: 35}]}>Onde você realiza os treinos?</Text>
+          <Text style={[styles.cardHeaderTitleSub, {marginTop: 35}]}>Onde realiza os treinos?</Text>
           {renderNeonGrid(OPCOES_LOCAL, locaisAtendidos, setLocaisAtendidos)}
         </View>
 
-        <View style={styles.preferenceCard}>
-          <Text style={styles.cardHeaderTitleSub}>Sua Vibe / Estilo de Aula</Text>
+        <View style={styles.cardGeral}>
+          <Text style={styles.cardHeaderTitleSub}>Seu Estilo de Aula</Text>
           {renderNeonGrid(OPCOES_PERFIL, perfilTreinador, setPerfilTreinador, true)}
         </View>
 
-        <View style={styles.sectionHeader}>
-          <View style={styles.iconWrapper}><Ionicons name="medal-outline" size={20} color={theme.colors.primary} /></View>
+        <View style={[styles.sectionHeader, { marginTop: 15 }]}>
+          <View style={styles.sectionAccent} />
           <Text style={styles.sectionTitle}>Estratégia e Autoridade</Text>
         </View>
 
-        <View style={styles.preferenceCard}>
+        <View style={styles.cardGeral}>
           <Text style={styles.cardHeaderTitleSub}>Tempo de Experiência</Text>
           {renderNeonChips(OPCOES_EXPERIENCIA, experiencia, setExperiencia, true)}
 
@@ -450,11 +523,11 @@ export default function PersonalSetup({ navigation }) {
           {renderNeonChips(OPCOES_PUBLICO, publicoAtendido, setPublicoAtendido)}
 
           <Text style={[styles.cardHeaderTitleSub, {marginTop: 35}]}>Diferenciais Competitivos</Text>
-          <View style={[styles.inputContainerArea, inputFocado === "diferenciais" && styles.inputFocused]}>
+          <View style={[styles.inputBoxArea, inputFocado === "diferenciais" && styles.inputBoxFocused]}>
             <TextInput 
-              style={[styles.input, styles.textArea]} placeholder="Ex: Avaliação postural inclusa, app próprio, suporte 24h..." placeholderTextColor={theme.colors.textMuted} 
+              style={styles.textAreaPremium} placeholder="Ex: Avaliação postural inclusa..." placeholderTextColor="#666" 
               multiline maxLength={300} value={diferenciais} onChangeText={setDiferenciais} textAlignVertical="top" 
-              onFocus={() => setInputFocado("diferenciais")} onBlur={() => setInputFocado(null)}
+              onFocus={() => setInputFocado("diferenciais")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark"
             />
           </View>
 
@@ -479,159 +552,132 @@ export default function PersonalSetup({ navigation }) {
           <Text style={styles.galeriaHint}>Anexe até 5 fotos para gerar confiança imediata.</Text>
         </View>
 
-        <View style={styles.cardGeral}>
-          <View style={styles.cardHeaderBox}>
-            <View style={styles.iconWrapper}><Ionicons name="pricetag-outline" size={20} color={theme.colors.primary} /></View>
-            <Text style={styles.cardHeaderTitle}>Comercial e Redes</Text>
-          </View>
+        <View style={[styles.sectionHeader, { marginTop: 15 }]}>
+          <View style={styles.sectionAccent} />
+          <Text style={styles.sectionTitle}>Redes Sociais</Text>
+        </View>
 
-          <View style={styles.labelRow}>
-            <Ionicons name="cash" size={14} color={theme.colors.primary} />
-            <Text style={styles.label}>Valor base da mensalidade</Text>
-          </View>
-          <View style={styles.priceContainer}>
-            <Text style={styles.priceValue}>R$ {precoMedio}</Text>
-            <Slider 
-              style={{ width: "100%", height: 40, marginTop: 10 }} minimumValue={50} maximumValue={1000} step={10} 
-              minimumTrackTintColor={theme.colors.primary} maximumTrackTintColor={theme.colors.borderLight} 
-              thumbTintColor={theme.colors.primary} value={precoMedio} onValueChange={setPrecoMedio} 
-            />
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.formGroup}>
-            <View style={styles.labelRow}>
-              <Ionicons name="logo-instagram" size={14} color={theme.colors.primary} />
-              <Text style={styles.label}>Instagram (Sem o @)</Text>
+        <View style={styles.formGroup}>
+          <Text style={styles.inputLabel}>Instagram (Sem o @)</Text>
+          <View style={[styles.inputBox, inputFocado === "insta" && styles.inputBoxFocused]}>
+            <View style={[styles.inputIconWrapper, inputFocado === "insta" && { backgroundColor: "rgba(225, 48, 108, 0.1)", borderColor: "rgba(225, 48, 108, 0.2)" }]}>
+              <Ionicons name="logo-instagram" size={16} color={inputFocado === "insta" ? "#E1306C" : "#888"} />
             </View>
-            <View style={[styles.inputContainer, inputFocado === "insta" && styles.inputFocused]}>
-              <Ionicons name="at" size={20} color={inputFocado === "insta" ? "#E1306C" : theme.colors.textMuted} style={styles.inputIcon} />
-              <TextInput 
-                style={styles.input} placeholder="seu_usuario" placeholderTextColor={theme.colors.textMuted} autoCapitalize="none"
-                value={instagram} onChangeText={setInstagram} onFocus={() => setInputFocado("insta")} onBlur={() => setInputFocado(null)}
-              />
-            </View>
-          </View>
-
-          <View style={[styles.formGroup, { marginBottom: 0 }]}>
-            <View style={styles.labelRow}>
-              <Ionicons name="logo-tiktok" size={14} color={theme.colors.primary} />
-              <Text style={styles.label}>TikTok (Sem o @)</Text>
-            </View>
-            <View style={[styles.inputContainer, inputFocado === "tiktok" && styles.inputFocused]}>
-              <FontAwesome5 name="at" size={16} color={inputFocado === "tiktok" ? "#FFF" : theme.colors.textMuted} style={styles.inputIcon} />
-              <TextInput 
-                style={styles.input} placeholder="seu_usuario" placeholderTextColor={theme.colors.textMuted} autoCapitalize="none"
-                value={tiktok} onChangeText={setTiktok} onFocus={() => setInputFocado("tiktok")} onBlur={() => setInputFocado(null)}
-              />
-            </View>
+            <TextInput style={styles.inputPremium} placeholder="seu_usuario" placeholderTextColor="#666" autoCapitalize="none" value={instagram} onChangeText={setInstagram} onFocus={() => setInputFocado("insta")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
           </View>
         </View>
 
-        <TouchableOpacity style={styles.btnSalvar} onPress={handleSalvar} disabled={loading} activeOpacity={0.85}>
-          {loading ? <ActivityIndicator size="small" color={theme.colors.backgroundPure} /> : (
-            <>
-              <Ionicons name="save" size={22} color={theme.colors.backgroundPure} style={{ marginRight: 10 }} />
-              <Text style={styles.btnSalvarText}>SALVAR PERFIL</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        <View style={styles.formGroup}>
+          <Text style={styles.inputLabel}>TikTok (Sem o @)</Text>
+          <View style={[styles.inputBox, inputFocado === "tiktok" && styles.inputBoxFocused]}>
+            <View style={styles.inputIconWrapper}>
+              <FontAwesome5 name="tiktok" size={14} color={inputFocado === "tiktok" ? "#FFF" : "#888"} />
+            </View>
+            <TextInput style={styles.inputPremium} placeholder="seu_usuario" placeholderTextColor="#666" autoCapitalize="none" value={tiktok} onChangeText={setTiktok} onFocus={() => setInputFocado("tiktok")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
+          </View>
+        </View>
 
       </ScrollView>
+
+      <BlurView intensity={90} tint="dark" style={styles.footerBlur}>
+        <TouchableOpacity style={styles.btnSalvarWrapper} onPress={handleSalvar} disabled={loading} activeOpacity={0.8}>
+          <LinearGradient colors={["#FF8C00", "#FF6B00"]} style={styles.btnSalvar}>
+            {loading ? <ActivityIndicator size="small" color="#000" /> : (
+              <>
+                <Ionicons name="checkmark-done" size={22} color="#000" style={{ marginRight: 8 }} />
+                <Text style={styles.btnSalvarText}>SALVAR PERFIL</Text>
+              </>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+      </BlurView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#070707" },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: "#070707" },
+  container: { flex: 1, backgroundColor: "#000000", position: "relative" },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: "#000" },
   
-  header: { 
+  glowTopLeft: { position: "absolute", top: -100, left: -50, width: 250, height: 250, borderRadius: 125, backgroundColor: theme.colors.primary, opacity: 0.15, blurRadius: 60 },
+  glowBottomRight: { position: "absolute", bottom: -50, right: -100, width: 300, height: 300, borderRadius: 150, backgroundColor: theme.colors.primary, opacity: 0.1, blurRadius: 80 },
+
+  headerAbsolute: {
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', 
     paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 15, paddingHorizontal: 20, 
-    borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.05)', 
-    backgroundColor: Platform.OS === 'android' ? 'rgba(0,0,0,0.5)' : 'transparent',
+    borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.05)'
   },
-  btnVoltar: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.08)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  headerTitle: { color: theme.colors.primary, fontSize: 13, fontWeight: '900', letterSpacing: 1.5 },
+  btnVoltar: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.08)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  headerTitle: { color: "#FFF", fontSize: 13, fontWeight: "900", letterSpacing: 1.5, textTransform: "uppercase" },
   
-  scrollContent: { padding: 20, paddingTop: Platform.OS === 'ios' ? 120 : 100, paddingBottom: 40 }, 
+  content: { padding: 24, paddingTop: Platform.OS === 'ios' ? 130 : 110, paddingBottom: 140 }, 
   
-  photoSection: { alignItems: 'center', marginBottom: 25, marginTop: 10 },
-  avatarContainer: { position: 'relative', shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
-  avatarRing: { padding: 4, borderRadius: 70 },
-  avatarImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 4, borderColor: "#070707", backgroundColor: theme.colors.surface },
-  cameraBadge: { position: 'absolute', bottom: 2, right: 2, backgroundColor: theme.colors.primary, width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: "#070707" },
-  photoHintText: { color: theme.colors.textSecondary, fontSize: 13, marginTop: 15, fontWeight: '500' },
-  
-  cardGeral: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.borderLight, borderRadius: 24, padding: 24, marginBottom: 25 },
-  cardHeaderBox: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  cardSubtitle: { color: theme.colors.textSecondary, fontSize: 13, lineHeight: 20, marginBottom: 20 },
-  
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, paddingHorizontal: 5, marginTop: 10 },
-  iconWrapper: { backgroundColor: "rgba(255,107,0,0.1)", padding: 10, borderRadius: 12, marginRight: 12, borderWidth: 1, borderColor: "rgba(255,107,0,0.2)" },
-  sectionTitle: { color: "#FFF", fontSize: 20, fontFamily: theme.fonts.title, letterSpacing: 0.5 },
-  cardHeaderTitle: { color: "#FFF", fontSize: 18, fontFamily: theme.fonts.title, letterSpacing: 0.5 },
+  headerTextContainer: { marginBottom: 30 },
+  mainTitle: { color: "#FFF", fontSize: 32, fontFamily: theme.fonts.title, marginBottom: 8, letterSpacing: -0.5 },
+  titleHighlight: { color: theme.colors.primary },
+  subTitle: { color: "#AAA", fontSize: 15, lineHeight: 24 },
+
+  photoSection: { alignItems: 'center', marginBottom: 35 },
+  avatarContainer: { position: 'relative', shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
+  avatarPlaceholder: { width: 120, height: 120, borderRadius: 60, backgroundColor: "#121212", borderWidth: 2, borderColor: theme.colors.primary, justifyContent: "center", alignItems: "center" },
+  avatarImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 2, borderColor: theme.colors.primary },
+  cameraBadge: { position: "absolute", bottom: -5, right: -5, backgroundColor: theme.colors.primary, width: 38, height: 38, borderRadius: 19, justifyContent: "center", alignItems: "center", borderWidth: 3, borderColor: "#000" },
+
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+  sectionAccent: { width: 4, height: 18, backgroundColor: theme.colors.primary, borderRadius: 2, marginRight: 8 },
+  sectionTitle: { color: "#FFF", fontSize: 18, fontFamily: theme.fonts.title, letterSpacing: 0.5 },
 
   formGroup: { marginBottom: 20 },
-  labelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, marginLeft: 4 },
-  label: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginLeft: 6 },
+  row: { flexDirection: "row" },
+  inputLabel: { color: "#888", fontSize: 12, fontWeight: "900", textTransform: "uppercase", marginBottom: 10, marginLeft: 5, letterSpacing: 0.5 },
+  
+  inputBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#0A0A0A", borderRadius: 18, borderWidth: 1, borderColor: "#222", paddingHorizontal: 12, height: 60 },
+  inputBoxArea: { backgroundColor: "#0A0A0A", borderRadius: 18, borderWidth: 1, borderColor: "#222", paddingHorizontal: 16 },
+  inputBoxFocused: { borderColor: theme.colors.primary, backgroundColor: "rgba(255, 107, 0, 0.05)" },
+  inputIconWrapper: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.05)", justifyContent: "center", alignItems: "center", marginRight: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  inputPremium: { flex: 1, color: "#FFF", fontSize: 16, fontFamily: theme.fonts.body, height: "100%", backgroundColor: "transparent" },
+  textAreaPremium: { minHeight: 120, paddingTop: 16, paddingBottom: 16, color: "#FFF", fontSize: 15, fontFamily: theme.fonts.body },
 
-  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: "#121212", borderWidth: 1.5, borderColor: "rgba(255, 107, 0, 0.3)", borderRadius: 16, overflow: 'hidden', height: 60 },
-  inputContainerArea: { backgroundColor: "#121212", borderWidth: 1.5, borderColor: "rgba(255, 107, 0, 0.3)", borderRadius: 16, paddingHorizontal: 16 },
-  inputFocused: { borderColor: theme.colors.primary, backgroundColor: "rgba(255, 107, 0, 0.05)" },
-  inputIcon: { marginLeft: 16, marginRight: 8 },
-  input: { flex: 1, color: "#FFF", fontSize: 15, paddingRight: 16, fontWeight: '500', height: '100%' },
-  textArea: { minHeight: 120, paddingTop: 16, paddingBottom: 16 },
+  btnGpsRadar: { flexDirection: "row", backgroundColor: theme.colors.primary, height: 60, borderRadius: 18, justifyContent: "center", alignItems: "center", marginBottom: 15, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
+  btnGpsRadarText: { color: "#000", fontSize: 16, fontWeight: "900", marginLeft: 8, letterSpacing: 0.5, textTransform: "uppercase" },
+  locationResultBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: "rgba(0, 230, 118, 0.1)", padding: 16, borderRadius: 16, borderWidth: 1, borderColor: "rgba(0, 230, 118, 0.2)" },
+  locationResultText: { color: "#00E676", fontSize: 15, fontWeight: 'bold', marginLeft: 8 },
 
-  btnLocationPremium: { backgroundColor: theme.colors.primary, flexDirection: "row", alignItems: "center", justifyContent: "center", height: 60, borderRadius: 16, marginBottom: 15, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
-  btnLocationText: { color: "#000", fontSize: 16, fontWeight: "900", marginLeft: 8, letterSpacing: 0.5 },
-  locationResultBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: "rgba(0, 230, 118, 0.1)", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(0, 230, 118, 0.2)" },
-  locationResultText: { color: "#00E676", fontSize: 14, fontWeight: 'bold', marginLeft: 6 },
+  cardGeral: { backgroundColor: "#0A0A0A", borderWidth: 1, borderColor: "#222", borderRadius: 24, padding: 20, marginBottom: 25 },
+  cardHeaderTitleSub: { color: "#FFF", fontSize: 14, fontWeight: '900', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  preferenceCard: { backgroundColor: theme.colors.surface, borderRadius: 24, padding: 24, marginBottom: 25, borderWidth: 1, borderColor: theme.colors.border }, 
-  cardHeaderTitleSub: { color: "#FFF", fontSize: 13, fontWeight: '800', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center' },
-
-  chipsContainerCenter: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }, 
-  chip: { flexDirection: 'row', alignItems: 'center', backgroundColor: "#121212", paddingVertical: 12, paddingHorizontal: 18, borderRadius: 30, borderWidth: 1, borderColor: "#222" }, 
-  chipTexto: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  chipsContainerCenter: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, 
+  chip: { backgroundColor: "#121212", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: "#333" }, 
+  chipAtivo: { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: theme.colors.primary },
+  chipTexto: { color: "#888", fontSize: 13, fontWeight: '700' },
   chipTextoAtivo: { color: theme.colors.primary, fontWeight: '900' },
 
-  subBox: { backgroundColor: "#0A0A0A", width: '100%', padding: 20, borderRadius: 20, marginTop: 15, borderWidth: 1, borderColor: "#1A1A1A", alignItems: 'center' },
-  subBoxTitle: { color: "#FFF", fontSize: 12, fontWeight: 'bold', marginBottom: 15, textTransform: 'uppercase', textAlign: 'center' },
-  inputPremiumSmall: { backgroundColor: "#121212", borderRadius: 14, color: "#FFF", fontSize: 14, padding: 16, borderWidth: 1, borderColor: "#222", width: '100%', marginTop: 15, marginBottom: 10 },
+  subBox: { backgroundColor: "#111", width: '100%', padding: 20, borderRadius: 20, marginTop: 15, borderWidth: 1, borderColor: "#222" },
+  subBoxTitle: { color: "#FFF", fontSize: 13, fontWeight: 'bold', marginBottom: 15, textTransform: 'uppercase' },
+  inputPremiumSmall: { backgroundColor: "#121212", borderRadius: 16, color: "#FFF", fontSize: 15, padding: 16, borderWidth: 1, borderColor: "#333", width: '100%', marginTop: 15, marginBottom: 5 },
 
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
-  gridItemWithIcon: { width: '48%', backgroundColor: "#121212", paddingVertical: 20, paddingHorizontal: 12, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: "#222" },
-  gridItemText: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: 'bold', marginBottom: 4, textAlign: 'center' },
-  gridItemTextAtivo: { color: theme.colors.primary, fontWeight: '900' },
-  gridItemDesc: { color: theme.colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 4 },
+  gridItemWithIcon: { width: '48%', backgroundColor: "#121212", paddingVertical: 20, paddingHorizontal: 14, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: "#222", position: "relative", overflow: "hidden" },
+  gridItemAtivo: { borderColor: theme.colors.primary },
+  gridItemText: { color: "#888", fontSize: 14, fontWeight: 'bold', marginBottom: 4, textAlign: 'center' },
+  gridItemTextAtivo: { color: "#FFF", fontWeight: '900' },
+  gridItemDesc: { color: "#666", fontSize: 11, textAlign: 'center', marginTop: 4 },
 
-  neonAtivo: { 
-    backgroundColor: 'rgba(255, 107, 0, 0.08)', 
-    borderColor: theme.colors.primary,         
-    shadowColor: theme.colors.primary,          
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 3,                              
-  },
+  priceContainer: { backgroundColor: "#111", borderRadius: 20, padding: 20, borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.3)", marginTop: 15, alignItems: 'center' },
+  priceValue: { color: theme.colors.primary, fontFamily: theme.fonts.title, fontSize: 36, marginBottom: 10, letterSpacing: -1 },
+  slider: { width: "100%", height: 40 },
   
   galeriaScroll: { paddingVertical: 10, gap: 12 },
-  galeriaItem: { width: 110, height: 110, borderRadius: 16, overflow: 'hidden', position: 'relative', borderWidth: 1, borderColor: theme.colors.borderLight },
+  galeriaItem: { width: 110, height: 110, borderRadius: 18, overflow: 'hidden', position: 'relative', borderWidth: 1, borderColor: "#333" },
   galeriaImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   btnRemoverFoto: { position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 14, padding: 5 },
-  btnAddFoto: { width: 110, height: 110, borderRadius: 16, borderWidth: 2, borderColor: "rgba(255,107,0,0.3)", borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', backgroundColor: "rgba(255,107,0,0.05)" },
+  btnAddFoto: { width: 110, height: 110, borderRadius: 18, borderWidth: 2, borderColor: "rgba(255,107,0,0.3)", borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', backgroundColor: "rgba(255,107,0,0.05)" },
   btnAddFotoText: { color: theme.colors.primary, fontSize: 12, marginTop: 8, fontWeight: 'bold' },
-  galeriaHint: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 8, textAlign: 'center' },
+  galeriaHint: { color: "#666", fontSize: 12, marginTop: 10, textAlign: 'center' },
 
-  priceContainer: { backgroundColor: "#121212", borderRadius: 16, padding: 24, borderWidth: 1.5, borderColor: "rgba(255, 107, 0, 0.3)", marginBottom: 10, alignItems: 'center' },
-  priceValue: { color: theme.colors.primary, fontFamily: theme.fonts.title, fontSize: 38, marginBottom: 5, letterSpacing: -1 },
-  
-  divider: { height: 1, backgroundColor: theme.colors.borderLight, marginVertical: 24 },
-
-  btnSalvar: { backgroundColor: theme.colors.primary, width: '100%', height: 64, borderRadius: 18, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 15, elevation: 8 },
-  btnSalvarText: { color: "#000", fontSize: 16, fontWeight: '900', letterSpacing: 1 }
+  footerBlur: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 24, paddingTop: 15, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.05)" },
+  btnSalvarWrapper: { borderRadius: 20, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 15, elevation: 8 },
+  btnSalvar: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', height: 64, borderRadius: 20 },
+  btnSalvarText: { color: "#000", fontSize: 16, fontWeight: '900', letterSpacing: 0.5 }
 });

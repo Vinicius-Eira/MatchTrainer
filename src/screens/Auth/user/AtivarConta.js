@@ -10,7 +10,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  StatusBar
+  StatusBar,
+  ActivityIndicator
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -23,7 +24,6 @@ export default function AtivarConvite({ navigation }) {
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
-
   const [inputFocado, setInputFocado] = useState(null);
 
   const handleAtivarConta = async () => {
@@ -68,14 +68,26 @@ export default function AtivarConvite({ navigation }) {
             personal_id: convite.personal_id,
             tipo_acompanhamento: convite.tipo_acompanhamento,
             objetivo_principal: convite.objetivo_principal,
-            valor_mensalidade: convite.valor_mensalidade,
-            dia_vencimento: convite.dia_vencimento,
             setup_completo: true,
             data_vinculo_personal: new Date().toISOString() 
           }
         ]);
 
         if (insertError) throw insertError;
+
+        const { error: erroPlano } = await supabase.from('planos').insert([
+          {
+            personal_id: convite.personal_id,
+            aluno_id: authData.user.id,
+            modalidade: convite.tipo_acompanhamento,
+            valor_mensal: convite.valor_mensalidade || 0,
+            dia_vencimento: convite.dia_vencimento || 10,
+            frequencia: convite.frequencia_pagamento || 'mensal',
+            status: 'ativo'
+          }
+        ]);
+
+        if (erroPlano) throw erroPlano;
       }
 
       await supabase
@@ -85,7 +97,7 @@ export default function AtivarConvite({ navigation }) {
 
       Alert.alert(
         "Conta Ativada! 🎉",
-        "Seu perfil foi vinculado com sucesso. Você será redirecionado ao seu painel.",
+        "Seu perfil e plano foram vinculados com sucesso. Bem-vindo ao time!",
         [{ text: "Entrar", onPress: () => navigation.navigate("ClienteLogin") }] 
       );
 
@@ -98,13 +110,13 @@ export default function AtivarConvite({ navigation }) {
 
   return (
     <View style={styles.mainContainer}>
-      <StatusBar barStyle="light-content" backgroundColor="#070707" />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
       <View style={styles.glowTopLeft} />
       <View style={styles.glowBottomRight} />
 
       <BlurView 
-        intensity={Platform.OS === 'ios' ? 70 : 100} 
+        intensity={Platform.OS === 'ios' ? 80 : 100} 
         tint="dark" 
         experimentalBlurMethod="dimezisBlurView" 
         style={styles.headerGlass}
@@ -136,7 +148,7 @@ export default function AtivarConvite({ navigation }) {
               <View style={styles.iconWrapper}>
                 <View style={styles.iconGlow} />
                 <LinearGradient
-                  colors={["rgba(255, 107, 0, 0.2)", "rgba(255, 107, 0, 0.02)"]}
+                  colors={["rgba(255, 107, 0, 0.25)", "rgba(255, 107, 0, 0.05)"]}
                   style={styles.iconCircle}
                 >
                   <MaterialCommunityIcons
@@ -154,22 +166,10 @@ export default function AtivarConvite({ navigation }) {
             </View>
 
             <View style={styles.form}>
-              <View
-                style={[
-                  styles.inputBox,
-                  inputFocado === "email" && styles.inputBoxFocused,
-                ]}
-              >
-                <Ionicons
-                  name="mail-outline"
-                  size={20}
-                  color={
-                    inputFocado === "email"
-                      ? theme.colors.primary
-                      : "#666"
-                  }
-                  style={styles.inputIcon}
-                />
+              <View style={[styles.inputBox, inputFocado === "email" && styles.inputBoxFocused]}>
+                <View style={styles.inputIconWrapper}>
+                  <Ionicons name="mail" size={16} color={theme.colors.primary} />
+                </View>
                 <TextInput
                   style={[styles.input, Platform.OS === "web" && { outlineStyle: "none" }]}
                   placeholder="Seu e-mail"
@@ -185,22 +185,10 @@ export default function AtivarConvite({ navigation }) {
                 />
               </View>
 
-              <View
-                style={[
-                  styles.inputBox,
-                  inputFocado === "codigo" && styles.inputBoxFocused,
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name="ticket-confirmation-outline"
-                  size={20}
-                  color={
-                    inputFocado === "codigo"
-                      ? theme.colors.primary
-                      : "#666"
-                  }
-                  style={styles.inputIcon}
-                />
+              <View style={[styles.inputBox, inputFocado === "codigo" && styles.inputBoxFocused]}>
+                <View style={styles.inputIconWrapper}>
+                  <MaterialCommunityIcons name="ticket-confirmation" size={16} color={theme.colors.primary} />
+                </View>
                 <TextInput
                   style={[styles.input, Platform.OS === "web" && { outlineStyle: "none" }]}
                   placeholder="Código de 6 dígitos"
@@ -216,22 +204,10 @@ export default function AtivarConvite({ navigation }) {
                 />
               </View>
 
-              <View
-                style={[
-                  styles.inputBox,
-                  inputFocado === "senha" && styles.inputBoxFocused,
-                ]}
-              >
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color={
-                    inputFocado === "senha"
-                      ? theme.colors.primary
-                      : "#666"
-                  }
-                  style={styles.inputIcon}
-                />
+              <View style={[styles.inputBox, inputFocado === "senha" && styles.inputBoxFocused]}>
+                <View style={styles.inputIconWrapper}>
+                  <Ionicons name="lock-closed" size={16} color={theme.colors.primary} />
+                </View>
                 <TextInput
                   style={[styles.input, Platform.OS === "web" && { outlineStyle: "none" }]}
                   placeholder="Crie sua senha de acesso"
@@ -250,7 +226,7 @@ export default function AtivarConvite({ navigation }) {
                   activeOpacity={0.7}
                 >
                   <Ionicons
-                    name={mostrarSenha ? "eye-off-outline" : "eye-outline"}
+                    name={mostrarSenha ? "eye-off" : "eye"}
                     size={20}
                     color="#888"
                   />
@@ -263,16 +239,23 @@ export default function AtivarConvite({ navigation }) {
                 disabled={loading}
                 activeOpacity={0.8}
               >
-                <Text style={styles.btnPrimaryText}>
-                  {loading ? "Validando..." : "Desbloquear Meu Acesso"}
-                </Text>
+                <LinearGradient colors={["#FF8C00", "#FF6B00"]} style={styles.btnGradient}>
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#000" />
+                  ) : (
+                    <>
+                      <MaterialCommunityIcons name="lock-open-variant" size={20} color="#000" style={{ marginRight: 8 }} />
+                      <Text style={styles.btnPrimaryText}>Desbloquear Meu Acesso</Text>
+                    </>
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.infoWrapper}>
+            <View style={styles.infoWrapperContainer}>
               <Text style={styles.infoSectionTitle}>O que acontece agora?</Text>
               
-              <View style={styles.infoItem}>
+              <View style={styles.infoItemCard}>
                 <View style={styles.infoIconBox}>
                   <Ionicons name="flash" size={16} color={theme.colors.primary} />
                 </View>
@@ -281,7 +264,7 @@ export default function AtivarConvite({ navigation }) {
                 </Text>
               </View>
 
-              <View style={styles.infoItem}>
+              <View style={styles.infoItemCard}>
                 <View style={styles.infoIconBox}>
                   <Ionicons name="barbell" size={16} color={theme.colors.primary} />
                 </View>
@@ -290,9 +273,9 @@ export default function AtivarConvite({ navigation }) {
                 </Text>
               </View>
               
-              <View style={styles.infoItem}>
-                <View style={styles.infoIconBox}>
-                  <Ionicons name="shield-checkmark" size={16} color={theme.colors.primary} />
+              <View style={styles.infoItemCard}>
+                <View style={[styles.infoIconBox, { backgroundColor: "rgba(0, 230, 118, 0.1)", borderColor: "rgba(0, 230, 118, 0.2)" }]}>
+                  <Ionicons name="shield-checkmark" size={16} color="#00E676" />
                 </View>
                 <Text style={styles.infoText}>
                   Esta senha será a sua credencial <Text style={styles.infoTextBold}>única e segura</Text> para os próximos acessos.
@@ -308,7 +291,7 @@ export default function AtivarConvite({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: "#070707", position: "relative" },
+  mainContainer: { flex: 1, backgroundColor: "#000000", position: "relative" },
 
   glowTopLeft: {
     position: "absolute",
@@ -318,7 +301,7 @@ const styles = StyleSheet.create({
     height: 250,
     borderRadius: 125,
     backgroundColor: theme.colors.primary,
-    opacity: 0.12,
+    opacity: 0.15,
     blurRadius: 60,
   },
   glowBottomRight: {
@@ -329,7 +312,7 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 150,
     backgroundColor: theme.colors.primary,
-    opacity: 0.08,
+    opacity: 0.1,
     blurRadius: 80,
   },
 
@@ -347,8 +330,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderColor: "rgba(255,255,255,0.05)",
-    backgroundColor: Platform.OS === "android" ? "rgba(0,0,0,0.5)" : "transparent",
-    overflow: "hidden",
   },
   btnVoltar: {
     width: 44,
@@ -362,9 +343,10 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: theme.fonts.title,
-    fontSize: 18,
+    fontSize: 16,
     color: "#FFF",
     letterSpacing: 0.5,
+    textTransform: "uppercase"
   },
 
   scrollContent: { flexGrow: 1 },
@@ -379,21 +361,21 @@ const styles = StyleSheet.create({
   },
   iconGlow: {
     position: "absolute",
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: theme.colors.primary,
     opacity: 0.3,
     blurRadius: 20,
   },
   iconCircle: {
-    width: 74,
-    height: 74,
-    borderRadius: 37,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255, 107, 0, 0.4)",
+    borderColor: "rgba(255, 107, 0, 0.5)",
   },
 
   title: {
@@ -407,10 +389,10 @@ const styles = StyleSheet.create({
   titleHighlight: { color: theme.colors.primary },
   subtitle: {
     fontFamily: theme.fonts.body,
-    fontSize: 15,
-    color: "#888",
-    marginTop: 12,
-    lineHeight: 24,
+    fontSize: 14,
+    color: "#AAA",
+    marginTop: 10,
+    lineHeight: 22,
     textAlign: "center",
     paddingHorizontal: 10,
   },
@@ -419,19 +401,34 @@ const styles = StyleSheet.create({
   inputBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#121212",
+    backgroundColor: "#0A0A0A",
     borderRadius: 18,
     borderWidth: 1,
     borderColor: "#222",
-    paddingLeft: 16,
+    paddingLeft: 12,
     marginBottom: 16,
     height: 64,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 5
   },
   inputBoxFocused: {
     borderColor: theme.colors.primary,
     backgroundColor: "rgba(255, 107, 0, 0.05)",
   },
-  inputIcon: { marginRight: 12 },
+  inputIconWrapper: { 
+    width: 38, 
+    height: 38, 
+    borderRadius: 12, 
+    backgroundColor: "rgba(255, 107, 0, 0.1)", 
+    justifyContent: "center", 
+    alignItems: "center", 
+    marginRight: 12, 
+    borderWidth: 1, 
+    borderColor: "rgba(255, 107, 0, 0.2)" 
+  },
   input: {
     flex: 1,
     color: "#FFF",
@@ -443,17 +440,20 @@ const styles = StyleSheet.create({
   eyeIcon: { paddingHorizontal: 16, height: "100%", justifyContent: "center" },
 
   btnPrimary: {
-    backgroundColor: theme.colors.primary,
-    height: 64,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 10,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    marginTop: 15, 
+    borderRadius: 20, 
+    shadowColor: theme.colors.primary, 
+    shadowOffset: { width: 0, height: 8 }, 
+    shadowOpacity: 0.4, 
+    shadowRadius: 16, 
+    elevation: 10
+  },
+  btnGradient: { 
+    flexDirection: "row", 
+    height: 64, 
+    borderRadius: 20, 
+    justifyContent: "center", 
+    alignItems: "center" 
   },
   btnPrimaryText: {
     color: "#000",
@@ -463,13 +463,8 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
 
-  infoWrapper: {
+  infoWrapperContainer: {
     marginTop: "auto",
-    backgroundColor: "rgba(255, 255, 255, 0.03)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 20,
-    padding: 20,
   },
   infoSectionTitle: {
     color: "#FFF",
@@ -479,20 +474,26 @@ const styles = StyleSheet.create({
     textAlign: "center",
     letterSpacing: 0.5,
   },
-  infoItem: {
+  infoItemCard: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
+    backgroundColor: "#0A0A0A",
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#222"
   },
   infoIconBox: {
-    width: 28,
-    height: 28,
+    width: 36,
+    height: 36,
     borderRadius: 10,
     backgroundColor: "rgba(255, 107, 0, 0.15)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
-    marginTop: 2,
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255, 107, 0, 0.2)",
   },
   infoText: {
     flex: 1,

@@ -7,76 +7,11 @@ import {
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import Slider from "@react-native-community/slider";
+import { BlurView } from "expo-blur";
 import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
 
 const { width: screenWidth } = Dimensions.get("window");
-
-const calcularDistanciaGPS = (lat1, lon1, lat2, lon2) => {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity; 
-  const R = 6371; 
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; 
-};
-
-const calcularPorcentagemMatch = (alunoPrefs, personalEspecs) => {
-  let score = 0; 
-  let motivos = [];
-
-  if (!alunoPrefs || !personalEspecs) return { percentual: 50, motivos: ["Faltam dados para análise exata."] };
-
-  if (alunoPrefs.objetivo && personalEspecs.objetivos?.includes(alunoPrefs.objetivo)) {
-    score += 35;
-    motivos.push(`Especialista no seu objetivo principal: ${alunoPrefs.objetivo}`);
-  }
-
-  if (alunoPrefs.limitacao && alunoPrefs.limitacao !== 'nenhuma') {
-    if (personalEspecs.limitacoes?.includes(alunoPrefs.limitacao)) {
-      score += 15;
-      motivos.push(`Preparado para lidar com: ${alunoPrefs.limitacao}`);
-      
-      if (alunoPrefs.sub_limitacao && alunoPrefs.sub_limitacao.length > 0) {
-        const trataDor = alunoPrefs.sub_limitacao.some(dor => personalEspecs.subs?.includes(dor));
-        if (trataDor) {
-          score += 10;
-          motivos.push(`Especialista na sua necessidade de saúde: ${alunoPrefs.sub_limitacao[0]}`);
-        }
-      } else {
-        score += 10; 
-      }
-    }
-  } else {
-    score += 25; 
-  }
-
-  if (alunoPrefs.perfil_treinador && personalEspecs.perfil === alunoPrefs.perfil_treinador) {
-    score += 20;
-    motivos.push("A didática dele(a) é exatamente o que você busca.");
-  }
-
-  if (alunoPrefs.investimento && personalEspecs.investimento === alunoPrefs.investimento) {
-    score += 10;
-    motivos.push("Encaixa perfeitamente no seu orçamento atual.");
-  } else {
-    score += 5; 
-  }
-
-  if (alunoPrefs.frequencia && personalEspecs.frequencia === alunoPrefs.frequencia) {
-    score += 10;
-    motivos.push("Tem disponibilidade ideal para a sua rotina semanal.");
-  } else {
-    score += 5; 
-  }
-
-  if(motivos.length === 0) motivos.push("Possui perfil genérico compatível com sua região.");
-  
-  return { percentual: Math.min(99, score), motivos };
-};
 
 const formatarBairroCidade = (cidade, bairro) => {
   if (!cidade && !bairro) return "Local não informado";
@@ -100,7 +35,7 @@ export default function FeedPersonal({ navigation }) {
   const [carregando, setCarregando] = useState(true);
   const [refreshing, setRefreshing] = useState(false); 
   
-  const [distanciaMaxima, setDistanciaMaxima] = useState(50); 
+  const [distanciaMaxima, setDistanciaMaxima] = useState(20); 
 
   const [modalVisible, setModalVisible] = useState(false);
   const [matchSelecionado, setMatchSelecionado] = useState(null);
@@ -119,47 +54,67 @@ export default function FeedPersonal({ navigation }) {
       if (!user) return;
 
       const { data: conexaoAtiva } = await supabase.from('conexoes').select('id').eq('usuario_id', user.id).eq('status', 'aluno_ativo').single();
-      
       if (conexaoAtiva) { 
         navigation.reset({ index: 0, routes: [{ name: 'PainelMeuTreinador', params: { conexaoId: conexaoAtiva.id } }] });
         return; 
       } 
 
-      const { data: uData } = await supabase.from("usuarios").select("cidade, latitude, longitude, preferencias").eq("id", user.id).single();
+      const { data: matches, error: matchError } = await supabase.rpc("get_match_personals", { p_aluno_id: user.id });
+      
+      if (matchError) throw matchError;
 
-      const { data: personalsData, error } = await supabase.from("personals").select("*").eq("ativo", true);
-      if (error) throw error;
+      if (matches && matches.length > 0) {
+        const personalIds = matches.map(m => m.personal_id);
+        
+        const { data: perfisFull } = await supabase.from('personals').select('*').in('id', personalIds);
 
-      if (personalsData) {
-        const processados = await Promise.all(personalsData.map(async (p) => {
-          
-          const { data: nota } = await supabase.rpc("get_media_avaliacoes", { p_id: p.id });
-          
-          let distCalculada = calcularDistanciaGPS(uData?.latitude, uData?.longitude, p.latitude, p.longitude);
-          
-          if (distCalculada === Infinity) {
-             distCalculada = (p.nome.length * 3.7) % 40 + 5; 
+        const processados = await Promise.all(matches.map(async (m) => {
+          const perfil = perfisFull.find(p => p.id === m.personal_id);
+          if (!perfil) return null;
+
+          const { data: nota } = await supabase.rpc("get_media_avaliacoes", { p_id: m.personal_id });
+
+          let motivos = [];
+          const det = m.detalhes_pontuacao || {};
+          if (det.peso_objetivo > 0) motivos.push("Especialista no seu principal objetivo de treino.");
+          if (det.peso_perfil > 0) motivos.push("O estilo de ensino bate perfeitamente com você.");
+          if (det.peso_preco > 0) motivos.push("O valor se encaixa muito bem no seu orçamento.");
+          if (det.peso_distancia > 0) motivos.push("Está localizado bem perto de você.");
+          if (motivos.length === 0) motivos.push("Possui um perfil altamente compatível com sua busca.");
+
+          let badgeUi = "HÍBRIDO";
+          let iconUi = "diamond";
+          if (m.servicos_oferecidos && m.servicos_oferecidos.length === 1) {
+            badgeUi = m.servicos_oferecidos[0].toUpperCase();
+            iconUi = badgeUi === 'CONSULTORIA' ? "phone-portrait" : "barbell";
           }
-          
+
           let specs = null;
-          try { specs = typeof p.especialidades === 'string' ? JSON.parse(p.especialidades) : p.especialidades; } catch(e){}
-          const matchData = calcularPorcentagemMatch(uData?.preferencias, specs);
+          try { specs = typeof perfil.especialidades === 'string' ? JSON.parse(perfil.especialidades) : perfil.especialidades; } catch(e){}
 
           return { 
-            ...p, 
+            ...perfil, 
+            id: m.personal_id, 
             nota_media: nota, 
-            distanciaReal: distCalculada,
-            matchPercentual: matchData.percentual,
-            matchMotivos: matchData.motivos,
-            specsParsed: specs
+            distanciaReal: Number(m.distancia_km),
+            matchPercentual: m.score_compatibilidade,
+            matchMotivos: motivos,
+            specsParsed: specs,
+            badgeUi,
+            iconUi,
+            precoAvaliar: m.preco_medio
           };
         }));
 
-        setAllPersonals(processados);
-        aplicarFiltros(processados, distanciaMaxima); 
+        const validos = processados.filter(p => p !== null);
+        setAllPersonals(validos);
+        aplicarFiltros(validos, distanciaMaxima); 
+      } else {
+        setAllPersonals([]);
+        setPersonalsExibidos([]);
       }
     } catch (error) { 
-      console.log("Erro ao carregar:", error); 
+      console.log("Erro ao carregar Match:", error); 
     } finally { 
       setCarregando(false); 
       setRefreshing(false); 
@@ -167,11 +122,10 @@ export default function FeedPersonal({ navigation }) {
   };
 
   const aplicarFiltros = (lista, maxKm) => {
-    let filtrados = lista.filter(p => p.distanciaReal <= maxKm && p.matchPercentual >= 80);
-
-    filtrados.sort((a, b) => {
-      if (b.matchPercentual !== a.matchPercentual) return b.matchPercentual - a.matchPercentual;
-      return a.distanciaReal - b.distanciaReal;
+    let filtrados = lista.filter(p => {
+      if (p.distanciaReal > 100) return true; 
+      
+      return p.distanciaReal <= maxKm;
     });
 
     setPersonalsExibidos(filtrados);
@@ -194,27 +148,21 @@ export default function FeedPersonal({ navigation }) {
 
   const handleLogout = async () => {
     Alert.alert(
-      "Sair da Conta",
-      "Deseja realmente sair?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sair",
-          style: "destructive",
-          onPress: async () => {
-            setCarregando(true);
-            await supabase.auth.signOut();
-            navigation.reset({ index: 0, routes: [{ name: 'ChoiceScreen' }] });
-          }
-        }
-      ]
+      "Sair da Conta", "Deseja realmente sair?",
+      [{ text: "Cancelar", style: "cancel" }, { text: "Sair", style: "destructive", onPress: async () => { setCarregando(true); await supabase.auth.signOut(); navigation.reset({ index: 0, routes: [{ name: 'ChoiceScreen' }] }); } }]
     );
   };
 
   const renderCard = ({ item }) => {
     const idade = item.data_nascimento ? calcularIdade(item.data_nascimento) : null;
-    const distanciaStr = item.distanciaReal !== Infinity ? `${item.distanciaReal.toFixed(1)} km` : "";
     const local = formatarBairroCidade(item.cidade, item.bairro);
+    
+    const isConsultoria = item.distanciaReal > 100; 
+    const distanciaStr = isConsultoria 
+      ? "📱 100% Online" 
+      : `a ${item.distanciaReal.toFixed(1)} km`;
+
+    const corBadge = item.badgeUi === 'HÍBRIDO' ? "#0A84FF" : theme.colors.primary;
 
     return (
       <View style={styles.premiumCardContainer}>
@@ -222,9 +170,18 @@ export default function FeedPersonal({ navigation }) {
           <Image source={{ uri: item.foto_url || "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=600" }} style={styles.cardCover} resizeMode="cover" />
           <LinearGradient colors={["transparent", "rgba(0,0,0,0.5)", theme.colors.surface]} locations={[0.5, 0.8, 1]} style={StyleSheet.absoluteFillObject} />
           
-          <TouchableOpacity style={styles.matchBadgeFloating} activeOpacity={0.8} onPress={() => abrirDetalhesMatch(item)}>
-            <FontAwesome5 name="fire" size={12} color={theme.colors.backgroundPure} />
-            <Text style={styles.matchBadgeText}>{item.matchPercentual}% COMPATÍVEL</Text>
+          <View style={styles.badgeTopLeft}>
+            <BlurView intensity={80} tint="dark" style={styles.badgeBlur}>
+              <Ionicons name={item.iconUi} size={12} color={corBadge} style={{marginRight: 6}} />
+              <Text style={[styles.badgeText, { color: corBadge }]}>{item.badgeUi}</Text>
+            </BlurView>
+          </View>
+
+          <TouchableOpacity style={styles.badgeTopRight} activeOpacity={0.8} onPress={() => abrirDetalhesMatch(item)}>
+            <BlurView intensity={80} tint="dark" style={[styles.badgeBlur, { borderColor: "rgba(255, 107, 0, 0.4)" }]}>
+              <FontAwesome5 name="fire" size={12} color={theme.colors.primary} />
+              <Text style={styles.badgeTextMatch}>{item.matchPercentual}% MATCH</Text>
+            </BlurView>
           </TouchableOpacity>
 
           <View style={styles.imageBottomInfo}>
@@ -237,8 +194,8 @@ export default function FeedPersonal({ navigation }) {
             <View style={styles.locationRow}>
               <Ionicons name="location-sharp" size={13} color={theme.colors.primary} />
               <Text style={styles.locationText} numberOfLines={1}>
-                {local}
-                {distanciaStr ? <Text style={styles.distanceText}> • a {distanciaStr}</Text> : null}
+                {isConsultoria ? "Todo o Brasil" : local}
+                {distanciaStr ? <Text style={isConsultoria ? styles.distanceTextOnline : styles.distanceText}> • {distanciaStr}</Text> : null}
               </Text>
             </View>
           </View>
@@ -280,8 +237,8 @@ export default function FeedPersonal({ navigation }) {
             <View style={styles.statSeparator} />
             <View style={styles.statBox}>
               <Ionicons name="cash" size={18} color={theme.colors.primary} style={styles.statIcon} />
-              <Text style={styles.statValueHighlight}>R$ {item.preco_medio || "--"}</Text>
-              <Text style={styles.statLabel}>Aula</Text>
+              <Text style={styles.statValueHighlight}>R$ {item.precoAvaliar || "--"}</Text>
+              <Text style={styles.statLabel}>Mensal</Text>
             </View>
           </View>
 
@@ -323,17 +280,20 @@ export default function FeedPersonal({ navigation }) {
               <View style={styles.radarPillHeader}>
                 <View style={{flexDirection: 'row', alignItems: 'center'}}>
                   <MaterialCommunityIcons name="radar" size={18} color={theme.colors.primary} />
-                  <Text style={styles.radarPillTitle}>Filtrar Distância</Text>
+                  <Text style={styles.radarPillTitle}>Filtro de Distância GPS</Text>
                 </View>
                 <View style={styles.radarPillValueBox}>
                   <Text style={styles.radarPillValue}>Até {distanciaMaxima} km</Text>
                 </View>
               </View>
               <Slider
-                style={{ width: "100%", height: 35 }} minimumValue={5} maximumValue={50} step={5}
+                style={{ width: "100%", height: 35 }} minimumValue={5} maximumValue={100} step={5}
                 minimumTrackTintColor={theme.colors.primary} maximumTrackTintColor={theme.colors.borderLight} thumbTintColor={theme.colors.primary}
                 value={distanciaMaxima} onValueChange={handleSliderChange}
               />
+              <Text style={{color: theme.colors.textMuted, fontSize: 10, textAlign: 'center', marginTop: 5}}>
+                *A distância se aplica apenas para atendimentos presenciais.
+              </Text>
             </View>
 
             {personalsExibidos.length > 0 && (
@@ -349,7 +309,7 @@ export default function FeedPersonal({ navigation }) {
           <View style={styles.emptyState}>
             <MaterialCommunityIcons name="map-marker-off" size={60} color={theme.colors.primary} style={{marginBottom: 15}} />
             <Text style={styles.emptyTitle}>Nenhum Match Perfeito</Text>
-            <Text style={styles.emptyText}>Por segurança e qualidade, exibimos apenas profissionais com mais de 80% de compatibilidade com a sua saúde e objetivo.</Text>
+            <Text style={styles.emptyText}>Por segurança e qualidade, exibimos apenas profissionais com alta compatibilidade de saúde e objetivo.</Text>
             <Text style={[styles.emptyText, {marginTop: 10, fontSize: 13, color: theme.colors.textMuted}]}>Tente aumentar a distância no radar acima.</Text>
           </View>
         }
@@ -409,8 +369,11 @@ const styles = StyleSheet.create({
   cardImageHeader: { width: "100%", height: 380, position: 'relative' },
   cardCover: { width: "100%", height: "100%" },
   
-  matchBadgeFloating: { position: 'absolute', top: 16, right: 16, flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.primary, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, gap: 6, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 5, elevation: 6 },
-  matchBadgeText: { color: theme.colors.backgroundPure, fontSize: 11, fontWeight: "900", letterSpacing: 0.5 },
+  badgeTopLeft: { position: 'absolute', top: 16, left: 16, borderRadius: 12, overflow: 'hidden' },
+  badgeTopRight: { position: 'absolute', top: 16, right: 16, borderRadius: 12, overflow: 'hidden' },
+  badgeBlur: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 12, backgroundColor: 'rgba(0,0,0,0.5)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  badgeText: { color: '#FFF', fontSize: 10, fontWeight: 'bold', letterSpacing: 0.5 },
+  badgeTextMatch: { color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 0.5, marginLeft: 6 },
 
   imageBottomInfo: { position: 'absolute', bottom: 15, left: 16, right: 16 },
   nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
@@ -420,6 +383,7 @@ const styles = StyleSheet.create({
   locationRow: { flexDirection: 'row', alignItems: 'center' },
   locationText: { color: theme.colors.textBody, fontSize: 13, marginLeft: 4, textShadowColor: 'rgba(0, 0, 0, 0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4, fontWeight: '500' },
   distanceText: { color: theme.colors.primary, fontWeight: 'bold' },
+  distanceTextOnline: { color: "#00E676", fontWeight: '900' },
 
   cardContentBox: { padding: 20, paddingTop: 20 },
 

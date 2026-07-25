@@ -45,6 +45,9 @@ import MeusAlunos from "./src/screens/Personal/MeusAlunos";
 import Chat from "./src/screens/Shared/Chat";
 import ConversasAluno from "./src/screens/Shared/Conversas";
 
+import Recebimentos from "./src/screens/Personal/Financeiro/recebimentos";
+import PainelCrescimento from "./src/screens/Personal/Financeiro/painelcrescimento";
+
 const Stack = createNativeStackNavigator();
 const FeedStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -160,7 +163,6 @@ export default function App() {
               refresh_token: refreshToken,
             });
 
-            // ROTEAMENTO INTELIGENTE COM A FUNÇÃO TRATOR:
             if (type === "recovery") {
               forcarNavegacao("RedefinirSenha");
             } else if (type === "signup") {
@@ -304,6 +306,16 @@ export default function App() {
         <RootStack.Screen
           name="PersonalStack"
           component={PersonalStackNavigator}
+        />
+        <RootStack.Screen
+          name="Recebimentos"
+          component={Recebimentos}
+          options={{ headerShown: false }}
+        />
+        <RootStack.Screen
+          name="PainelCrescimento"
+          component={PainelCrescimento}
+          options={{ headerShown: false }}
         />
       </RootStack.Navigator>
     </NavigationContainer>
