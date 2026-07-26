@@ -18,6 +18,7 @@ export default function PainelCrescimento({ navigation }) {
   } = usePainelCrescimento();
 
   if (loading) return <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}><ActivityIndicator size="large" color="#0A84FF" /></View>;
+  
 
   const { mrrAtual, mrrAnterior, crescimentoPct, valorMeta, diasParaMeta } = metricas;
   const progressoPct = valorMeta ? Math.min((mrrAtual / valorMeta) * 100, 100) : 0;

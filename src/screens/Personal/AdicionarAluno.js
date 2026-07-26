@@ -19,9 +19,13 @@ import { BlurView } from "expo-blur";
 import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
 
-const OPCOES_SERVICOS = ["Consultoria", "Presencial", "Avaliação Física", "Mentoria", "Grupo de Corrida", "Reabilitação"];
+import { useOnboarding } from "../../hooks/useOnboarding";
+
+const OPCOES_SERVICOS = ["Consultoria", "Presencial"];
 
 export default function AdicionarAluno({ navigation }) {
+  const { completarMissao } = useOnboarding();
+
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [servicosInclusos, setServicosInclusos] = useState(["Consultoria"]); 
@@ -98,6 +102,9 @@ export default function AdicionarAluno({ navigation }) {
         ]);
 
       if (insertError) throw insertError;
+
+      await completarMissao('primeiro_aluno');
+      await completarMissao('primeiro_contrato');
 
       const copiarEVoltar = async () => {
         const mensagem = `Fala ${nome.split(' ')[0]}! Baixe o MatchTrainer e clique em "Já tenho um Personal".\n\nUse o código VIP abaixo para ativar nosso contrato:\n🎟️ Código: ${codigoGerado}`;

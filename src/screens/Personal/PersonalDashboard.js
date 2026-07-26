@@ -20,14 +20,20 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { BlurView } from "expo-blur";
+
+import { useOnboarding } from '../../hooks/useOnboarding';
+import WidgetOnboarding from '../../components/WidgetOnboarding';
+
 import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
 
 const { width } = Dimensions.get("window");
-
 const FILTROS_CRM = ["Todos", "Consultoria", "Presencial", "Híbrido", "Sem Contrato"];
 
 export default function PersonalDashboard({ navigation }) {
+  const { jornada, progressoPct, completarMissao, loadingJornada, recarregarJornada } = useOnboarding();
+  
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("em_contato"); 
   const [modalidadeFilter, setModalidadeFilter] = useState("Todos"); 
@@ -44,16 +50,15 @@ export default function PersonalDashboard({ navigation }) {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
-      carregarDados();
+      carregarDados(); 
+      recarregarJornada(); 
     });
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, recarregarJornada]);
 
   const carregarDados = async () => {
     setLoading(true);
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
 
     try {
@@ -132,6 +137,7 @@ export default function PersonalDashboard({ navigation }) {
   const onRefresh = async () => {
     setRefreshing(true);
     await carregarDados();
+    if(recarregarJornada) recarregarJornada(); 
     setRefreshing(false);
   };
 
@@ -238,9 +244,7 @@ export default function PersonalDashboard({ navigation }) {
       >
         <View style={styles.cardAvatarContainer}>
           <Image
-            source={{
-              uri: userData?.foto_url || "https://via.placeholder.com/150",
-            }}
+            source={{ uri: userData?.foto_url || "https://via.placeholder.com/150" }}
             style={[styles.alunoAvatar, isInativo && styles.avatarInativo]}
           />
           {temMensagemNaoLida ? (
@@ -412,6 +416,13 @@ export default function PersonalDashboard({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />
         }
       >
+        
+        <WidgetOnboarding 
+          jornada={jornada} 
+          progressoPct={progressoPct} 
+          navigation={navigation} 
+          completarMissao={completarMissao} 
+        />
         
         <View style={styles.quickAccessGrid}>
           <TouchableOpacity style={styles.quickAccessCard} activeOpacity={0.8} onPress={() => navigation.navigate("Recebimentos")}>

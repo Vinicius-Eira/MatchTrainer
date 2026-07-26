@@ -5,8 +5,11 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
 import { MESES_NOME } from './RecebimentosConstants';
+import { useOnboarding } from "../../../../hooks/useOnboarding"; 
 
 export function useRecebimentos(navigation) {
+  const { completarMissao } = useOnboarding();
+
   const hoje = new Date();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -305,6 +308,9 @@ export function useRecebimentos(navigation) {
       const valorFloat = parseFloat(valorInput.replace(',', '.'));
       await supabase.from('mensalidades').update({ status: 'pago', data_pagamento: new Date().toISOString(), valor_pago: valorFloat, forma_pagamento: formaPgto, observacoes: observacao }).eq('id', faturaSelecionada.id);
       await supabase.from('historico_financeiro_logs').insert([{ personal_id: faturaSelecionada.planos.personal_id, aluno_id: faturaSelecionada.planos.aluno_id, referencia_id: faturaSelecionada.id, tipo_evento: 'PAGAMENTO_RECEBIDO', descricao: `Pagamento de R$ ${valorFloat.toFixed(2)} confirmado via ${formaPgto}.`, metadados: { valor: valorFloat, forma_pagamento: formaPgto, observacoes: observacao } }]);
+      
+      await completarMissao('primeiro_recebimento');
+      
       carregarFinanceiro();
       setEtapaBaixa(2); 
     } catch (e) { Alert.alert("Erro", "Falha ao registrar."); } finally { setProcessando(false); }
@@ -325,6 +331,9 @@ export function useRecebimentos(navigation) {
       if (erroFatura) throw erroFatura;
 
       await supabase.from('historico_financeiro_logs').insert([{ personal_id: session.user.id, aluno_id: alunoInfo.aluno_id, referencia_id: novaFatura.id, tipo_evento: 'RECEITA_EXTRA_GERADA', descricao: `Venda de ${categoriaExtra} (R$ ${valorFloat.toFixed(2)}) via ${formaPgto}.`, metadados: { valor: valorFloat, categoria: categoriaExtra, forma_pagamento: formaPgto } }]);
+      
+      await completarMissao('primeiro_recebimento');
+
       setModalExtraVisivel(false); carregarFinanceiro();
     } catch (e) { Alert.alert("Erro", "Falha ao salvar receita."); } finally { setProcessando(false); }
   };
@@ -375,7 +384,7 @@ export function useRecebimentos(navigation) {
     formaPgto, observacao, processando, etapaBaixa, modalExtraVisivel, modalCongelarVisivel, alunoSelecionadoId,
     categoriaExtra, motivoPausa, textoOutroMotivo, diasPausa, dataRetornoCalculada, fabAberto, reciboRef,
     alunosFiltrados, alunosExtraFiltrados, alunosCongelarFiltrados, totalRecebido, totalPendente, totalAtrasado, totalGeral,
-    percRecebido, percAReceber, percAtraso, hoje, // Retornando tudo que a UI precisa
+    percRecebido, percAReceber, percAtraso, hoje, 
     
     setModalidadeAtiva, setStatusAtivo, abrirCalendarioTopo, selecionarMesCalendario, selecionarDiaCalendario, 
     aplicarFiltroCalendario, setaMudarMesRapido, gerarPdfDaTela, confirmarBaixaManual, salvarReceitaExtra, 

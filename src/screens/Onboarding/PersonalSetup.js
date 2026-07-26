@@ -28,10 +28,6 @@ const { width } = Dimensions.get("window");
 const OPCOES_SERVICOS = [
   { id: "Consultoria", titulo: "Consultoria no App", icon: "phone-portrait-outline", desc: "Planilhas e suporte" },
   { id: "Presencial", titulo: "Personal Presencial", icon: "barbell-outline", desc: "1 a 1" },
-  { id: "Avaliação Física", titulo: "Avaliação Física", icon: "body-outline", desc: "Antropometria" },
-  { id: "Mentoria", titulo: "Mentoria de Vida", icon: "bulb-outline", desc: "Coaching" },
-  { id: "Grupo de Corrida", titulo: "Grupo de Corrida", icon: "walk-outline", desc: "Coletivos" },
-  { id: "Reabilitação", titulo: "Reabilitação", icon: "medkit-outline", desc: "Clínico e Lesões" }
 ];
 
 const OPCOES_OBJETIVO = [
@@ -134,7 +130,6 @@ export default function PersonalSetup({ navigation }) {
         if (data.latitude) setLatitude(data.latitude);
         if (data.longitude) setLongitude(data.longitude);
         
-        // --- LEITURA DA NOVA ARQUITETURA ---
         if (data.servicos_oferecidos && data.servicos_oferecidos.length > 0) {
           setServicosOferecidos(data.servicos_oferecidos);
         } else if (data.modalidades) {
@@ -374,45 +369,47 @@ export default function PersonalSetup({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionAccent} />
-          <Text style={styles.sectionTitle}>Apresentação Básica</Text>
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.inputLabel}>Nome Público *</Text>
-          <View style={[styles.inputBox, inputFocado === "nome" && styles.inputBoxFocused]}>
-            <View style={styles.inputIconWrapper}>
-              <Ionicons name="person" size={16} color={inputFocado === "nome" ? theme.colors.primary : "#888"} />
-            </View>
-            <TextInput style={styles.inputPremium} placeholder="Ex: Personal João Silva" placeholderTextColor="#666" value={nome} onChangeText={setNome} onFocus={() => setInputFocado("nome")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
+        <View style={styles.cardGeral}>
+          <View style={styles.cardHeaderBox}>
+            <View style={styles.iconWrapper}><Ionicons name="id-card" size={18} color={theme.colors.primary} /></View>
+            <Text style={styles.cardHeaderTitle}>Identificação Profissional</Text>
           </View>
-        </View>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.inputLabel}>Biografia Profissional</Text>
-          <View style={[styles.inputBoxArea, inputFocado === "bio" && styles.inputBoxFocused]}>
-            <TextInput style={styles.textAreaPremium} placeholder="Descreva sua metodologia e conquistas..." placeholderTextColor="#666" multiline maxLength={400} value={bio} onChangeText={setBio} textAlignVertical="top" onFocus={() => setInputFocado("bio")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-            <Text style={styles.inputLabel}>CREF *</Text>
-            <View style={[styles.inputBox, inputFocado === "cref" && styles.inputBoxFocused]}>
+          <View style={styles.formGroup}>
+            <Text style={styles.inputLabel}>Nome Público *</Text>
+            <View style={[styles.inputBox, inputFocado === "nome" && styles.inputBoxFocused]}>
               <View style={styles.inputIconWrapper}>
-                <MaterialCommunityIcons name="card-account-details" size={16} color={inputFocado === "cref" ? theme.colors.primary : "#888"} />
+                <Ionicons name="person" size={16} color={theme.colors.primary} />
               </View>
-              <TextInput style={styles.inputPremium} placeholder="0000-G/SP" placeholderTextColor="#666" value={cref} onChangeText={setCref} onFocus={() => setInputFocado("cref")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
+              <TextInput style={styles.inputPremium} placeholder="Ex: Personal João Silva" placeholderTextColor="#666" value={nome} onChangeText={setNome} onFocus={() => setInputFocado("nome")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
             </View>
           </View>
-          <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
-            <Text style={styles.inputLabel}>WhatsApp *</Text>
-            <View style={[styles.inputBox, inputFocado === "wpp" && styles.inputBoxFocused]}>
-              <View style={[styles.inputIconWrapper, inputFocado === "wpp" && { backgroundColor: "rgba(37, 211, 102, 0.1)", borderColor: "rgba(37, 211, 102, 0.2)" }]}>
-                <MaterialCommunityIcons name="whatsapp" size={16} color={inputFocado === "wpp" ? "#25D366" : "#888"} />
+
+          <View style={styles.row}>
+            <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
+              <Text style={styles.inputLabel}>CREF *</Text>
+              <View style={[styles.inputBox, inputFocado === "cref" && styles.inputBoxFocused]}>
+                <View style={styles.inputIconWrapper}>
+                  <MaterialCommunityIcons name="card-account-details" size={16} color={theme.colors.primary} />
+                </View>
+                <TextInput style={styles.inputPremium} placeholder="0000-G/SP" placeholderTextColor="#666" value={cref} onChangeText={setCref} onFocus={() => setInputFocado("cref")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
               </View>
-              <TextInput style={styles.inputPremium} placeholder="(00) 00000" placeholderTextColor="#666" keyboardType="phone-pad" value={telefone} onChangeText={formatarWhatsApp} onFocus={() => setInputFocado("wpp")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
+            </View>
+            <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
+              <Text style={styles.inputLabel}>WhatsApp *</Text>
+              <View style={[styles.inputBox, inputFocado === "wpp" && styles.inputBoxFocused]}>
+                <View style={styles.inputIconWrapper}>
+                  <MaterialCommunityIcons name="whatsapp" size={16} color={theme.colors.primary} />
+                </View>
+                <TextInput style={styles.inputPremium} placeholder="(00) 00000" placeholderTextColor="#666" keyboardType="phone-pad" value={telefone} onChangeText={formatarWhatsApp} onFocus={() => setInputFocado("wpp")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.inputLabel}>Biografia Profissional</Text>
+            <View style={[styles.inputBoxArea, inputFocado === "bio" && styles.inputBoxFocused]}>
+              <TextInput style={styles.textAreaPremium} placeholder="Descreva sua metodologia, especialidades e conquistas de forma atrativa..." placeholderTextColor="#666" multiline maxLength={400} value={bio} onChangeText={setBio} textAlignVertical="top" onFocus={() => setInputFocado("bio")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
             </View>
           </View>
         </View>
@@ -560,8 +557,8 @@ export default function PersonalSetup({ navigation }) {
         <View style={styles.formGroup}>
           <Text style={styles.inputLabel}>Instagram (Sem o @)</Text>
           <View style={[styles.inputBox, inputFocado === "insta" && styles.inputBoxFocused]}>
-            <View style={[styles.inputIconWrapper, inputFocado === "insta" && { backgroundColor: "rgba(225, 48, 108, 0.1)", borderColor: "rgba(225, 48, 108, 0.2)" }]}>
-              <Ionicons name="logo-instagram" size={16} color={inputFocado === "insta" ? "#E1306C" : "#888"} />
+            <View style={styles.inputIconWrapper}>
+              <Ionicons name="logo-instagram" size={16} color={theme.colors.primary} />
             </View>
             <TextInput style={styles.inputPremium} placeholder="seu_usuario" placeholderTextColor="#666" autoCapitalize="none" value={instagram} onChangeText={setInstagram} onFocus={() => setInputFocado("insta")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
           </View>
@@ -571,7 +568,7 @@ export default function PersonalSetup({ navigation }) {
           <Text style={styles.inputLabel}>TikTok (Sem o @)</Text>
           <View style={[styles.inputBox, inputFocado === "tiktok" && styles.inputBoxFocused]}>
             <View style={styles.inputIconWrapper}>
-              <FontAwesome5 name="tiktok" size={14} color={inputFocado === "tiktok" ? "#FFF" : "#888"} />
+              <FontAwesome5 name="tiktok" size={14} color={theme.colors.primary} />
             </View>
             <TextInput style={styles.inputPremium} placeholder="seu_usuario" placeholderTextColor="#666" autoCapitalize="none" value={tiktok} onChangeText={setTiktok} onFocus={() => setInputFocado("tiktok")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
           </View>
@@ -635,9 +632,9 @@ const styles = StyleSheet.create({
   inputBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#0A0A0A", borderRadius: 18, borderWidth: 1, borderColor: "#222", paddingHorizontal: 12, height: 60 },
   inputBoxArea: { backgroundColor: "#0A0A0A", borderRadius: 18, borderWidth: 1, borderColor: "#222", paddingHorizontal: 16 },
   inputBoxFocused: { borderColor: theme.colors.primary, backgroundColor: "rgba(255, 107, 0, 0.05)" },
-  inputIconWrapper: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.05)", justifyContent: "center", alignItems: "center", marginRight: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
-  inputPremium: { flex: 1, color: "#FFF", fontSize: 16, fontFamily: theme.fonts.body, height: "100%", backgroundColor: "transparent" },
-  textAreaPremium: { minHeight: 120, paddingTop: 16, paddingBottom: 16, color: "#FFF", fontSize: 15, fontFamily: theme.fonts.body },
+  inputIconWrapper: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(255, 107, 0, 0.1)", justifyContent: "center", alignItems: "center", marginRight: 12, borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.2)" },
+  inputPremium: { flex: 1, color: "#FFF", fontSize: 16, fontFamily: theme.fonts.body, height: "100%", backgroundColor: "transparent", outlineStyle: "none" },
+  textAreaPremium: { minHeight: 120, paddingTop: 16, paddingBottom: 16, color: "#FFF", fontSize: 15, fontFamily: theme.fonts.body, outlineStyle: "none" },
 
   btnGpsRadar: { flexDirection: "row", backgroundColor: theme.colors.primary, height: 60, borderRadius: 18, justifyContent: "center", alignItems: "center", marginBottom: 15, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
   btnGpsRadarText: { color: "#000", fontSize: 16, fontWeight: "900", marginLeft: 8, letterSpacing: 0.5, textTransform: "uppercase" },
@@ -645,6 +642,9 @@ const styles = StyleSheet.create({
   locationResultText: { color: "#00E676", fontSize: 15, fontWeight: 'bold', marginLeft: 8 },
 
   cardGeral: { backgroundColor: "#0A0A0A", borderWidth: 1, borderColor: "#222", borderRadius: 24, padding: 20, marginBottom: 25 },
+  cardHeaderBox: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  iconWrapper: { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255, 107, 0, 0.1)", justifyContent: "center", alignItems: "center", marginRight: 12, borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.2)" },
+  cardHeaderTitle: { color: "#FFF", fontSize: 18, fontFamily: theme.fonts.title, letterSpacing: 0.5 },
   cardHeaderTitleSub: { color: "#FFF", fontSize: 14, fontWeight: '900', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 0.5 },
 
   chipsContainerCenter: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, 
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
 
   subBox: { backgroundColor: "#111", width: '100%', padding: 20, borderRadius: 20, marginTop: 15, borderWidth: 1, borderColor: "#222" },
   subBoxTitle: { color: "#FFF", fontSize: 13, fontWeight: 'bold', marginBottom: 15, textTransform: 'uppercase' },
-  inputPremiumSmall: { backgroundColor: "#121212", borderRadius: 16, color: "#FFF", fontSize: 15, padding: 16, borderWidth: 1, borderColor: "#333", width: '100%', marginTop: 15, marginBottom: 5 },
+  inputPremiumSmall: { backgroundColor: "#121212", borderRadius: 16, color: "#FFF", fontSize: 15, padding: 16, borderWidth: 1, borderColor: "#333", width: '100%', marginTop: 15, marginBottom: 5, outlineStyle: "none" },
 
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
   gridItemWithIcon: { width: '48%', backgroundColor: "#121212", paddingVertical: 20, paddingHorizontal: 14, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: "#222", position: "relative", overflow: "hidden" },
