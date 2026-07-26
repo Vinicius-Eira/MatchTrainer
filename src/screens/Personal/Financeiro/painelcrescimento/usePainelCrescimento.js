@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Alert } from "react-native";
 import { supabase } from "../../../../services/supabase";
+import { useOnboarding } from "../../../../hooks/useOnboarding"; 
 
 export function usePainelCrescimento() {
+  const { completarMissao } = useOnboarding();
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [kpis, setKpis] = useState(null);
@@ -45,6 +48,8 @@ export function usePainelCrescimento() {
       if (metaAtual) await supabase.from('metas_negocio').update({ alvo: valorFloat }).eq('id', metaAtual.id);
       else await supabase.from('metas_negocio').insert([{ personal_id: session.user.id, tipo: 'faturamento', alvo: valorFloat }]);
       
+      await completarMissao('meta_definida');
+
       setModalMetaVisivel(false); setNovaMetaValor(""); carregarDados();
     } catch (error) { Alert.alert("Erro", "Não foi possível salvar a meta."); } finally { setSalvandoMeta(false); }
   };
@@ -97,4 +102,4 @@ export function usePainelCrescimento() {
     modalInfoVisivel, setModalInfoVisivel, infoDados, abrirInfo,
     insightIA: gerarInsightIA()
   };
-}
+};
