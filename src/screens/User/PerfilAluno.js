@@ -14,9 +14,9 @@ import { theme } from '../../theme/theme';
 const { width } = Dimensions.get('window');
 
 const OPCOES_MODALIDADE = [
-  { id: "consultoria", titulo: "Consultoria no App", desc: "Treinos na palma da mão, suporte online e flexibilidade total.", icon: "phone-portrait-outline" },
-  { id: "presencial", titulo: "Personal Presencial", desc: "Acompanhamento físico lado a lado durante a execução.", icon: "barbell-outline" },
-  { id: "ambos", titulo: "Ainda não sei", desc: "Estou aberto a propostas dos melhores profissionais.", icon: "shuffle-outline" },
+  { id: "Consultoria", titulo: "Consultoria no App", desc: "Treinos na palma da mão, suporte online e flexibilidade total.", icon: "phone-portrait-outline" },
+  { id: "Presencial", titulo: "Personal Presencial", desc: "Acompanhamento físico lado a lado durante a execução.", icon: "barbell-outline" },
+  { id: "indiferente", titulo: "Ainda não sei", desc: "Estou aberto a propostas dos melhores profissionais.", icon: "shuffle-outline" },
 ];
 
 const OPCOES_OBJETIVO = [
@@ -48,6 +48,19 @@ const OPCOES_PERFIL = [
   { id: "estrategista", titulo: "O Estrategista", desc: "Foco absoluto em planilhas, metas e progressão.", icon: "stats-chart-outline" },
 ];
 
+const OPCOES_GENERO_TREINADOR = [
+  { id: "Indiferente", titulo: "Indiferente", desc: "Foco apenas na qualidade técnica.", icon: "people-outline" },
+  { id: "Mulher", titulo: "Apenas Mulheres", desc: "Prefiro treinar com uma treinadora.", icon: "woman-outline" },
+  { id: "Homem", titulo: "Apenas Homens", desc: "Prefiro treinar com um treinador.", icon: "man-outline" },
+];
+
+const OPCOES_TURNO = [
+  { id: "Manhã", titulo: "Manhã (06h às 12h)", desc: "Treinar cedo para começar o dia.", icon: "sunny-outline" },
+  { id: "Tarde", titulo: "Tarde (12h às 18h)", desc: "Aproveito a tarde ou horário de almoço.", icon: "partly-sunny-outline" },
+  { id: "Noite", titulo: "Noite (18h às 22h)", desc: "Treino após o trabalho ou estudos.", icon: "moon-outline" },
+  { id: "Indiferente", titulo: "Horários Variados", desc: "Minha agenda é flexível.", icon: "shuffle-outline" },
+];
+
 const OPCOES_FREQUENCIA = [
   { id: "1-2", titulo: "1 a 2 dias por semana", desc: "Rotina apertada, mas quero dar o primeiro passo.", icon: "calendar-outline" },
   { id: "3-4", titulo: "3 a 4 dias por semana", desc: "Consigo manter uma constância saudável.", icon: "calendar-outline" },
@@ -68,38 +81,10 @@ const OPCOES_INVESTIMENTO = [
   { id: "premium", titulo: "A partir de R$ 160", desc: "Treinadores de Elite e acompanhamento VIP.", icon: "diamond-outline" }
 ];
 
-const SUB_SAUDE = [
-  { titulo: "Melhorar Postura", icon: "body-outline" },
-  { titulo: "Dores nas Costas", icon: "bandage-outline" },
-  { titulo: "Recomendação Médica", icon: "medkit-outline" },
-  { titulo: "Reduzir Stress / Sono", icon: "moon-outline" },
-  { titulo: "Terceira Idade", icon: "walk-outline" }
-];
-const SUB_ESPORTE = [
-  { titulo: "Corrida / Maratona", icon: "walk-outline" },
-  { titulo: "Artes Marciais", icon: "hand-left-outline" },
-  { titulo: "Natação", icon: "water-outline" },
-  { titulo: "Futebol / Quadra", icon: "football-outline" },
-  { titulo: "Crossfit", icon: "barbell-outline" },
-  { titulo: "Ciclismo", icon: "bicycle-outline" },
-  { titulo: "Outro", icon: "star-outline" }
-];
-const SUB_LESAO = [
-  { titulo: "Joelho", icon: "accessibility-outline" },
-  { titulo: "Lombar / Coluna", icon: "body-outline" },
-  { titulo: "Ombro", icon: "fitness-outline" },
-  { titulo: "Cervical", icon: "person-outline" },
-  { titulo: "Quadril", icon: "walk-outline" },
-  { titulo: "Tornozelo", icon: "footsteps-outline" },
-  { titulo: "Outra", icon: "add-circle-outline" }
-];
-const SUB_CLINICA = [
-  { titulo: "Hipertensão", icon: "pulse-outline" },
-  { titulo: "Diabetes", icon: "water-outline" },
-  { titulo: "Asma", icon: "leaf-outline" },
-  { titulo: "Cardiopatia", icon: "heart-half-outline" },
-  { titulo: "Outra", icon: "add-circle-outline" }
-];
+const SUB_SAUDE = [ { titulo: "Melhorar Postura", icon: "body-outline" }, { titulo: "Dores nas Costas", icon: "bandage-outline" }, { titulo: "Recomendação Médica", icon: "medkit-outline" }, { titulo: "Reduzir Stress / Sono", icon: "moon-outline" }, { titulo: "Terceira Idade", icon: "walk-outline" } ];
+const SUB_ESPORTE = [ { titulo: "Corrida / Maratona", icon: "walk-outline" }, { titulo: "Artes Marciais", icon: "hand-left-outline" }, { titulo: "Natação", icon: "water-outline" }, { titulo: "Futebol / Quadra", icon: "football-outline" }, { titulo: "Crossfit", icon: "barbell-outline" }, { titulo: "Ciclismo", icon: "bicycle-outline" }, { titulo: "Outro", icon: "star-outline" } ];
+const SUB_LESAO = [ { titulo: "Joelho", icon: "accessibility-outline" }, { titulo: "Lombar / Coluna", icon: "body-outline" }, { titulo: "Ombro", icon: "fitness-outline" }, { titulo: "Cervical", icon: "person-outline" }, { titulo: "Quadril", icon: "walk-outline" }, { titulo: "Tornozelo", icon: "footsteps-outline" }, { titulo: "Outra", icon: "add-circle-outline" } ];
+const SUB_CLINICA = [ { titulo: "Hipertensão", icon: "pulse-outline" }, { titulo: "Diabetes", icon: "water-outline" }, { titulo: "Asma", icon: "leaf-outline" }, { titulo: "Cardiopatia", icon: "heart-half-outline" }, { titulo: "Outra", icon: "add-circle-outline" } ];
 
 export default function PerfilAluno({ navigation }) {
   const [loading, setLoading] = useState(true);
@@ -129,6 +114,11 @@ export default function PerfilAluno({ navigation }) {
   const [subLimitacao, setSubLimitacao] = useState([]); 
   const [outraLimitacaoTexto, setOutraLimitacaoTexto] = useState(""); 
   const [perfilPersonal, setPerfilPersonal] = useState(null);
+  
+  const [generoTreinador, setGeneroTreinador] = useState(null);
+  const [turnoPreferido, setTurnoPreferido] = useState(null);
+  const [horarioEspecifico, setHorarioEspecifico] = useState("");
+
   const [frequencia, setFrequencia] = useState(null);
   const [localTreino, setLocalTreino] = useState(null);
   const [investimento, setInvestimento] = useState(null);
@@ -167,7 +157,20 @@ export default function PerfilAluno({ navigation }) {
 
         if (data.preferencias) {
           const p = data.preferencias;
-          setModalidade(OPCOES_MODALIDADE.find(m => m.id === p.modalidade) || null);
+          
+          if (p.servicos_buscados) {
+             if (p.servicos_buscados.includes("Consultoria") && p.servicos_buscados.includes("Presencial")) {
+                setModalidade(OPCOES_MODALIDADE.find(m => m.id === "indiferente"));
+             } else if (p.servicos_buscados.includes("Consultoria")) {
+                setModalidade(OPCOES_MODALIDADE.find(m => m.id === "Consultoria"));
+             } else if (p.servicos_buscados.includes("Presencial")) {
+                setModalidade(OPCOES_MODALIDADE.find(m => m.id === "Presencial"));
+             }
+          } else if (p.modalidade) {
+             const legacyMap = { "consultoria": "Consultoria", "presencial": "Presencial", "ambos": "indiferente" };
+             setModalidade(OPCOES_MODALIDADE.find(m => m.id === legacyMap[p.modalidade]) || null);
+          }
+
           setObjetivo(OPCOES_OBJETIVO.find(o => o.id === p.objetivo) || null);
           setOutroObjetivoTexto(p.outroObjetivo || "");
           setSubObjetivo(p.sub_objetivo || []);
@@ -177,6 +180,11 @@ export default function PerfilAluno({ navigation }) {
           setSubLimitacao(p.sub_limitacao || []);
           setOutraLimitacaoTexto(p.detalhe_outra_limitacao || "");
           setPerfilPersonal(OPCOES_PERFIL.find(t => t.id === p.perfil_treinador) || null);
+          
+          setGeneroTreinador(OPCOES_GENERO_TREINADOR.find(g => g.id === p.genero_treinador) || null);
+          setTurnoPreferido(OPCOES_TURNO.find(t => t.id === p.turno_preferido) || null);
+          setHorarioEspecifico(p.horario_especifico || "");
+
           setFrequencia(OPCOES_FREQUENCIA.find(f => f.id === p.frequencia) || null);
           setLocalTreino(OPCOES_LOCAL.find(l => l.id === p.local_treino) || null); 
           setInvestimento(OPCOES_INVESTIMENTO.find(i => i.id === p.investimento) || null);
@@ -227,6 +235,15 @@ export default function PerfilAluno({ navigation }) {
   const formatarAltura = (t) => {
     let v = t.replace(/[^0-9]/g, ""); 
     setAltura(v);
+  };
+
+  const formatarNome = (texto) => {
+    if (!texto) return "";
+    return texto
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0) ? word.charAt(0).toUpperCase() + word.slice(1) : "")
+      .join(' ');
   };
 
   const handleLockedPress = () => {
@@ -330,8 +347,16 @@ export default function PerfilAluno({ navigation }) {
         alturaNumerica = isNaN(parseFloat(alturaLimpa)) ? null : parseFloat(alturaLimpa);
       }
 
+      let servicosParaSalvar = [];
+      if (modalidade?.id === "indiferente") {
+        servicosParaSalvar = ["Consultoria", "Presencial"];
+      } else if (modalidade) {
+        servicosParaSalvar = [modalidade.id];
+      }
+
       const preferencias = {
-        modalidade: modalidade?.id || null, 
+        servicos_buscados: servicosParaSalvar, 
+        
         objetivo: objetivo?.id || null,
         outroObjetivo: objetivo?.id === "outro" ? outroObjetivoTexto.trim() : null,
         sub_objetivo: subObjetivo && subObjetivo.length > 0 ? subObjetivo : null,
@@ -341,6 +366,11 @@ export default function PerfilAluno({ navigation }) {
         sub_limitacao: subLimitacao && subLimitacao.length > 0 ? subLimitacao : null,
         detalhe_outra_limitacao: subLimitacao && subLimitacao.includes("Outra") ? outraLimitacaoTexto.trim() : null,
         perfil_treinador: perfilPersonal?.id || null,
+        
+        genero_treinador: generoTreinador?.id || null,
+        turno_preferido: turnoPreferido?.id || null,
+        horario_especifico: horarioEspecifico.trim() || null,
+        
         frequencia: frequencia?.id || null,
         local_treino: localTreino?.id || null, 
         investimento: investimento?.id || null
@@ -408,8 +438,8 @@ export default function PerfilAluno({ navigation }) {
           <View style={styles.formGroup}>
             <Text style={styles.label}>Nome Completo</Text>
             <View style={[styles.inputContainer, inputFocado === 'nome' && styles.inputContainerFocused]}>
-              <Ionicons name="person-circle-outline" size={20} color={inputFocado === 'nome' ? theme.colors.primary : "#666"} style={styles.inputIcon} />
-              <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholderTextColor="#666" placeholder="Como quer ser chamado?" onFocus={() => setInputFocado('nome')} onBlur={() => setInputFocado(null)} />
+              <Ionicons name="person-circle-outline" size={20} color={inputFocado === 'nome' ? theme.colors.primary : "#FF6B00"} style={styles.inputIcon} />
+              <TextInput style={styles.input} value={nome} onChangeText={(texto) => setNome(formatarNome(texto))} placeholderTextColor="#666" placeholder="Como quer ser chamado?" onFocus={() => setInputFocado('nome')} onBlur={() => setInputFocado(null)} />
             </View>
           </View>
 
@@ -417,7 +447,7 @@ export default function PerfilAluno({ navigation }) {
             <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
               <Text style={styles.label}>Nascimento</Text>
               <View style={[styles.inputContainer, inputFocado === 'nasc' && styles.inputContainerFocused]}>
-                <Ionicons name="calendar-outline" size={18} color={inputFocado === 'nasc' ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+                <Ionicons name="calendar-outline" size={18} color={inputFocado === 'nasc' ? theme.colors.primary : "#FF6B00"} style={styles.inputIcon} />
                 <TextInput style={styles.inputHalf} keyboardType="number-pad" maxLength={10} value={dataNascimento} placeholder="DD/MM/AAAA" placeholderTextColor="#666"
                   onChangeText={(t) => {
                     let v = t.replace(/\D/g, '');
@@ -431,7 +461,7 @@ export default function PerfilAluno({ navigation }) {
             <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
               <Text style={styles.label}>WhatsApp</Text>
               <View style={[styles.inputContainer, inputFocado === 'whats' && styles.inputContainerFocused]}>
-                <MaterialCommunityIcons name="whatsapp" size={18} color={inputFocado === 'whats' ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+                <MaterialCommunityIcons name="whatsapp" size={18} color={inputFocado === 'whats' ? theme.colors.primary : "#FF6B00"} style={styles.inputIcon} />
                 <TextInput style={styles.inputHalf} keyboardType="number-pad" value={telefone} onChangeText={formatarWhatsApp} placeholder="(00) 00000" placeholderTextColor="#666" onFocus={() => setInputFocado('whats')} onBlur={() => setInputFocado(null)} />
               </View>
             </View>
@@ -451,7 +481,7 @@ export default function PerfilAluno({ navigation }) {
             <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
               <Text style={styles.label}>Cidade</Text>
               <View style={[styles.inputContainer, inputFocado === 'cidade' && styles.inputContainerFocused]}>
-                <TextInput style={styles.inputLocation} value={cidade} onChangeText={setCidade} placeholder="Sua cidade" placeholderTextColor="#666" onFocus={() => setInputFocado('cidade')} onBlur={() => setInputFocado(null)} />
+                <TextInput style={styles.inputLocation} value={cidade} onChangeText={setCidade} placeholder="Sua cidade" placeholderTextColor="#FF6B00" onFocus={() => setInputFocado('cidade')} onBlur={() => setInputFocado(null)} />
               </View>
             </View>
             <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
@@ -473,14 +503,14 @@ export default function PerfilAluno({ navigation }) {
             <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
               <Text style={styles.label}>Peso (kg)</Text>
               <View style={[styles.inputContainer, inputFocado === 'peso' && styles.inputContainerFocused]}>
-                <MaterialCommunityIcons name="scale-bathroom" size={18} color={inputFocado === 'peso' ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+                <MaterialCommunityIcons name="scale-bathroom" size={18} color={inputFocado === 'peso' ? theme.colors.primary : "#FF6B00"} style={styles.inputIcon} />
                 <TextInput style={styles.inputHalf} keyboardType="numeric" maxLength={6} value={peso} onChangeText={formatarPeso} placeholder="Ex: 80,5" placeholderTextColor="#666" onFocus={() => setInputFocado('peso')} onBlur={() => setInputFocado(null)} />
               </View>
             </View>
             <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
               <Text style={styles.label}>Altura (cm)</Text>
               <View style={[styles.inputContainer, inputFocado === 'altura' && styles.inputContainerFocused]}>
-                <MaterialCommunityIcons name="human-male-height" size={18} color={inputFocado === 'altura' ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+                <MaterialCommunityIcons name="human-male-height" size={18} color={inputFocado === 'altura' ? theme.colors.primary : "#FF6B00"} style={styles.inputIcon} />
                 <TextInput style={styles.inputHalf} keyboardType="numeric" maxLength={3} value={altura} onChangeText={formatarAltura} placeholder="Ex: 180" placeholderTextColor="#666" onFocus={() => setInputFocado('altura')} onBlur={() => setInputFocado(null)} />
               </View>
             </View>
@@ -578,6 +608,34 @@ export default function PerfilAluno({ navigation }) {
         <View style={styles.preferenceCard}>
           <Text style={styles.cardHeaderTitleSub}>Perfil de Professor Ideal {temPersonal && "🔒"}</Text>
           {renderPremiumList(OPCOES_PERFIL, perfilPersonal, setPerfilPersonal, temPersonal)}
+        </View>
+
+        <View style={styles.preferenceCard}>
+          <Text style={styles.cardHeaderTitleSub}>Preferência de Gênero {temPersonal && "🔒"}</Text>
+          {renderPremiumList(OPCOES_GENERO_TREINADOR, generoTreinador, setGeneroTreinador, temPersonal)}
+        </View>
+
+        <View style={styles.preferenceCard}>
+          <Text style={styles.cardHeaderTitleSub}>Turno de Treino {temPersonal && "🔒"}</Text>
+          {renderPremiumList(OPCOES_TURNO, turnoPreferido, setTurnoPreferido, temPersonal)}
+          
+          {(turnoPreferido && turnoPreferido.id !== "Indiferente") && (
+            <View style={styles.subBox}>
+              <Text style={styles.subBoxTitle}>Possui horário específico? (Opcional)</Text>
+              <TouchableOpacity onPress={temPersonal ? handleLockedPress : null} activeOpacity={temPersonal ? 1 : 0.8}>
+                <View pointerEvents={temPersonal ? "none" : "auto"}>
+                  <TextInput 
+                    style={[styles.inputPremiumSmall, temPersonal && {opacity: 0.5}]} 
+                    placeholder="Ex: Das 06h às 07h..." 
+                    placeholderTextColor="#666" 
+                    value={horarioEspecifico} 
+                    onChangeText={setHorarioEspecifico} 
+                    editable={!temPersonal}
+                  />
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View style={styles.preferenceCard}>

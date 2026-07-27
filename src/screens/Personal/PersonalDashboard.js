@@ -17,8 +17,10 @@ import {
   StyleSheet,
   RefreshControl,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
+  Modal
 } from "react-native";
 import { BlurView } from "expo-blur";
 
@@ -29,7 +31,6 @@ import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
 
 const { width } = Dimensions.get("window");
-const FILTROS_CRM = ["Todos", "Consultoria", "Presencial", "Híbrido", "Sem Contrato"];
 
 export default function PersonalDashboard({ navigation }) {
   const { jornada, progressoPct, completarMissao, loadingJornada, recarregarJornada } = useOnboarding();
@@ -38,6 +39,11 @@ export default function PersonalDashboard({ navigation }) {
   const [activeTab, setActiveTab] = useState("em_contato"); 
   const [modalidadeFilter, setModalidadeFilter] = useState("Todos"); 
   
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("recentes"); 
+  const [isSortModalVisible, setIsSortModalVisible] = useState(false);
+  const [filtrosDinamicos, setFiltrosDinamicos] = useState(["Todos"]);
+
   const [loading, setLoading] = useState(true);
   const [personal, setPersonal] = useState(null);
 
@@ -64,29 +70,44 @@ export default function PersonalDashboard({ navigation }) {
     try {
       const [perfilRes, conexoesRes, mediaRes, ativosRes, inativosRes, planosRes] = await Promise.all([
         supabase.from("personals").select("*").eq("id", session.user.id).single(),
-        supabase.from("conexoes").select("*, usuarios(*)").eq("personal_id", session.user.id).in("status", ["pendente", "em_contato", "lead", "aguardando_personal", "aceito_personal"]).order("criado_em", { ascending: false }),
+        supabase.from("conexoes").select("*, usuarios(*)").eq("personal_id", session.user.id).in("status", ["pendente", "em_contato", "lead", "aguardando_personal", "aceito_personal"]),
         supabase.rpc("get_media_avaliacoes", { p_id: session.user.id }),
-        supabase.from("conexoes").select("*, usuarios(*)").eq("personal_id", session.user.id).eq("status", "aluno_ativo").order("criado_em", { ascending: false }),
-        supabase.from("conexoes").select("*, usuarios(*)").eq("personal_id", session.user.id).eq("status", "inativo").order("criado_em", { ascending: false }),
-        supabase.from("planos").select("aluno_id, servicos_inclusos").eq("personal_id", session.user.id).eq("status", "ativo")
+        supabase.from("conexoes").select("*, usuarios(*)").eq("personal_id", session.user.id).eq("status", "aluno_ativo"),
+        supabase.from("conexoes").select("*, usuarios(*)").eq("personal_id", session.user.id).eq("status", "inativo"),
+        supabase.from("planos").select("aluno_id, servicos_inclusos, dia_vencimento").eq("personal_id", session.user.id).eq("status", "ativo")
       ]);
 
       if (conexoesRes.error) {
         Alert.alert("Erro no Banco", "Falha ao buscar alunos. Verifique o console.");
       }
 
-      if (!perfilRes.error) setPersonal(perfilRes.data);
+      if (!perfilRes.error) {
+        setPersonal(perfilRes.data);
+        const servicos = perfilRes.data.servicos_oferecidos || perfilRes.data.modalidades || [];
+        
+        let arrFiltros = ["Todos"];
+        if (servicos.includes("Consultoria")) arrFiltros.push("Consultoria");
+        if (servicos.includes("Presencial")) arrFiltros.push("Presencial");
+        if (servicos.includes("Consultoria") && servicos.includes("Presencial")) arrFiltros.push("Híbrido");
+        arrFiltros.push("Sem Contrato");
+        
+        setFiltrosDinamicos(arrFiltros);
+      }
 
       const planosMap = new Map();
       if (planosRes.data) {
-        planosRes.data.forEach(p => planosMap.set(p.aluno_id, p.servicos_inclusos || []));
+        planosRes.data.forEach(p => planosMap.set(p.aluno_id, {
+          servicos: p.servicos_inclusos || [],
+          vencimento: p.dia_vencimento || 99 
+        }));
       }
 
       const dataLeads = conexoesRes.data || [];
       const dataInativos = inativosRes.data || [];
       
       const dataAtivos = (ativosRes.data || []).map(c => {
-        const servicosDoAluno = planosMap.get(c.usuario_id) || [];
+        const planoData = planosMap.get(c.usuario_id) || { servicos: [], vencimento: 99 };
+        const servicosDoAluno = planoData.servicos;
         
         let categoriaUi = 'Sem Contrato';
         let isHibrido = false;
@@ -101,6 +122,7 @@ export default function PersonalDashboard({ navigation }) {
         return {
           ...c,
           servicos_array: servicosDoAluno, 
+          dia_vencimento: planoData.vencimento,
           modalidadeUi: categoriaUi, 
           isHibrido: isHibrido
         };
@@ -161,56 +183,36 @@ export default function PersonalDashboard({ navigation }) {
   };
 
   const getListaAtiva = () => {
-    if (activeTab === "em_contato") return emContato;
-    if (activeTab === "inativo") return inativos;
-    if (activeTab === "aluno_ativo") {
-      
-      if (modalidadeFilter === "Consultoria") return ativos.filter(a => !a.isHibrido && a.servicos_array.includes("Consultoria"));
-      if (modalidadeFilter === "Presencial") return ativos.filter(a => !a.isHibrido && a.servicos_array.includes("Presencial"));
-      if (modalidadeFilter === "Híbrido") return ativos.filter(a => a.isHibrido);
-      if (modalidadeFilter === "Sem Contrato") return ativos.filter(a => a.servicos_array.length === 0);
-      
-      const hibridos = ativos.filter(a => a.isHibrido);
-      const consultoria = ativos.filter(a => !a.isHibrido && a.servicos_array.includes("Consultoria"));
-      const presencial = ativos.filter(a => !a.isHibrido && a.servicos_array.includes("Presencial"));
-      const indefinidos = ativos.filter(a => a.servicos_array.length === 0);
-
-      let listaAgrupada = [];
-      if (hibridos.length > 0) {
-        listaAgrupada.push({ isHeader: true, title: "Alunos Híbridos (Combos)", icon: "diamond-outline", id: "header-hibrido" });
-        listaAgrupada.push(...hibridos);
-      }
-      if (consultoria.length > 0) {
-        listaAgrupada.push({ isHeader: true, title: "Apenas Consultoria", icon: "phone-portrait-outline", id: "header-consultoria" });
-        listaAgrupada.push(...consultoria);
-      }
-      if (presencial.length > 0) {
-        listaAgrupada.push({ isHeader: true, title: "Apenas Presencial", icon: "barbell-outline", id: "header-presencial" });
-        listaAgrupada.push(...presencial);
-      }
-      if (indefinidos.length > 0) {
-        listaAgrupada.push({ isHeader: true, title: "Sem Contrato Ativo", icon: "alert-circle-outline", id: "header-semcontrato" });
-        listaAgrupada.push(...indefinidos);
-      }
-      
-      if (listaAgrupada.length === 0) return [];
-      
-      return listaAgrupada;
+    let lista = [];
+    
+    if (activeTab === "em_contato") lista = [...emContato];
+    else if (activeTab === "inativo") lista = [...inativos];
+    else if (activeTab === "aluno_ativo") {
+      lista = [...ativos];
+      if (modalidadeFilter === "Consultoria") lista = lista.filter(a => !a.isHibrido && a.servicos_array.includes("Consultoria"));
+      else if (modalidadeFilter === "Presencial") lista = lista.filter(a => !a.isHibrido && a.servicos_array.includes("Presencial"));
+      else if (modalidadeFilter === "Híbrido") lista = lista.filter(a => a.isHibrido);
+      else if (modalidadeFilter === "Sem Contrato") lista = lista.filter(a => a.servicos_array.length === 0);
     }
-    return [];
+
+    if (searchQuery.trim() !== "") {
+      const removerAcentos = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const q = removerAcentos(searchQuery);
+      lista = lista.filter(item => removerAcentos(item.usuarios?.nome || "").includes(q));
+    }
+
+    if (sortOrder === "alfabetica") {
+      lista.sort((a, b) => (a.usuarios?.nome || "").localeCompare(b.usuarios?.nome || ""));
+    } else if (sortOrder === "vencimento" && activeTab === "aluno_ativo") {
+      lista.sort((a, b) => a.dia_vencimento - b.dia_vencimento);
+    } else {
+      lista.sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em));
+    }
+
+    return lista;
   };
 
   const renderItem = ({ item }) => {
-    if (item.isHeader) {
-      return (
-        <View style={styles.sectionDivider}>
-          <Ionicons name={item.icon} size={18} color={theme.colors.primary} />
-          <Text style={styles.sectionDividerText}>{item.title}</Text>
-          <View style={styles.sectionDividerLine} />
-        </View>
-      );
-    }
-
     const isAtivo = activeTab === "aluno_ativo";
     const isInativo = activeTab === "inativo";
     const status = item.status;
@@ -270,6 +272,17 @@ export default function PersonalDashboard({ navigation }) {
                 <Ionicons name="calendar-outline" size={12} color={isInativo ? theme.colors.danger : theme.colors.textSecondary} />
                 <Text style={[styles.infoTextBiometria, isInativo && styles.textInativo]}>{freqStr}/sem</Text>
               </View>
+              
+              {/* 🚀 Adicionando a TAG de Vencimento se estiver ordenado por Vencimento */}
+              {(isAtivo && sortOrder === "vencimento" && item.dia_vencimento !== 99) && (
+                <>
+                  <View style={styles.biometriaDivider} />
+                  <View style={styles.biometriaItem}>
+                    <Ionicons name="cash-outline" size={12} color={theme.colors.primary} />
+                    <Text style={[styles.infoTextBiometria, {color: theme.colors.primary}]}>Dia {item.dia_vencimento}</Text>
+                  </View>
+                </>
+              )}
             </View>
           ) : (
             <View style={styles.infoRow}>
@@ -412,9 +425,7 @@ export default function PersonalDashboard({ navigation }) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />}
       >
         
         <WidgetOnboarding 
@@ -478,9 +489,33 @@ export default function PersonalDashboard({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {activeTab === "aluno_ativo" && (
+        {/* 🚀 BUSCA E ORDENAÇÃO */}
+        <View style={styles.searchSortContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color={theme.colors.textSecondary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar aluno por nome..."
+              placeholderTextColor={theme.colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              keyboardAppearance="dark"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery("")} style={{padding: 4}}>
+                <Ionicons name="close-circle" size={18} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity style={styles.sortBtn} onPress={() => setIsSortModalVisible(true)} activeOpacity={0.7}>
+            <Ionicons name="filter" size={20} color={theme.colors.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* 🚀 FILTRO DINÂMICO DE SERVIÇOS (APENAS ATIVOS E SE O PERSONAL OFERECER) */}
+        {activeTab === "aluno_ativo" && filtrosDinamicos.length > 2 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.secondaryFilterContainer}>
-            {FILTROS_CRM.map(mod => (
+            {filtrosDinamicos.map(mod => (
               <TouchableOpacity
                 key={mod}
                 style={[styles.secondaryFilterChip, modalidadeFilter === mod && styles.secondaryFilterChipActive]}
@@ -506,18 +541,55 @@ export default function PersonalDashboard({ navigation }) {
                   color={theme.colors.textMuted}
                 />
               </View>
-              <Text style={styles.emptyTitle}>Nenhum registro aqui</Text>
+              <Text style={styles.emptyTitle}>
+                {searchQuery !== "" ? "Nenhum aluno encontrado" : "Nenhum registro aqui"}
+              </Text>
               <Text style={styles.emptyText}>
-                {activeTab === "em_contato"
+                {searchQuery !== "" 
+                  ? `Ninguém com o nome "${searchQuery}" nesta lista.`
+                  : activeTab === "em_contato"
                   ? "Sua vitrine está online! Quando novos alunos se interessarem pelo seu perfil, eles aparecerão aqui."
                   : activeTab === "aluno_ativo"
                   ? "Você não possui alunos ativos para este filtro."
-                  : "Os alunos com ciclos finalizados ou pausados ficarão salvos aqui no seu histórico."}
+                  : "Os alunos com ciclos finalizados ou pausados ficarão salvos aqui."}
               </Text>
             </View>
           }
         />
       </ScrollView>
+
+      {/* 🚀 BOTTOM SHEET DE ORDENAÇÃO */}
+      <Modal visible={isSortModalVisible} transparent animationType="slide" onRequestClose={() => setIsSortModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={{flex: 1}} onPress={() => setIsSortModalVisible(false)} activeOpacity={1} />
+          <View style={styles.bottomSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Ordenar Lista</Text>
+
+            <TouchableOpacity style={styles.sortOption} onPress={() => { setSortOrder("recentes"); setIsSortModalVisible(false); }}>
+              <Text style={[styles.sortOptionText, sortOrder === "recentes" && styles.sortOptionTextActive]}>Mais Recentes</Text>
+              {sortOrder === "recentes" && <Ionicons name="checkmark-circle" size={22} color={theme.colors.primary} />}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.sortOption} onPress={() => { setSortOrder("alfabetica"); setIsSortModalVisible(false); }}>
+              <Text style={[styles.sortOptionText, sortOrder === "alfabetica" && styles.sortOptionTextActive]}>Ordem Alfabética (A-Z)</Text>
+              {sortOrder === "alfabetica" && <Ionicons name="checkmark-circle" size={22} color={theme.colors.primary} />}
+            </TouchableOpacity>
+
+            {activeTab === "aluno_ativo" && (
+              <TouchableOpacity style={styles.sortOption} onPress={() => { setSortOrder("vencimento"); setIsSortModalVisible(false); }}>
+                <Text style={[styles.sortOptionText, sortOrder === "vencimento" && styles.sortOptionTextActive]}>Dia de Vencimento</Text>
+                {sortOrder === "vencimento" && <Ionicons name="checkmark-circle" size={22} color={theme.colors.primary} />}
+              </TouchableOpacity>
+            )}
+            
+            <TouchableOpacity style={styles.sheetBtnClose} onPress={() => setIsSortModalVisible(false)}>
+               <Text style={styles.sheetBtnCloseText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -559,7 +631,7 @@ const styles = StyleSheet.create({
   crmHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20, marginTop: 25 },
   sectionTitle: { color: theme.colors.text, fontSize: 22, fontFamily: theme.fonts.title },
   headerActions: { flexDirection: "row", gap: 10 },
-  actionHeaderBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: theme.colors.surface, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: theme.colors.borderLight },
+  actionHeaderBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: theme.colors.primary, justifyContent: "center", alignItems: "center" },
 
   segmentControl: { flexDirection: "row", backgroundColor: theme.colors.surface, borderRadius: 20, padding: 6, marginBottom: 16, borderWidth: 1, borderColor: "#222" },
   segmentBtn: { flex: 1, paddingVertical: 14, borderRadius: 16, alignItems: "center", borderWidth: 1, borderColor: "transparent" },
@@ -567,15 +639,26 @@ const styles = StyleSheet.create({
   segmentText: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: "700" },
   segmentTextActive: { color: theme.colors.primary, fontWeight: "900" },
 
+  searchSortContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 10 },
+  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surfaceLight, height: 50, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: theme.colors.border },
+  searchInput: { flex: 1, color: theme.colors.text, fontSize: 15, marginLeft: 10, fontFamily: theme.fonts.body, height: '100%' },
+  sortBtn: { width: 50, height: 50, borderRadius: 16, backgroundColor: "rgba(255, 107, 0, 0.1)", justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.3)" },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  bottomSheet: { backgroundColor: theme.colors.surface, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, borderWidth: 1, borderColor: theme.colors.border },
+  sheetHandle: { width: 40, height: 5, borderRadius: 3, backgroundColor: "#444", alignSelf: 'center', marginBottom: 20 },
+  sheetTitle: { color: "#FFF", fontSize: 20, fontFamily: theme.fonts.title, marginBottom: 20, textAlign: 'center' },
+  sortOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: theme.colors.borderLight },
+  sortOptionText: { color: theme.colors.textSecondary, fontSize: 16, fontWeight: '600' },
+  sortOptionTextActive: { color: theme.colors.primary, fontWeight: 'bold' },
+  sheetBtnClose: { marginTop: 25, backgroundColor: theme.colors.surfaceLight, paddingVertical: 16, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border },
+  sheetBtnCloseText: { color: "#FFF", fontSize: 16, fontWeight: 'bold' },
+
   secondaryFilterContainer: { flexDirection: 'row', gap: 10, marginBottom: 20, paddingHorizontal: 2 },
   secondaryFilterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: theme.colors.surfaceLight, borderWidth: 1, borderColor: theme.colors.borderLight },
   secondaryFilterChipActive: { backgroundColor: "rgba(255, 107, 0, 0.15)", borderColor: theme.colors.primary },
   secondaryFilterText: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: "700" },
   secondaryFilterTextActive: { color: theme.colors.primary, fontWeight: "900" },
-
-  sectionDivider: { flexDirection: 'row', alignItems: 'center', marginTop: 15, marginBottom: 15, paddingHorizontal: 5, gap: 8 },
-  sectionDividerText: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
-  sectionDividerLine: { flex: 1, height: 1, backgroundColor: theme.colors.borderLight, marginLeft: 8 },
 
   alunoCard: { flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.surface, padding: 16, borderRadius: 24, marginBottom: 16, borderWidth: 1, borderColor: theme.colors.borderLight },
   alunoCardNovo: { borderColor: theme.colors.primary, backgroundColor: theme.colors.primaryLight },
@@ -613,8 +696,6 @@ const styles = StyleSheet.create({
 
   tagStatusPrimary: { backgroundColor: theme.colors.primary, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
   tagStatusTextPrimary: { color: theme.colors.backgroundPure, fontSize: 10, fontWeight: "900", textTransform: "uppercase" },
-  tagStatusWarning: { backgroundColor: "rgba(255, 215, 0, 0.15)", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255, 215, 0, 0.4)" },
-  tagStatusTextWarning: { color: theme.colors.warning, fontSize: 10, fontWeight: "800", textTransform: "uppercase" },
   tagStatusNeutral: { backgroundColor: theme.colors.surfaceLight, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.borderLight },
   tagStatusTextNeutral: { color: theme.colors.textSecondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" },
   tagStatusDanger: { backgroundColor: "rgba(255, 59, 48, 0.15)", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255, 59, 48, 0.4)" },

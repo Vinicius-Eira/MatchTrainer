@@ -19,50 +19,56 @@ const formatarLocalizacaoPremium = (cidade, bairro) => {
   return cidade.trim();
 };
 
-const calcularPorcentagemMatch = (alunoPrefs, personalEspecs, precoAvaliar, matchType) => {
-  let score = 0; 
+const calcularPorcentagemMatch = (alunoPrefs, personal, precoAvaliar, matchType) => {
+  let score = 20; 
   let motivos = [];
+  
+  if (!alunoPrefs || !personal) return { percentual: 50, motivos: ["Faltam dados para análise exata."] };
+  
+  let specs = null;
+  try { specs = typeof personal.especialidades === 'string' ? JSON.parse(personal.especialidades) : personal.especialidades; } catch(e){}
 
-  if (!alunoPrefs || !personalEspecs) return { percentual: 50, motivos: ["Faltam dados para análise exata."] };
+  if (alunoPrefs.objetivo && specs?.objetivos?.includes(alunoPrefs.objetivo)) {
+    score += 30;
+    motivos.push(`Especialista no seu objetivo principal: ${alunoPrefs.objetivo}.`);
+  }
 
-  if (alunoPrefs.objetivo && personalEspecs.objetivos?.includes(alunoPrefs.objetivo)) {
-    score += 40;
-    motivos.push(`Especialista no seu objetivo principal: ${alunoPrefs.objetivo}`);
-  } else {
-    score += 10;
+  if (alunoPrefs.turno_preferido === "Indiferente" || (alunoPrefs.turno_preferido && personal.turnos_disponiveis?.includes(alunoPrefs.turno_preferido))) {
+    score += 15;
+    motivos.push("O horário de atendimento dele é perfeitamente compatível com a sua rotina.");
   }
 
   if (alunoPrefs.limitacao && alunoPrefs.limitacao !== 'nenhuma') {
-    if (personalEspecs.limitacoes?.includes(alunoPrefs.limitacao)) {
-      score += 25;
-      motivos.push(`Preparado para lidar com: ${alunoPrefs.limitacao}`);
+    if (specs?.limitacoes?.includes(alunoPrefs.limitacao)) {
+      score += 10;
+      motivos.push("Tem qualificação para cuidar da sua necessidade/restrição.");
     }
   } else {
-    score += 25; 
-  }
-
-  if (alunoPrefs.perfil_treinador && personalEspecs.perfil === alunoPrefs.perfil_treinador) {
-    score += 20;
-    motivos.push("A didática dele(a) é exatamente o que você busca.");
-  } else {
-    score += 5;
+    score += 10; 
   }
 
   let priceMatch = false;
   if (alunoPrefs.investimento && precoAvaliar) {
-    if (alunoPrefs.investimento === "base" && precoAvaliar <= 110) priceMatch = true;
-    else if (alunoPrefs.investimento === "mid" && precoAvaliar >= 110 && precoAvaliar <= 150) priceMatch = true;
+    if (alunoPrefs.investimento === "base" && precoAvaliar <= 120) priceMatch = true;
+    else if (alunoPrefs.investimento === "mid" && precoAvaliar >= 110 && precoAvaliar <= 160) priceMatch = true;
     else if (alunoPrefs.investimento === "premium" && precoAvaliar >= 150) priceMatch = true;
   }
-
   if (priceMatch) {
-    score += 15;
-    motivos.push(`Encaixa perfeitamente no seu orçamento para ${matchType}.`);
-  } else {
-    score += 5; 
+    score += 10;
+    motivos.push(`A mensalidade se encaixa perfeitamente no seu orçamento para ${matchType}.`);
   }
 
-  if(motivos.length === 0) motivos.push("Possui perfil altamente compatível com você.");
+  if (alunoPrefs.genero_treinador === "Indiferente" || alunoPrefs.genero_treinador === personal.genero) {
+    score += 10;
+    motivos.push("Possui o perfil pessoal que você procura.");
+  }
+
+  if (alunoPrefs.perfil_treinador && specs?.perfil === alunoPrefs.perfil_treinador) {
+    score += 4;
+    motivos.push("A didática dele(a) é exatamente o que você busca.");
+  }
+
+  if(motivos.length === 0) motivos.push("Possui um perfil de treino altamente compatível com você.");
   
   return { percentual: Math.min(99, score), motivos };
 };
@@ -70,9 +76,10 @@ const calcularPorcentagemMatch = (alunoPrefs, personalEspecs, precoAvaliar, matc
 const getMotivoStyle = (texto) => {
   const t = texto.toLowerCase();
   if (t.includes('objetivo')) return { icon: 'bullseye', color: '#0A84FF', title: 'Objetivo Alinhado', bg: 'rgba(10, 132, 255, 0.1)' };
-  if (t.includes('lidar com') || t.includes('necessidade')) return { icon: 'heartbeat', color: '#FF3B30', title: 'Saúde Protegida', bg: 'rgba(255, 59, 48, 0.1)' };
-  if (t.includes('didática') || t.includes('perfil')) return { icon: 'user-graduate', color: '#FFD60A', title: 'Perfil de Ensino Ideal', bg: 'rgba(255, 214, 10, 0.1)' };
-  if (t.includes('orçamento')) return { icon: 'wallet', color: '#32ADE6', title: 'Investimento Compatível', bg: 'rgba(50, 173, 230, 0.1)' };
+  if (t.includes('horário') || t.includes('rotina')) return { icon: 'clock', color: '#FF9500', title: 'Horário Compatível', bg: 'rgba(255, 149, 0, 0.1)' };
+  if (t.includes('cuidar') || t.includes('necessidade')) return { icon: 'heartbeat', color: '#FF3B30', title: 'Saúde Protegida', bg: 'rgba(255, 59, 48, 0.1)' };
+  if (t.includes('perfil pessoal') || t.includes('didática')) return { icon: 'user-graduate', color: '#FFD60A', title: 'Conexão Pessoal', bg: 'rgba(255, 214, 10, 0.1)' };
+  if (t.includes('orçamento')) return { icon: 'wallet', color: '#32ADE6', title: 'Investimento Aprovado', bg: 'rgba(50, 173, 230, 0.1)' };
   return { icon: 'check-circle', color: '#00E676', title: 'Afinidade Geral', bg: 'rgba(0, 230, 118, 0.1)' };
 };
 
@@ -132,15 +139,12 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
         const { data: uData } = await supabase.from("usuarios").select("preferencias").eq("id", user.id).single();
         const alunoPrefs = uData?.preferencias || {};
         
-        let specs = null;
-        try { specs = typeof prof.especialidades === 'string' ? JSON.parse(prof.especialidades) : prof.especialidades; } catch(e){}
+        const modalidadeAluno = alunoPrefs.servicos_buscados || ["Consultoria", "Presencial"];
+        const modalidadesPersonal = prof.servicos_oferecidos || ["Consultoria", "Presencial"];
         
-        const modalidadeAluno = alunoPrefs.modalidade || "ambos";
-        const modalidadesPersonal = prof.modalidades || ["Consultoria", "Presencial"];
-        
-        let matchType = "Ambos";
-        if (modalidadeAluno === "consultoria" && modalidadesPersonal.includes("Consultoria")) matchType = "Consultoria";
-        else if (modalidadeAluno === "presencial" && modalidadesPersonal.includes("Presencial")) matchType = "Presencial";
+        let matchType = "Híbrido";
+        if (modalidadeAluno.includes("Consultoria") && !modalidadeAluno.includes("Presencial")) matchType = "Consultoria";
+        else if (modalidadeAluno.includes("Presencial") && !modalidadeAluno.includes("Consultoria")) matchType = "Presencial";
 
         let precoA = matchType === "Consultoria" ? prof.preco_consultoria : prof.preco_presencial;
         if (!precoA) precoA = prof.preco_medio;
@@ -148,7 +152,7 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
         setPrecoExibido(precoA);
         setLabelPrecoExibido(matchType === "Consultoria" ? "Mensalidade" : "Por Aula");
 
-        const matchCalculado = calcularPorcentagemMatch(alunoPrefs, specs, precoA, matchType);
+        const matchCalculado = calcularPorcentagemMatch(alunoPrefs, prof, precoA, matchType);
         setMatchData(matchCalculado);
       }
 
@@ -252,7 +256,9 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
   
   const temGaleria = personal.galeria_fotos && Array.isArray(personal.galeria_fotos) && personal.galeria_fotos.length > 0;
   const fotoPerfil = personal.foto_url || "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=600";
-  const modalidadesAtendidas = personal.modalidades || ["Consultoria", "Presencial"];
+  const modalidadesAtendidas = personal.servicos_oferecidos || ["Consultoria", "Presencial"];
+  
+  const isPoucasVagas = personal.status_agenda === "Poucas Vagas" || personal.status_agenda === "Quase Lotada";
 
   return (
     <View style={styles.container}>
@@ -266,6 +272,16 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
+        {/* 🚀 TAG DE ESCASSEZ NO TOPO DO PERFIL */}
+        {isPoucasVagas && (
+          <View style={styles.escassezBanner}>
+            <Ionicons name="time" size={16} color="#FFF" style={{marginRight: 6}} />
+            <Text style={styles.escassezText}>
+              Este treinador está com <Text style={{fontWeight: '900', color: '#FFF'}}>{personal.status_agenda.toUpperCase()}</Text>. Envie sua mensagem logo!
+            </Text>
+          </View>
+        )}
+
         <View style={styles.heroSection}>
           <LinearGradient colors={['rgba(255, 107, 0, 0.15)', '#000000']} style={styles.heroCoverGradient} />
           
@@ -565,7 +581,10 @@ const styles = StyleSheet.create({
   headerAbsolute: { position: "absolute", top: Platform.OS === "ios" ? 55 : 40, left: 20, zIndex: 100 },
   btnVoltar: { backgroundColor: "rgba(20,20,20,0.8)", width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10 },
 
-  heroSection: { alignItems: 'center', paddingTop: 60, paddingBottom: 15, position: 'relative' },
+  escassezBanner: { flexDirection: 'row', backgroundColor: '#FF3B30', paddingVertical: 12, paddingHorizontal: 20, justifyContent: 'center', alignItems: 'center', paddingTop: Platform.OS === "ios" ? 55 : 40, zIndex: 90 },
+  escassezText: { color: '#FFF', fontSize: 12, fontWeight: '600', flexShrink: 1 },
+
+  heroSection: { alignItems: 'center', paddingTop: 40, paddingBottom: 15, position: 'relative' },
   heroCoverGradient: { position: 'absolute', top: 0, width: width, height: 280, opacity: 0.8 },
   
   avatarWrapper: { position: 'relative', marginBottom: 20, zIndex: 2 },
