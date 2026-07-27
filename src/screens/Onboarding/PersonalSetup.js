@@ -25,6 +25,23 @@ import { theme } from "../../theme/theme";
 
 const { width } = Dimensions.get("window");
 
+const OPCOES_GENERO = [
+  { id: "Homem", titulo: "Homem", icon: "man-outline" },
+  { id: "Mulher", titulo: "Mulher", icon: "woman-outline" }
+];
+
+const OPCOES_TURNO = [
+  { id: "Manhã", titulo: "Manhã", desc: "06h às 12h", icon: "sunny-outline" },
+  { id: "Tarde", titulo: "Tarde", desc: "12h às 18h", icon: "partly-sunny-outline" },
+  { id: "Noite", titulo: "Noite", desc: "18h às 22h", icon: "moon-outline" }
+];
+
+const OPCOES_AGENDA = [
+  { id: "Disponível", titulo: "Agenda Livre", desc: "Recebendo alunos", icon: "calendar-outline" },
+  { id: "Poucas Vagas", titulo: "Poucas Vagas", desc: "Alta procura", icon: "flame-outline" },
+  { id: "Quase Lotada", titulo: "Quase Lotada", desc: "Vagas restritas", icon: "lock-closed-outline" }
+];
+
 const OPCOES_SERVICOS = [
   { id: "Consultoria", titulo: "Consultoria no App", icon: "phone-portrait-outline", desc: "Planilhas e suporte" },
   { id: "Presencial", titulo: "Personal Presencial", icon: "barbell-outline", desc: "1 a 1" },
@@ -79,6 +96,10 @@ export default function PersonalSetup({ navigation }) {
   const [cref, setCref] = useState("");
   const [telefone, setTelefone] = useState("");
   
+  const [genero, setGenero] = useState("");
+  const [turnos, setTurnos] = useState([]);
+  const [statusAgenda, setStatusAgenda] = useState("Disponível");
+
   const [cidade, setCidade] = useState("");
   const [bairro, setBairro] = useState("");
   const [latitude, setLatitude] = useState(null);
@@ -86,6 +107,7 @@ export default function PersonalSetup({ navigation }) {
   const [buscandoLocalizacao, setBuscandoLocalizacao] = useState(false);
 
   const [servicosOferecidos, setServicosOferecidos] = useState(["Consultoria"]); 
+  const [servicosBloqueados, setServicosBloqueados] = useState([]); // 🚀 Trava de exclusão
   
   const [precoConsultoria, setPrecoConsultoria] = useState(150);
   const [precoPresencial, setPrecoPresencial] = useState(100);
@@ -115,20 +137,49 @@ export default function PersonalSetup({ navigation }) {
       if (!user) return;
 
       if (user.user_metadata?.nome) setNome(user.user_metadata.nome);
-      if (user.user_metadata?.cref) setCref(user.user_metadata.cref);
+      if (user.user_metadata?.cref) setCref(user.user_metadata.cref.toUpperCase());
+
+      const { data: planosAtivos } = await supabase
+        .from("planos")
+        .select("servicos_inclusos")
+        .eq("personal_id", user.id)
+        .eq("status", "ativo");
+
+      if (planosAtivos) {
+        let bloqueados = [];
+        planosAtivos.forEach(plano => {
+          if (plano.servicos_inclusos) {
+            plano.servicos_inclusos.forEach(servico => {
+              if (!bloqueados.includes(servico)) bloqueados.push(servico);
+            });
+          }
+        });
+        setServicosBloqueados(bloqueados); 
+      }
 
       const { data, error } = await supabase.from("personals").select("*").eq("id", user.id).single();
 
       if (data) {
         if (data.ativo) setIsEditing(true);
-        if (data.cref) setCref(data.cref);
+        if (data.cref) setCref(data.cref.toUpperCase());
         if (data.nome) setNome(data.nome);
         if (data.descricao) setBio(data.descricao);
-        if (data.telefone) setTelefone(data.telefone);
+        
+        if (data.telefone) {
+          let v = data.telefone.replace(/\D/g, '');
+          if (v.length > 2) v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
+          if (v.length > 7) v = v.replace(/(\d{5})(\d)/, '$1-$2');
+          setTelefone(v.substring(0, 15));
+        }
+
         if (data.cidade) setCidade(data.cidade);
         if (data.bairro) setBairro(data.bairro);
         if (data.latitude) setLatitude(data.latitude);
         if (data.longitude) setLongitude(data.longitude);
+        
+        if (data.genero) setGenero(data.genero);
+        if (data.turnos_disponiveis) setTurnos(data.turnos_disponiveis);
+        if (data.status_agenda) setStatusAgenda(data.status_agenda);
         
         if (data.servicos_oferecidos && data.servicos_oferecidos.length > 0) {
           setServicosOferecidos(data.servicos_oferecidos);
@@ -163,8 +214,9 @@ export default function PersonalSetup({ navigation }) {
           setDiferenciais(p.diferenciais || "");
         }
       }
-    } catch (error) {} 
-    finally { setLoadingDados(false); }
+    } catch (error) {
+      console.log("Erro ao carregar dados do personal: ", error);
+    } finally { setLoadingDados(false); }
   };
 
   const obterLocalizacaoAtual = async () => {
@@ -214,6 +266,14 @@ export default function PersonalSetup({ navigation }) {
     setGaleria(prevGaleria => prevGaleria.filter((_, index) => index !== indexToRemove));
   };
 
+  const formatarNome = (texto) => {
+    return texto
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   const formatarWhatsApp = (texto) => {
     let v = texto.replace(/\D/g, '');
     if (v.length > 2) v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
@@ -226,10 +286,28 @@ export default function PersonalSetup({ navigation }) {
     else { setState([...state, item]); }
   };
 
+  const handleToggleServicos = (servicoId) => {
+    if (servicosOferecidos.includes(servicoId)) {
+      if (servicosBloqueados.includes(servicoId)) {
+        Alert.alert(
+          "Ação Bloqueada 🔒", 
+          `Você possui alunos ativos utilizando a ${servicoId}. Conclua ou altere os planos deles antes de remover este serviço da sua vitrine.`
+        );
+        return;
+      }
+      setServicosOferecidos(servicosOferecidos.filter(s => s !== servicoId));
+    } else {
+      setServicosOferecidos([...servicosOferecidos, servicoId]);
+    }
+  };
+
   const handleSalvar = async () => {
     if (!cref?.trim() || !telefone?.trim() || !cidade?.trim() || !nome?.trim()) {
       return Alert.alert("Atenção", "Preencha os dados obrigatórios (*). A localização também é obrigatória.");
     }
+    if (!genero) return Alert.alert("Atenção", "Selecione seu gênero na seção de identificação.");
+    if (turnos.length === 0) return Alert.alert("Atenção", "Selecione pelo menos um turno de atendimento na sua agenda.");
+    
     if (servicosOferecidos.length === 0) {
       return Alert.alert("Atenção", "Selecione pelo menos um Serviço que você oferece.");
     }
@@ -259,13 +337,17 @@ export default function PersonalSetup({ navigation }) {
         id: user.id, 
         email: user.email, 
         nome: nome.trim(), 
-        cref: cref.trim(),
+        cref: cref.trim().toUpperCase(),
         telefone: telefone.trim(), 
         cidade: cidade.trim(), 
         bairro: bairro.trim(),
         latitude: latitude, 
         longitude: longitude, 
         tempo_experiencia: experiencia,
+        
+        genero: genero,
+        turnos_disponiveis: turnos,
+        status_agenda: statusAgenda,
         
         servicos_oferecidos: servicosOferecidos,
         
@@ -283,7 +365,7 @@ export default function PersonalSetup({ navigation }) {
       }, { onConflict: 'id' });
 
       if (error) throw error;
-      Alert.alert("Sucesso!", "Seu perfil está online e atualizado!", [
+      Alert.alert("Sucesso!", "Seu perfil está online e atualizado para o Match!", [
         { text: "Ver Meu Painel", onPress: () => { isEditing ? navigation.goBack() : navigation.replace("PersonalDashboard"); } },
       ]);
     } catch (err) { Alert.alert("Erro", "Falha ao salvar."); } 
@@ -381,28 +463,68 @@ export default function PersonalSetup({ navigation }) {
               <View style={styles.inputIconWrapper}>
                 <Ionicons name="person" size={16} color={theme.colors.primary} />
               </View>
-              <TextInput style={styles.inputPremium} placeholder="Ex: Personal João Silva" placeholderTextColor="#666" value={nome} onChangeText={setNome} onFocus={() => setInputFocado("nome")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
+              <TextInput 
+                style={styles.inputPremium} 
+                placeholder="Ex: Personal João Silva" 
+                placeholderTextColor="#666" 
+                value={nome} 
+                onChangeText={(texto) => setNome(formatarNome(texto))} 
+                onFocus={() => setInputFocado("nome")} 
+                onBlur={() => setInputFocado(null)} 
+                keyboardAppearance="dark" 
+              />
             </View>
           </View>
 
-          <View style={styles.row}>
-            <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.inputLabel}>CREF *</Text>
-              <View style={[styles.inputBox, inputFocado === "cref" && styles.inputBoxFocused]}>
-                <View style={styles.inputIconWrapper}>
-                  <MaterialCommunityIcons name="card-account-details" size={16} color={theme.colors.primary} />
-                </View>
-                <TextInput style={styles.inputPremium} placeholder="0000-G/SP" placeholderTextColor="#666" value={cref} onChangeText={setCref} onFocus={() => setInputFocado("cref")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
+          <Text style={styles.inputLabel}>Seu Gênero *</Text>
+          <View style={{marginBottom: 20}}>
+            {renderNeonGrid(OPCOES_GENERO, genero, setGenero, true)}
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.inputLabel}>CREF Profissional *</Text>
+            <View style={[
+              styles.inputBox, 
+              { borderColor: theme.colors.primary, backgroundColor: "rgba(255, 107, 0, 0.05)" }, 
+              inputFocado === "cref" && styles.inputBoxFocused
+            ]}>
+              <View style={[styles.inputIconWrapper, { backgroundColor: theme.colors.primary }]}>
+                <MaterialCommunityIcons name="card-account-details" size={16} color="#000" />
               </View>
+              <TextInput 
+                style={[styles.inputPremium, { color: theme.colors.primary, fontWeight: 'bold' }]} 
+                placeholder="000000-G/SP" 
+                placeholderTextColor="rgba(255, 107, 0, 0.4)" 
+                value={cref} 
+                onChangeText={(texto) => setCref(texto.toUpperCase())} 
+                onFocus={() => setInputFocado("cref")} 
+                onBlur={() => setInputFocado(null)} 
+                keyboardAppearance="dark" 
+              />
+              <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} />
             </View>
-            <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
-              <Text style={styles.inputLabel}>WhatsApp *</Text>
-              <View style={[styles.inputBox, inputFocado === "wpp" && styles.inputBoxFocused]}>
-                <View style={styles.inputIconWrapper}>
-                  <MaterialCommunityIcons name="whatsapp" size={16} color={theme.colors.primary} />
-                </View>
-                <TextInput style={styles.inputPremium} placeholder="(00) 00000" placeholderTextColor="#666" keyboardType="phone-pad" value={telefone} onChangeText={formatarWhatsApp} onFocus={() => setInputFocado("wpp")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
+            <Text style={{color: '#666', fontSize: 11, marginTop: 6, marginLeft: 4}}>
+              Registro obrigatório para validação do perfil na plataforma.
+            </Text>
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.inputLabel}>WhatsApp para Contato *</Text>
+            <View style={[styles.inputBox, inputFocado === "wpp" && styles.inputBoxFocused]}>
+              <View style={styles.inputIconWrapper}>
+                <MaterialCommunityIcons name="whatsapp" size={16} color={theme.colors.primary} />
               </View>
+              <TextInput 
+                style={styles.inputPremium} 
+                placeholder="(00) 00000-0000" 
+                placeholderTextColor="#666" 
+                keyboardType="phone-pad" 
+                value={telefone} 
+                onChangeText={formatarWhatsApp} 
+                onFocus={() => setInputFocado("wpp")} 
+                onBlur={() => setInputFocado(null)} 
+                keyboardAppearance="dark" 
+              />
             </View>
           </View>
 
@@ -419,7 +541,26 @@ export default function PersonalSetup({ navigation }) {
           <Text style={styles.sectionTitle}>Serviços Oferecidos</Text>
         </View>
         
-        {renderNeonGrid(OPCOES_SERVICOS, servicosOferecidos, setServicosOferecidos)}
+        <View style={styles.gridContainer}>
+          {OPCOES_SERVICOS.map((opt) => {
+            const ativo = servicosOferecidos.includes(opt.id);
+            return (
+              <TouchableOpacity 
+                key={opt.id} 
+                style={[styles.gridItemWithIcon, ativo && styles.gridItemAtivo]} 
+                onPress={() => handleToggleServicos(opt.id)} 
+                activeOpacity={0.8}
+              >
+                {ativo && (
+                  <LinearGradient colors={["rgba(255, 107, 0, 0.1)", "transparent"]} style={StyleSheet.absoluteFill} borderRadius={20} />
+                )}
+                <Ionicons name={opt.icon} size={28} color={ativo ? theme.colors.primary : "#666"} style={{marginBottom: 8}} />
+                <Text style={[styles.gridItemText, ativo && styles.gridItemTextAtivo]}>{opt.titulo}</Text>
+                {opt.desc && <Text style={[styles.gridItemDesc, ativo && {color: "#AAA"}]}>{opt.desc}</Text>}
+              </TouchableOpacity>
+            )
+          })}
+        </View>
 
         {servicosOferecidos.includes("Consultoria") && (
           <View style={styles.priceContainer}>
@@ -465,6 +606,21 @@ export default function PersonalSetup({ navigation }) {
             <Text style={styles.locationResultText}>{cidade}{bairro ? `, ${bairro}` : ''}</Text>
           </View>
         ) : null}
+
+        <View style={[styles.sectionHeader, { marginTop: 35 }]}>
+          <View style={styles.sectionAccent} />
+          <Text style={styles.sectionTitle}>Sua Agenda e Turnos</Text>
+        </View>
+
+        <View style={styles.cardGeral}>
+          <Text style={styles.cardHeaderTitleSub}>Turnos Disponíveis (Match)</Text>
+          <Text style={{color: '#888', fontSize: 13, marginBottom: 15}}>Em quais períodos você tem disponibilidade para encaixar novos alunos?</Text>
+          {renderNeonGrid(OPCOES_TURNO, turnos, setTurnos)}
+
+          <Text style={[styles.cardHeaderTitleSub, {marginTop: 35}]}>Status da sua Agenda</Text>
+          <Text style={{color: '#888', fontSize: 13, marginBottom: 15}}>Isso gera um gatilho de urgência para o aluno fechar o contrato mais rápido.</Text>
+          {renderNeonGrid(OPCOES_AGENDA, statusAgenda, setStatusAgenda, true)}
+        </View>
 
         <View style={[styles.sectionHeader, { marginTop: 35 }]}>
           <View style={styles.sectionAccent} />

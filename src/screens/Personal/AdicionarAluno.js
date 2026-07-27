@@ -21,14 +21,20 @@ import { theme } from "../../theme/theme";
 
 import { useOnboarding } from "../../hooks/useOnboarding";
 
-const OPCOES_SERVICOS = ["Consultoria", "Presencial"];
+const OPCOES_MODALIDADE = [
+  { id: "Consultoria", label: "Consultoria", icon: "phone-portrait-outline" },
+  { id: "Presencial", label: "Presencial", icon: "barbell-outline" },
+  { id: "Híbrido", label: "Híbrido", icon: "diamond-outline" }
+];
 
 export default function AdicionarAluno({ navigation }) {
   const { completarMissao } = useOnboarding();
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [servicosInclusos, setServicosInclusos] = useState(["Consultoria"]); 
+  
+  const [modalidade, setModalidade] = useState("Consultoria"); 
+  
   const [frequencia, setFrequencia] = useState("Mensal"); 
   const [objetivo, setObjetivo] = useState("hipertrofia"); 
   const [mensalidade, setMensalidade] = useState("");
@@ -47,20 +53,9 @@ export default function AdicionarAluno({ navigation }) {
     }
   };
 
-  const toggleServico = (servico) => {
-    if (servicosInclusos.includes(servico)) {
-      setServicosInclusos(servicosInclusos.filter(s => s !== servico));
-    } else {
-      setServicosInclusos([...servicosInclusos, servico]);
-    }
-  };
-
   const handleAdicionarAluno = async () => {
     if (!nome || !email) {
       return Alert.alert("Atenção", "Nome e E-mail são obrigatórios.");
-    }
-    if (servicosInclusos.length === 0) {
-      return Alert.alert("Atenção", "Selecione pelo menos um serviço para o pacote deste aluno.");
     }
     if (!mensalidade) {
       return Alert.alert("Atenção", "O Valor do contrato é obrigatório.");
@@ -83,6 +78,13 @@ export default function AdicionarAluno({ navigation }) {
       const codigoGerado = Math.floor(100000 + Math.random() * 900000).toString();
       const valorFloat = mensalidade ? parseFloat(mensalidade.replace(',', '.')) : 0;
 
+      let servicosDB = [];
+      if (modalidade === "Híbrido") {
+        servicosDB = ["Consultoria", "Presencial"];
+      } else {
+        servicosDB = [modalidade];
+      }
+
       const { error: insertError } = await supabase
         .from('convites_alunos')
         .insert([
@@ -91,7 +93,7 @@ export default function AdicionarAluno({ navigation }) {
             codigo_convite: codigoGerado,
             personal_id: user.id,
             nome: nome.trim(),
-            servicos_inclusos: servicosInclusos,
+            servicos_inclusos: servicosDB, 
             objetivo_principal: objetivo,
             frequencia_pagamento: frequencia,
             valor_mensalidade: valorFloat,
@@ -192,7 +194,6 @@ export default function AdicionarAluno({ navigation }) {
                 <Ionicons name="person-circle" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
                 <Text style={styles.sectionTitle}>Dados Cadastrais</Text>
               </View>
-              <Text style={styles.sectionDesc}>Informações básicas para identificação no sistema.</Text>
             </View>
             
             <View style={[styles.inputBox, inputFocado === "nome" && styles.inputBoxFocused]}>
@@ -237,26 +238,39 @@ export default function AdicionarAluno({ navigation }) {
                 <Ionicons name="layers" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
                 <Text style={styles.sectionTitle}>Escopo do Serviço (Pacote)</Text>
               </View>
-              <Text style={styles.sectionDesc}>Selecione todos os serviços que estão inclusos neste contrato.</Text>
+              <Text style={styles.sectionDesc}>O que será entregue a este aluno?</Text>
             </View>
 
-            <View style={styles.servicosContainer}>
-              {OPCOES_SERVICOS.map(servico => {
-                const isSelected = servicosInclusos.includes(servico);
+            <View style={styles.modalidadeContainer}>
+              {OPCOES_MODALIDADE.map(opcao => {
+                const isSelected = modalidade === opcao.id;
+                let iconColor = isSelected ? theme.colors.primary : "#666";
+                if (isSelected && opcao.id === "Híbrido") iconColor = "#0A84FF";
+                
                 return (
                   <TouchableOpacity 
-                    key={servico} 
-                    style={[styles.servicoChip, isSelected && styles.servicoChipActive]} 
-                    onPress={() => toggleServico(servico)} 
+                    key={opcao.id} 
+                    style={[
+                      styles.modalidadeCard, 
+                      isSelected && styles.modalidadeCardActive,
+                      isSelected && opcao.id === "Híbrido" && { borderColor: "#0A84FF", backgroundColor: "rgba(10, 132, 255, 0.08)" }
+                    ]} 
+                    onPress={() => setModalidade(opcao.id)} 
                     activeOpacity={0.8}
                   >
                     <Ionicons 
-                      name={isSelected ? "checkmark-circle" : "add-circle-outline"} 
-                      size={16} 
-                      color={isSelected ? theme.colors.primary : "#666"} 
-                      style={{ marginRight: 6 }} 
+                      name={isSelected ? "checkmark-circle" : opcao.icon} 
+                      size={24} 
+                      color={iconColor} 
+                      style={{ marginBottom: 8 }} 
                     />
-                    <Text style={[styles.servicoChipText, isSelected && styles.servicoChipTextActive]}>{servico}</Text>
+                    <Text style={[
+                      styles.modalidadeCardText, 
+                      isSelected && styles.modalidadeCardTextActive,
+                      isSelected && opcao.id === "Híbrido" && { color: "#0A84FF" }
+                    ]}>
+                      {opcao.label}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -296,63 +310,66 @@ export default function AdicionarAluno({ navigation }) {
                 <Ionicons name="wallet" size={20} color="#FF6B00" style={{ marginRight: 8 }} />
                 <Text style={styles.sectionTitle}>Detalhes Financeiros</Text>
               </View>
-              <Text style={styles.sectionDesc}>Defina o valor e a periodicidade das cobranças.</Text>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.freqScrollContainer}>
-              {frequenciaList.map((item) => {
-                const isActive = frequencia === item.id;
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[styles.freqChip, isActive && styles.freqChipActive]}
-                    onPress={() => setFrequencia(item.id)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.freqChipText, isActive && styles.freqChipTextActive]}>
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            <View style={styles.financeiroCard}>
+              <Text style={styles.financeiroLabel}>Frequência de Cobrança</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.freqScrollContainer}>
+                {frequenciaList.map((item) => {
+                  const isActive = frequencia === item.id;
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={[styles.freqChip, isActive && styles.freqChipActive]}
+                      onPress={() => setFrequencia(item.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.freqChipText, isActive && styles.freqChipTextActive]}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
 
-            <View style={styles.rowInputs}>
-              <View style={[styles.inputBox, { flex: 1.2, marginRight: 8 }, inputFocado === "valor" && styles.inputBoxFocusedFinance]}>
-                <View style={[styles.inputIconWrapper, { backgroundColor: "rgba(0, 230, 118, 0.1)", borderColor: "rgba(0, 230, 118, 0.2)" }]}>
-                  <MaterialCommunityIcons name="currency-brl" size={18} color="#00E676" />
+              <Text style={[styles.financeiroLabel, { marginTop: 10, marginBottom: 10 }]}>Valores e Datas</Text>
+              <View style={styles.rowInputs}>
+                <View style={[styles.inputBox, { flex: 1.2, marginRight: 8, marginBottom: 0 }, inputFocado === "valor" && styles.inputBoxFocusedFinance]}>
+                  <View style={[styles.inputIconWrapper, { backgroundColor: "rgba(0, 230, 118, 0.1)", borderColor: "rgba(0, 230, 118, 0.2)" }]}>
+                    <MaterialCommunityIcons name="currency-brl" size={18} color="#00E676" />
+                  </View>
+                  <TextInput
+                    style={[styles.input, Platform.OS === "web" && { outlineStyle: "none" }]}
+                    placeholder="0,00"
+                    placeholderTextColor="#666"
+                    keyboardType="numeric"
+                    value={mensalidade}
+                    onChangeText={handleMoneyChange}
+                    onFocus={() => setInputFocado("valor")}
+                    onBlur={() => setInputFocado(null)}
+                    cursorColor="#00E676"
+                    keyboardAppearance="dark"
+                  />
                 </View>
-                <TextInput
-                  style={[styles.input, Platform.OS === "web" && { outlineStyle: "none" }]}
-                  placeholder="0,00"
-                  placeholderTextColor="#666"
-                  keyboardType="numeric"
-                  value={mensalidade}
-                  onChangeText={handleMoneyChange}
-                  onFocus={() => setInputFocado("valor")}
-                  onBlur={() => setInputFocado(null)}
-                  cursorColor="#00E676"
-                  keyboardAppearance="dark"
-                />
-              </View>
 
-              <View style={[styles.inputBox, { flex: 0.8, marginLeft: 8 }, inputFocado === "vencimento" && styles.inputBoxFocusedFinance]}>
-                <View style={[styles.inputIconWrapper, { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.6)" }]}>
-                  <Ionicons name="calendar" size={18} color="#FF6B00" />
+                <View style={[styles.inputBox, { flex: 0.8, marginLeft: 8, marginBottom: 0 }, inputFocado === "vencimento" && styles.inputBoxFocusedFinance]}>
+                  <View style={[styles.inputIconWrapper, { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.6)" }]}>
+                    <Ionicons name="calendar" size={18} color="#FF6B00" />
+                  </View>
+                  <TextInput
+                    style={[styles.input, Platform.OS === "web" && { outlineStyle: "none" }]}
+                    placeholder="Venc."
+                    placeholderTextColor="#666"
+                    keyboardType="numeric"
+                    maxLength={2}
+                    value={vencimento}
+                    onChangeText={setVencimento}
+                    onFocus={() => setInputFocado("vencimento")}
+                    onBlur={() => setInputFocado(null)}
+                    cursorColor="#00E676"
+                    keyboardAppearance="dark"
+                  />
                 </View>
-                <TextInput
-                  style={[styles.input, Platform.OS === "web" && { outlineStyle: "none" }]}
-                  placeholder="Venc."
-                  placeholderTextColor="#666"
-                  keyboardType="numeric"
-                  maxLength={2}
-                  value={vencimento}
-                  onChangeText={setVencimento}
-                  onFocus={() => setInputFocado("vencimento")}
-                  onBlur={() => setInputFocado(null)}
-                  cursorColor="#00E676"
-                  keyboardAppearance="dark"
-                />
               </View>
             </View>
 
@@ -402,18 +419,8 @@ export default function AdicionarAluno({ navigation }) {
                   <Ionicons name="sync" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.infoTitle}>Automação Financeira</Text>
-                  <Text style={styles.infoDesc}>Assim que o aluno validar o código, o seu painel de Recebimentos será atualizado com esta nova previsão de cobrança.</Text>
-                </View>
-              </View>
-
-              <View style={styles.infoCard}>
-                <View style={[styles.infoIconBox, { backgroundColor: "rgba(0, 230, 118, 0.1)", borderColor: "rgba(0, 230, 118, 0.2)" }]}>
-                  <Ionicons name="cellular" size={20} color="#00E676" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.infoTitle}>Sincronização de Painel</Text>
-                  <Text style={styles.infoDesc}>O aluno será inserido no seu Dashboard já com as tags {servicosInclusos.length > 0 ? `[${servicosInclusos.join(', ')}]` : ''} definidas.</Text>
+                  <Text style={styles.infoTitle}>Automação de Painel</Text>
+                  <Text style={styles.infoDesc}>Este aluno será inserido no seu Dashboard já segmentado como <Text style={{fontWeight: 'bold', color: '#FFF'}}>[{modalidade}]</Text>.</Text>
                 </View>
               </View>
             </View>
@@ -432,19 +439,7 @@ const styles = StyleSheet.create({
   glowBottomRight: { position: "absolute", bottom: -50, right: -100, width: 350, height: 350, borderRadius: 175, backgroundColor: "#00E676", opacity: 0.08, blurRadius: 100 },
 
   headerGlass: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: Platform.OS === "ios" ? 60 : 40,
-    paddingBottom: 15,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
+    position: "absolute", top: 0, left: 0, right: 0, zIndex: 100, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: Platform.OS === "ios" ? 60 : 40, paddingBottom: 15, paddingHorizontal: 20, borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.05)",
   },
   btnVoltar: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.05)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
   headerTitle: { fontFamily: theme.fonts.title, fontSize: 14, color: "#FFF", letterSpacing: 1.5, textTransform: "uppercase" },
@@ -472,17 +467,16 @@ const styles = StyleSheet.create({
   
   inputIconWrapper: { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.03)", justifyContent: "center", alignItems: "center", marginRight: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
   inputIconWrapperFocused: { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.2)" },
-  
   input: { flex: 1, color: "#FFF", fontSize: 16, fontFamily: theme.fonts.body, height: "100%", backgroundColor: "transparent" },
 
   inputBoxArea: { backgroundColor: "#111", borderRadius: 20, borderWidth: 1, borderColor: "#222", padding: 16, height: 120, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 },
   inputArea: { flex: 1, color: "#FFF", fontSize: 15, fontFamily: theme.fonts.body, textAlignVertical: 'top', backgroundColor: "transparent", lineHeight: 22 },
 
-  servicosContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingLeft: 2 },
-  servicoChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: "#111", paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, borderWidth: 1, borderColor: "#222", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 5 },
-  servicoChipActive: { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: theme.colors.primary },
-  servicoChipText: { color: "#888", fontSize: 13, fontWeight: "bold", letterSpacing: 0.3 },
-  servicoChipTextActive: { color: theme.colors.primary, fontWeight: "900" },
+  modalidadeContainer: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginBottom: 24 },
+  modalidadeCard: { flex: 1, height: 90, backgroundColor: "#111", borderRadius: 18, borderWidth: 1, borderColor: "#222", justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
+  modalidadeCardActive: { borderColor: theme.colors.primary, backgroundColor: "rgba(255, 107, 0, 0.08)", shadowColor: theme.colors.primary, shadowOpacity: 0.2 },
+  modalidadeCardText: { color: "#888", fontSize: 12, fontWeight: "bold", letterSpacing: 0.2 },
+  modalidadeCardTextActive: { color: theme.colors.primary, fontWeight: "900" },
 
   selectorGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: 15 },
   gridButton: { width: "48%", height: 100, backgroundColor: "#111", borderRadius: 20, justifyContent: "center", alignItems: "center", marginBottom: 15, borderWidth: 1, borderColor: "#222", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 4, position: 'relative', overflow: 'hidden' },
@@ -490,22 +484,25 @@ const styles = StyleSheet.create({
   gridIconBox: { width: 40, height: 40, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.03)", justifyContent: 'center', alignItems: 'center', marginBottom: 6 },
   gridIconBoxActive: { backgroundColor: "rgba(255, 107, 0, 0.15)" },
 
-  freqScrollContainer: { flexDirection: 'row', gap: 12, marginBottom: 20, paddingHorizontal: 2, paddingVertical: 4 },
-  freqChip: { paddingHorizontal: 20, paddingVertical: 14, borderRadius: 16, backgroundColor: "#111", borderWidth: 1, borderColor: "#222", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
+  financeiroCard: { backgroundColor: "#111", borderRadius: 24, padding: 20, borderWidth: 1, borderColor: "#222", marginBottom: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 6 },
+  financeiroLabel: { color: "#888", fontSize: 13, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
+  
+  freqScrollContainer: { flexDirection: 'row', gap: 10, paddingBottom: 4 },
+  freqChip: { paddingHorizontal: 18, paddingVertical: 12, borderRadius: 14, backgroundColor: "#1A1A1A", borderWidth: 1, borderColor: "#333" },
   freqChipActive: { backgroundColor: "rgba(0, 230, 118, 0.1)", borderColor: "#00E676" },
-  freqChipText: { color: "#888", fontSize: 13, fontWeight: "800", letterSpacing: 0.5 },
+  freqChipText: { color: "#666", fontSize: 13, fontWeight: "bold", letterSpacing: 0.3 },
   freqChipTextActive: { color: "#00E676", fontWeight: "900" },
 
   selectorText: { color: "#888", fontWeight: "700", fontSize: 14, letterSpacing: 0.3 },
   selectorTextActive: { color: theme.colors.primary, fontWeight: "900" },
 
-  rowInputs: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
+  rowInputs: { flexDirection: "row", justifyContent: "space-between" },
 
-  btnPrimary: { marginTop: 35, borderRadius: 22, shadowColor: "#00E676", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 10 },
+  btnPrimary: { marginTop: 25, borderRadius: 22, shadowColor: "#00E676", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 10 },
   btnGradient: { flexDirection: "row", height: 64, borderRadius: 22, justifyContent: "center", alignItems: "center" },
   btnPrimaryText: { color: "#000", fontSize: 16, fontWeight: "900", letterSpacing: 0.5, textTransform: "uppercase" },
 
-  infoContainer: { marginTop: 40, gap: 14 },
+  infoContainer: { marginTop: 25 },
   infoCard: { flexDirection: "row", backgroundColor: "#111", borderRadius: 20, padding: 20, borderWidth: 1, borderColor: "#222", alignItems: "center" },
   infoIconBox: { width: 48, height: 48, borderRadius: 16, justifyContent: "center", alignItems: "center", marginRight: 16, borderWidth: 1 },
   infoTitle: { color: "#FFF", fontSize: 15, fontWeight: "bold", marginBottom: 6, letterSpacing: 0.3 },

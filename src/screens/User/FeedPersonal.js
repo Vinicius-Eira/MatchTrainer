@@ -60,12 +60,10 @@ export default function FeedPersonal({ navigation }) {
       } 
 
       const { data: matches, error: matchError } = await supabase.rpc("get_match_personals", { p_aluno_id: user.id });
-      
       if (matchError) throw matchError;
 
       if (matches && matches.length > 0) {
         const personalIds = matches.map(m => m.personal_id);
-        
         const { data: perfisFull } = await supabase.from('personals').select('*').in('id', personalIds);
 
         const processados = await Promise.all(matches.map(async (m) => {
@@ -76,11 +74,15 @@ export default function FeedPersonal({ navigation }) {
 
           let motivos = [];
           const det = m.detalhes_pontuacao || {};
-          if (det.peso_objetivo > 0) motivos.push("Especialista no seu principal objetivo de treino.");
-          if (det.peso_perfil > 0) motivos.push("O estilo de ensino bate perfeitamente com você.");
-          if (det.peso_preco > 0) motivos.push("O valor se encaixa muito bem no seu orçamento.");
-          if (det.peso_distancia > 0) motivos.push("Está localizado bem perto de você.");
-          if (motivos.length === 0) motivos.push("Possui um perfil altamente compatível com sua busca.");
+          
+          if (det.peso_objetivo > 0) motivos.push({ icone: "🎯", texto: "Especialista no seu principal objetivo." });
+          if (det.peso_distancia > 0) motivos.push({ icone: "📍", texto: `Apenas ${Number(m.distancia_km).toFixed(1)} km de você.` });
+          if (det.peso_disponibilidade > 0) motivos.push({ icone: "🌙", texto: "Turno compatível com a sua rotina." });
+          if (det.peso_preco > 0) motivos.push({ icone: "💰", texto: "Dentro da sua faixa de preço ideal." });
+          if (det.peso_especialidade > 0) motivos.push({ icone: "💪", texto: "Experiência com suas necessidades e restrições." });
+          if (det.peso_genero > 0) motivos.push({ icone: "✨", texto: "Bate com a sua preferência de perfil." });
+          
+          if (motivos.length === 0) motivos.push({ icone: "🤝", texto: "Perfil altamente compatível com sua busca geral." });
 
           let badgeUi = "HÍBRIDO";
           let iconUi = "diamond";
@@ -123,11 +125,11 @@ export default function FeedPersonal({ navigation }) {
 
   const aplicarFiltros = (lista, maxKm) => {
     let filtrados = lista.filter(p => {
-      if (p.distanciaReal > 100) return true; 
+      const isApenasConsultoria = p.servicos_oferecidos.length === 1 && p.servicos_oferecidos[0] === 'Consultoria';
+      if (isApenasConsultoria) return true; 
       
       return p.distanciaReal <= maxKm;
     });
-
     setPersonalsExibidos(filtrados);
   };
 
@@ -158,11 +160,10 @@ export default function FeedPersonal({ navigation }) {
     const local = formatarBairroCidade(item.cidade, item.bairro);
     
     const isConsultoria = item.distanciaReal > 100; 
-    const distanciaStr = isConsultoria 
-      ? "📱 100% Online" 
-      : `a ${item.distanciaReal.toFixed(1)} km`;
-
+    const distanciaStr = isConsultoria ? "📱 100% Online" : `a ${item.distanciaReal.toFixed(1)} km`;
     const corBadge = item.badgeUi === 'HÍBRIDO' ? "#0A84FF" : theme.colors.primary;
+
+    const isPoucasVagas = item.status_agenda === "Poucas Vagas" || item.status_agenda === "Quase Lotada";
 
     return (
       <View style={styles.premiumCardContainer}>
@@ -202,7 +203,17 @@ export default function FeedPersonal({ navigation }) {
         </View>
 
         <View style={styles.cardContentBox}>
-          <View style={styles.bioWrapper}>
+          
+          {isPoucasVagas && (
+            <View style={styles.agendaAlertBox}>
+              <Ionicons name="time" size={14} color="#FFF" style={{marginRight: 6}} />
+              <Text style={styles.agendaAlertText}>
+                {item.status_agenda === "Quase Lotada" ? "AGENDA QUASE LOTADA" : "POUCAS VAGAS DISPONÍVEIS"}
+              </Text>
+            </View>
+          )}
+
+          <View style={[styles.bioWrapper, isPoucasVagas && {marginTop: 10}]}>
             <MaterialCommunityIcons name="format-quote-open" size={24} color={theme.colors.borderLight} style={styles.quoteIcon} />
             <Text style={styles.bioText} numberOfLines={3}>
               {item.descricao || "Profissional focado em resultados, pronto para te ajudar a alcançar sua melhor versão."}
@@ -215,9 +226,9 @@ export default function FeedPersonal({ navigation }) {
                 <Text style={styles.tagPremiumText}>{esp}</Text>
               </View>
             ))}
-            {item.specsParsed?.subs?.slice(0, 3).map((sub, i) => (
-              <View key={`sub-${i}`} style={styles.tagSecondary}>
-                <Text style={styles.tagSecondaryText}>{sub}</Text>
+            {item.turnos_disponiveis?.slice(0, 2).map((turno, i) => (
+              <View key={`turno-${i}`} style={styles.tagSecondary}>
+                <Text style={styles.tagSecondaryText}>{turno}</Text>
               </View>
             ))}
           </View>
@@ -309,7 +320,7 @@ export default function FeedPersonal({ navigation }) {
           <View style={styles.emptyState}>
             <MaterialCommunityIcons name="map-marker-off" size={60} color={theme.colors.primary} style={{marginBottom: 15}} />
             <Text style={styles.emptyTitle}>Nenhum Match Perfeito</Text>
-            <Text style={styles.emptyText}>Por segurança e qualidade, exibimos apenas profissionais com alta compatibilidade de saúde e objetivo.</Text>
+            <Text style={styles.emptyText}>Por segurança e qualidade, exibimos apenas profissionais com alta compatibilidade com seu objetivo e turno.</Text>
             <Text style={[styles.emptyText, {marginTop: 10, fontSize: 13, color: theme.colors.textMuted}]}>Tente aumentar a distância no radar acima.</Text>
           </View>
         }
@@ -328,8 +339,8 @@ export default function FeedPersonal({ navigation }) {
             <View style={styles.modalBody}>
               {matchSelecionado?.matchMotivos?.map((motivo, index) => (
                 <View key={index} style={styles.motivoRow}>
-                  <Ionicons name="checkmark-circle" size={22} color={theme.colors.success} style={{marginTop: 2}} />
-                  <Text style={styles.motivoText}>{motivo}</Text>
+                  <Text style={{ fontSize: 18, marginTop: 1 }}>{motivo.icone}</Text>
+                  <Text style={styles.motivoText}>{motivo.texto}</Text>
                 </View>
               ))}
             </View>
@@ -386,6 +397,9 @@ const styles = StyleSheet.create({
   distanceTextOnline: { color: "#00E676", fontWeight: '900' },
 
   cardContentBox: { padding: 20, paddingTop: 20 },
+
+  agendaAlertBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FF3B30', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginBottom: 10 },
+  agendaAlertText: { color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
 
   bioWrapper: { position: 'relative', marginBottom: 18 },
   quoteIcon: { position: 'absolute', top: -5, left: -5, opacity: 0.4 },

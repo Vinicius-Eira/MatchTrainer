@@ -14,7 +14,7 @@ import {
   StatusBar,
   Dimensions
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { LinearGradient } from "expo-linear-gradient";
@@ -58,6 +58,19 @@ const OPCOES_PERFIL = [
   { id: "estrategista", titulo: "O Estrategista", desc: "Foco 100% em planilhas, metas claras e progressão.", icon: "stats-chart-outline" },
 ];
 
+const OPCOES_GENERO_TREINADOR = [
+  { id: "Indiferente", titulo: "Indiferente", desc: "Me importo apenas com a qualidade técnica do profissional.", icon: "people-outline" },
+  { id: "Mulher", titulo: "Apenas Mulheres", desc: "Me sinto mais confortável treinando com uma treinadora.", icon: "woman-outline" },
+  { id: "Homem", titulo: "Apenas Homens", desc: "Prefiro que meu treinador seja do gênero masculino.", icon: "man-outline" },
+];
+
+const OPCOES_TURNO = [
+  { id: "Manhã", titulo: "Manhã (06h às 12h)", desc: "Gosto de treinar cedo para começar bem o dia.", icon: "sunny-outline" },
+  { id: "Tarde", titulo: "Tarde (12h às 18h)", desc: "Aproveito o horário de almoço ou meio da tarde.", icon: "partly-sunny-outline" },
+  { id: "Noite", titulo: "Noite (18h às 22h)", desc: "Meu dia é corrido, treino após o trabalho.", icon: "moon-outline" },
+  { id: "Indiferente", titulo: "Horários Variados", desc: "Trabalho por turnos ou tenho agenda bem flexível.", icon: "shuffle-outline" },
+];
+
 const OPCOES_FREQUENCIA = [
   { id: "1-2", titulo: "1 a 2 dias por semana", desc: "Minha rotina é muito apertada, mas quero iniciar.", icon: "calendar-outline" },
   { id: "3-4", titulo: "3 a 4 dias por semana", desc: "Consigo manter uma constância saudável e contínua.", icon: "calendar-outline" },
@@ -78,45 +91,15 @@ const OPCOES_INVESTIMENTO = [
   { id: "premium", titulo: "A partir de R$ 160 / mês", desc: "Treinadores de Elite e acompanhamento super VIP.", icon: "diamond-outline" }
 ];
 
-const SUB_SAUDE = [
-  { titulo: "Melhorar Postura", icon: "body-outline" },
-  { titulo: "Dores nas Costas", icon: "bandage-outline" },
-  { titulo: "Recomendação Médica", icon: "medkit-outline" },
-  { titulo: "Reduzir Stress / Sono", icon: "moon-outline" },
-  { titulo: "Terceira Idade", icon: "walk-outline" }
-];
+const SUB_SAUDE = [ { titulo: "Melhorar Postura", icon: "body-outline" }, { titulo: "Dores nas Costas", icon: "bandage-outline" }, { titulo: "Recomendação Médica", icon: "medkit-outline" }, { titulo: "Reduzir Stress / Sono", icon: "moon-outline" }, { titulo: "Terceira Idade", icon: "walk-outline" } ];
+const SUB_ESPORTE = [ { titulo: "Corrida / Maratona", icon: "walk-outline" }, { titulo: "Artes Marciais", icon: "hand-left-outline" }, { titulo: "Natação", icon: "water-outline" }, { titulo: "Futebol / Quadra", icon: "football-outline" }, { titulo: "Crossfit", icon: "barbell-outline" }, { titulo: "Ciclismo", icon: "bicycle-outline" }, { titulo: "Outro", icon: "star-outline" } ];
+const SUB_LESAO = [ { titulo: "Joelho", icon: "accessibility-outline" }, { titulo: "Lombar / Coluna", icon: "body-outline" }, { titulo: "Ombro", icon: "fitness-outline" }, { titulo: "Cervical", icon: "person-outline" }, { titulo: "Quadril", icon: "walk-outline" }, { titulo: "Tornozelo", icon: "footsteps-outline" }, { titulo: "Outra", icon: "add-circle-outline" } ];
+const SUB_CLINICA = [ { titulo: "Hipertensão", icon: "pulse-outline" }, { titulo: "Diabetes", icon: "water-outline" }, { titulo: "Asma", icon: "leaf-outline" }, { titulo: "Cardiopatia", icon: "heart-half-outline" }, { titulo: "Outra", icon: "add-circle-outline" } ];
 
-const SUB_ESPORTE = [
-  { titulo: "Corrida / Maratona", icon: "walk-outline" },
-  { titulo: "Artes Marciais", icon: "hand-left-outline" },
-  { titulo: "Natação", icon: "water-outline" },
-  { titulo: "Futebol / Quadra", icon: "football-outline" },
-  { titulo: "Crossfit", icon: "barbell-outline" },
-  { titulo: "Ciclismo", icon: "bicycle-outline" },
-  { titulo: "Outro", icon: "star-outline" }
-];
-
-const SUB_LESAO = [
-  { titulo: "Joelho", icon: "accessibility-outline" },
-  { titulo: "Lombar / Coluna", icon: "body-outline" },
-  { titulo: "Ombro", icon: "fitness-outline" },
-  { titulo: "Cervical", icon: "person-outline" },
-  { titulo: "Quadril", icon: "walk-outline" },
-  { titulo: "Tornozelo", icon: "footsteps-outline" },
-  { titulo: "Outra", icon: "add-circle-outline" }
-];
-
-const SUB_CLINICA = [
-  { titulo: "Hipertensão", icon: "pulse-outline" },
-  { titulo: "Diabetes", icon: "water-outline" },
-  { titulo: "Asma", icon: "leaf-outline" },
-  { titulo: "Cardiopatia", icon: "heart-half-outline" },
-  { titulo: "Outra", icon: "add-circle-outline" }
-];
 
 export default function ClienteSetup({ navigation }) {
   const [step, setStep] = useState(0);
-  const totalSteps = 8; 
+  const totalSteps = 10; 
 
   const [nome, setNome] = useState("");
   const [cidade, setCidade] = useState("");
@@ -128,7 +111,7 @@ export default function ClienteSetup({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [buscandoLocal, setBuscandoLocal] = useState(false);
 
-  const [servicosBuscados, setServicosBuscados] = useState([]); 
+  const [servicoBuscado, setServicoBuscado] = useState(null); 
 
   const [objetivo, setObjetivo] = useState(null);
   const [subObjetivo, setSubObjetivo] = useState([]);
@@ -137,6 +120,11 @@ export default function ClienteSetup({ navigation }) {
   const [subLimitacao, setSubLimitacao] = useState([]);
   const [outraLimitacaoTexto, setOutraLimitacaoTexto] = useState("");
   const [perfilPersonal, setPerfilPersonal] = useState(null);
+  
+  const [generoTreinador, setGeneroTreinador] = useState(null);
+  const [turnoPreferido, setTurnoPreferido] = useState(null);
+  const [horarioEspecifico, setHorarioEspecifico] = useState("");
+
   const [frequencia, setFrequencia] = useState(null);
   const [localTreino, setLocalTreino] = useState(null);
   const [investimento, setInvestimento] = useState(null);
@@ -175,9 +163,7 @@ export default function ClienteSetup({ navigation }) {
       });
       if (geocode.length > 0) {
         const { district, city, subregion, region } = geocode[0];
-        setCidade(
-          `${district ? district + ", " : ""}${city || subregion} - ${region}`,
-        );
+        setCidade(`${district ? district + ", " : ""}${city || subregion} - ${region}`);
       }
     } catch (error) {
       Alert.alert("Aviso", "Não foi possível buscar GPS. Digite manualmente.");
@@ -210,21 +196,6 @@ export default function ClienteSetup({ navigation }) {
     setAltura(v);
   };
 
-  const toggleModalidade = (id) => {
-    if (id === "indiferente") {
-      setServicosBuscados(["indiferente"]);
-    } else {
-      let novosServicos = servicosBuscados.filter(item => item !== "indiferente"); // Remove o indiferente se existir
-      
-      if (novosServicos.includes(id)) {
-        novosServicos = novosServicos.filter((item) => item !== id);
-      } else {
-        novosServicos.push(id);
-      }
-      setServicosBuscados(novosServicos);
-    }
-  };
-
   const toggleMultiSelect = (item, state, setState) => {
     if (state.includes(item)) {
       if (item === "Outra" || item === "Outro") setOutraLimitacaoTexto("");
@@ -255,9 +226,11 @@ export default function ClienteSetup({ navigation }) {
         dataBanco = `${parts[2]}-${parts[1]}-${parts[0]}`;
       }
 
-      let servicosParaSalvar = servicosBuscados;
-      if (servicosBuscados.includes("indiferente")) {
+      let servicosParaSalvar = [];
+      if (servicoBuscado?.id === "indiferente") {
         servicosParaSalvar = ["Consultoria", "Presencial"];
+      } else if (servicoBuscado) {
+        servicosParaSalvar = [servicoBuscado.id];
       }
 
       const preferencias = {
@@ -267,10 +240,11 @@ export default function ClienteSetup({ navigation }) {
         historico: historico?.id,
         limitacao: limitacao?.id,
         sub_limitacao: subLimitacao.length > 0 ? subLimitacao : null,
-        detalhe_outra_limitacao: subLimitacao.includes("Outra")
-          ? outraLimitacaoTexto.trim()
-          : null,
+        detalhe_outra_limitacao: subLimitacao.includes("Outra") ? outraLimitacaoTexto.trim() : null,
         perfil_treinador: perfilPersonal?.id,
+        genero_treinador: generoTreinador?.id, 
+        turno_preferido: turnoPreferido?.id,   
+        horario_especifico: horarioEspecifico.trim() || null, 
         frequencia: frequencia?.id,
         local_treino: localTreino?.id,
         investimento: investimento?.id,
@@ -333,7 +307,6 @@ export default function ClienteSetup({ navigation }) {
         <Text style={styles.cardDesc}>{item.desc}</Text>
       </View>
       
-      {/* Visual de Checkbox ou Radio dependendo do isMultiSelect */}
       <View style={[isMultiSelect ? styles.checkbox : styles.radio, isSelected && (isMultiSelect ? styles.checkboxSelected : styles.radioSelected)]}>
         {isSelected && <View style={isMultiSelect ? styles.checkboxInner : styles.radioInner} />}
       </View>
@@ -380,7 +353,7 @@ export default function ClienteSetup({ navigation }) {
 
   const isAvançarDesabilitado = () => {
     if (loading) return true;
-    if (step === 1 && servicosBuscados.length === 0) return true;
+    if (step === 1 && !servicoBuscado) return true; 
     if (step === 2 && (!objetivo || (objetivo?.hasSub && subObjetivo.length === 0))) return true;
     if (step === 3 && !historico) return true;
     if (step === 4) {
@@ -389,28 +362,31 @@ export default function ClienteSetup({ navigation }) {
       if (limitacao?.hasSub && subLimitacao.includes("Outra") && !outraLimitacaoTexto.trim()) return true;
     }
     if (step === 5 && !perfilPersonal) return true;
-    if (step === 6 && !frequencia) return true;
-    if (step === 7 && !localTreino) return true; 
-    if (step === 8 && !investimento) return true;
+    if (step === 6 && !generoTreinador) return true; 
+    if (step === 7 && !turnoPreferido) return true;  
+    if (step === 8 && !frequencia) return true;
+    if (step === 9 && !localTreino) return true; 
+    if (step === 10 && !investimento) return true;
     return false;
   };
 
+  const formatarNome = (texto) => {
+    return texto
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
       <View style={styles.glowTopLeft} />
       <View style={styles.glowBottomRight} />
 
       <BlurView intensity={Platform.OS === 'ios' ? 80 : 100} tint="dark" style={styles.headerAbsolute}>
         {step > 0 && (
-          <TouchableOpacity
-            style={styles.btnBack}
-            onPress={() => setStep(step - 1)}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity style={styles.btnBack} onPress={() => setStep(step - 1)} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={24} color="#FFF" />
           </TouchableOpacity>
         )}
@@ -427,6 +403,7 @@ export default function ClienteSetup({ navigation }) {
       )}
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        
         {step === 0 && (
           <View style={styles.fadeContainer}>
             <Text style={styles.mainTitle}>Sua <Text style={styles.titleHighlight}>Jornada</Text> começa aqui.</Text>
@@ -447,40 +424,29 @@ export default function ClienteSetup({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Nome Completo *</Text>
+          <View style={styles.inputGroup}>
+             <Text style={styles.inputLabel}>Nome Completo *</Text>
               <View style={[styles.inputBox, inputFocado === "nome" && styles.inputBoxFocused]}>
-                <Ionicons name="person-outline" size={20} color={inputFocado === "nome" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
-                <TextInput 
+              <Ionicons name="person-outline" size={20} color={inputFocado === "nome" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+              <TextInput 
                   style={styles.inputPremium} 
                   placeholder="Como quer ser chamado?" 
                   placeholderTextColor="#666" 
                   value={nome} 
-                  onChangeText={setNome} 
-                  onFocus={() => setInputFocado("nome")}
-                  onBlur={() => setInputFocado(null)}
-                  keyboardAppearance="dark"
-                />
-              </View>
+                  onChangeText={(texto) => setNome(formatarNome(texto))} 
+                  onFocus={() => setInputFocado("nome")} 
+                  onBlur={() => setInputFocado(null)} 
+                  keyboardAppearance="dark" 
+              />
             </View>
+          </View>
 
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
                 <Text style={styles.inputLabel}>Nascimento *</Text>
                 <View style={[styles.inputBox, inputFocado === "nasc" && styles.inputBoxFocused]}>
                   <Ionicons name="calendar-outline" size={20} color={inputFocado === "nasc" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
-                  <TextInput 
-                    style={styles.inputPremium} 
-                    placeholder="DD/MM/AAAA" 
-                    placeholderTextColor="#666" 
-                    keyboardType="number-pad" 
-                    maxLength={10} 
-                    value={dataNascimento} 
-                    onChangeText={formatarData} 
-                    onFocus={() => setInputFocado("nasc")}
-                    onBlur={() => setInputFocado(null)}
-                    keyboardAppearance="dark"
-                  />
+                  <TextInput style={styles.inputPremium} placeholder="DD/MM/AAAA" placeholderTextColor="#666" keyboardType="number-pad" maxLength={10} value={dataNascimento} onChangeText={formatarData} onFocus={() => setInputFocado("nasc")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
                 </View>
               </View>
               
@@ -488,17 +454,7 @@ export default function ClienteSetup({ navigation }) {
                 <Text style={styles.inputLabel}>WhatsApp *</Text>
                 <View style={[styles.inputBox, inputFocado === "whats" && styles.inputBoxFocused]}>
                   <MaterialCommunityIcons name="whatsapp" size={20} color={inputFocado === "whats" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
-                  <TextInput 
-                    style={styles.inputPremium} 
-                    placeholder="(00) 00000-0000" 
-                    placeholderTextColor="#666" 
-                    keyboardType="number-pad" 
-                    value={telefone} 
-                    onChangeText={formatarWhatsApp} 
-                    onFocus={() => setInputFocado("whats")}
-                    onBlur={() => setInputFocado(null)}
-                    keyboardAppearance="dark"
-                  />
+                  <TextInput style={styles.inputPremium} placeholder="(00) 00000-0000" placeholderTextColor="#666" keyboardType="number-pad" value={telefone} onChangeText={formatarWhatsApp} onFocus={() => setInputFocado("whats")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
                 </View>
               </View>
             </View>
@@ -507,16 +463,7 @@ export default function ClienteSetup({ navigation }) {
               <Text style={styles.inputLabel}>Localização *</Text>
               <View style={[styles.inputBox, inputFocado === "cidade" && styles.inputBoxFocused]}>
                 <Ionicons name="location-outline" size={20} color={inputFocado === "cidade" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
-                <TextInput 
-                  style={styles.inputPremium} 
-                  placeholder="Bairro e Cidade" 
-                  placeholderTextColor="#666" 
-                  value={cidade} 
-                  onChangeText={setCidade} 
-                  onFocus={() => setInputFocado("cidade")}
-                  onBlur={() => setInputFocado(null)}
-                  keyboardAppearance="dark"
-                />
+                <TextInput style={styles.inputPremium} placeholder="Bairro e Cidade" placeholderTextColor="#666" value={cidade} onChangeText={setCidade} onFocus={() => setInputFocado("cidade")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
                 <TouchableOpacity style={styles.btnGpsPremium} onPress={buscarLocalizacao}>
                   {buscandoLocal ? (
                     <ActivityIndicator size="small" color="#000" />
@@ -535,18 +482,7 @@ export default function ClienteSetup({ navigation }) {
               <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
                 <View style={[styles.inputBox, inputFocado === "peso" && styles.inputBoxFocused]}>
                   <MaterialCommunityIcons name="scale-bathroom" size={20} color={inputFocado === "peso" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
-                  <TextInput 
-                    style={styles.inputPremium} 
-                    placeholder="Peso" 
-                    placeholderTextColor="#666" 
-                    keyboardType="decimal-pad" 
-                    maxLength={6} 
-                    value={peso} 
-                    onChangeText={formatarPeso} 
-                    onFocus={() => setInputFocado("peso")}
-                    onBlur={() => setInputFocado(null)}
-                    keyboardAppearance="dark"
-                  />
+                  <TextInput style={styles.inputPremium} placeholder="Peso" placeholderTextColor="#666" keyboardType="decimal-pad" maxLength={6} value={peso} onChangeText={formatarPeso} onFocus={() => setInputFocado("peso")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
                   <Text style={styles.suffix}>kg</Text>
                 </View>
               </View>
@@ -554,41 +490,31 @@ export default function ClienteSetup({ navigation }) {
               <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
                 <View style={[styles.inputBox, inputFocado === "altura" && styles.inputBoxFocused]}>
                   <Ionicons name="body-outline" size={20} color={inputFocado === "altura" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
-                  <TextInput 
-                    style={styles.inputPremium} 
-                    placeholder="Altura" 
-                    placeholderTextColor="#666" 
-                    keyboardType="number-pad" 
-                    maxLength={3} 
-                    value={altura} 
-                    onChangeText={formatarAltura} 
-                    onFocus={() => setInputFocado("altura")}
-                    onBlur={() => setInputFocado(null)}
-                    keyboardAppearance="dark"
-                  />
+                  <TextInput style={styles.inputPremium} placeholder="Altura" placeholderTextColor="#666" keyboardType="number-pad" maxLength={3} value={altura} onChangeText={formatarAltura} onFocus={() => setInputFocado("altura")} onBlur={() => setInputFocado(null)} keyboardAppearance="dark" />
                   <Text style={styles.suffix}>cm</Text>
                 </View>
               </View>
             </View>
+
+            <TipBox title="Privacidade Garantida" text="Seus dados estão seguros e só serão compartilhados com o treinador após você aceitar o Match." icon="lock-closed-outline" />
           </View>
         )}
 
         {step === 1 && (
           <View style={styles.fadeContainer}>
             <Text style={styles.mainTitle}>Como você deseja <Text style={styles.titleHighlight}>treinar?</Text></Text>
-            <Text style={styles.subTitle}>Você pode selecionar mais de uma opção se estiver em dúvida.</Text>
+            <Text style={styles.subTitle}>Selecione o formato de atendimento que você está procurando no momento.</Text>
 
             {OPCOES_MODALIDADE.map((item) => (
               <OptionCard 
                 key={item.id} 
                 item={item} 
-                isMultiSelect={true}
-                isSelected={servicosBuscados.includes(item.id)} 
-                onPress={() => toggleModalidade(item.id)} 
+                isSelected={servicoBuscado?.id === item.id} 
+                onPress={() => setServicoBuscado(item)} 
               />
             ))}
 
-            <TipBox title="Híbrido Mágico" text="Se você selecionar Consultoria e Presencial, conectaremos você a profissionais que oferecem planos flexíveis combinando as duas coisas." icon="options" />
+            <TipBox title="Híbrido Mágico" text="Se você selecionar 'Ainda não sei', conectaremos você a profissionais versáteis que oferecem tanto presencial quanto online." icon="options" />
           </View>
         )}
 
@@ -664,6 +590,8 @@ export default function ClienteSetup({ navigation }) {
                 )}
               </View>
             )}
+
+            <TipBox title="Segurança em 1º Lugar" text="Não esconda dores ou lesões. Um bom personal vai usar isso para fortalecer seu corpo de forma totalmente segura." icon="shield-checkmark-outline" />
           </View>
         )}
 
@@ -682,18 +610,63 @@ export default function ClienteSetup({ navigation }) {
 
         {step === 6 && (
           <View style={styles.fadeContainer}>
+            <Text style={styles.mainTitle}>Você tem preferência de <Text style={styles.titleHighlight}>gênero?</Text></Text>
+            <Text style={styles.subTitle}>Entendemos que o conforto é essencial na hora do acompanhamento presencial ou online.</Text>
+
+            {OPCOES_GENERO_TREINADOR.map((item) => (
+              <OptionCard key={item.id} item={item} isSelected={generoTreinador?.id === item.id} onPress={() => setGeneroTreinador(item)} />
+            ))}
+
+            <TipBox title="Seu Conforto Importa" text="Não existe certo ou errado. Escolha o gênero com o qual você se sente mais à vontade para tirar dúvidas e se comunicar." icon="chatbubbles-outline" />
+          </View>
+        )}
+
+        {step === 7 && (
+          <View style={styles.fadeContainer}>
+            <Text style={styles.mainTitle}>Em qual turno você prefere <Text style={styles.titleHighlight}>treinar?</Text></Text>
+            <Text style={styles.subTitle}>Isso garante que o aplicativo só mostre profissionais que têm agenda disponível no seu horário.</Text>
+
+            {OPCOES_TURNO.map((item) => (
+              <OptionCard key={item.id} item={item} isSelected={turnoPreferido?.id === item.id} onPress={() => setTurnoPreferido(item)} />
+            ))}
+
+            {(turnoPreferido && turnoPreferido.id !== "Indiferente") && (
+              <View style={styles.subBox}>
+                <Text style={styles.subBoxTitle}>Possui um horário específico? (Opcional)</Text>
+                <Text style={{ color: "#888", fontSize: 13, marginBottom: 15 }}>Ex: Das 06:00 às 07:00, ou Antes de ir pro trabalho.</Text>
+                <View style={[styles.inputBox, inputFocado === "horario" && styles.inputBoxFocused]}>
+                  <Ionicons name="time-outline" size={20} color={inputFocado === "horario" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+                  <TextInput 
+                    style={styles.inputPremium} 
+                    placeholder="Seu horário de preferência..." 
+                    placeholderTextColor="#666" 
+                    value={horarioEspecifico} 
+                    onChangeText={setHorarioEspecifico} 
+                    onFocus={() => setInputFocado("horario")}
+                    onBlur={() => setInputFocado(null)}
+                    keyboardAppearance="dark" 
+                  />
+                </View>
+              </View>
+            )}
+
+            <TipBox title="Match de Agenda" text="Cruzar o seu horário com o do Personal é o segredo para garantir que ele conseguirá te dar suporte imediato." icon="time-outline" />
+          </View>
+        )}
+
+        {step === 8 && (
+          <View style={styles.fadeContainer}>
             <Text style={styles.mainTitle}>Qual sua <Text style={styles.titleHighlight}>disponibilidade?</Text></Text>
             <Text style={styles.subTitle}>Seja realista com sua agenda. O seu treinador vai periodizar os estímulos com base nessa frequência.</Text>
 
             {OPCOES_FREQUENCIA.map((item) => (
               <OptionCard key={item.id} item={item} isSelected={frequencia?.id === item.id} onPress={() => setFrequencia(item)} />
             ))}
-
-            <TipBox title="Menos é mais?" text="Treinar bem 3 vezes na semana é muito mais eficiente do que tentar ir 6 dias e desistir no primeiro mês." icon="time" />
+            <TipBox title="Menos é mais?" text="Treinar bem 3 vezes na semana é muito mais eficiente do que tentar ir 6 dias e desistir no primeiro mês." icon="trending-up" />
           </View>
         )}
 
-        {step === 7 && (
+        {step === 9 && (
           <View style={styles.fadeContainer}>
             <Text style={styles.mainTitle}>Onde você prefere <Text style={styles.titleHighlight}>treinar?</Text></Text>
             <Text style={styles.subTitle}>Isso nos ajuda a encontrar personais que atendem perfeitamente no seu ambiente escolhido.</Text>
@@ -701,12 +674,11 @@ export default function ClienteSetup({ navigation }) {
             {OPCOES_LOCAL.map((item) => (
               <OptionCard key={item.id} item={item} isSelected={localTreino?.id === item.id} onPress={() => setLocalTreino(item)} />
             ))}
-
             <TipBox title="Treino Inteligente" text="Mesmo em casa ou no condomínio é possível ter resultados incríveis se a estratégia for montada corretamente." icon="location" />
           </View>
         )}
 
-        {step === 8 && (
+        {step === 10 && (
           <View style={styles.fadeContainer}>
             <Text style={styles.mainTitle}>Planejamento de <Text style={styles.titleHighlight}>Investimento</Text></Text>
             <Text style={styles.subTitle}>Nós mostraremos os profissionais que se encaixam na sua faixa de orçamento escolhida para o plano.</Text>
@@ -714,7 +686,6 @@ export default function ClienteSetup({ navigation }) {
             {OPCOES_INVESTIMENTO.map((item) => (
               <OptionCard key={item.id} item={item} isSelected={investimento?.id === item.id} onPress={() => setInvestimento(item)} />
             ))}
-
             <TipBox title="Segurança Total" text="Todos os personais do aplicativo passam por rigorosa validação de CREF ativo. Você estará sempre em boas mãos." icon="shield-checkmark" />
           </View>
         )}
@@ -723,7 +694,7 @@ export default function ClienteSetup({ navigation }) {
       <BlurView intensity={90} tint="dark" style={styles.footerBlur}>
         <TouchableOpacity
           style={[styles.btnAvançar, isAvançarDesabilitado() && { opacity: 0.5 }]}
-          onPress={step === 8 ? handleFinalizar : nextStep}
+          onPress={step === 10 ? handleFinalizar : nextStep}
           disabled={isAvançarDesabilitado()}
           activeOpacity={0.8}
         >
@@ -732,9 +703,9 @@ export default function ClienteSetup({ navigation }) {
           ) : (
             <LinearGradient colors={isAvançarDesabilitado() ? ["#333", "#222"] : ["#FF8C00", "#FF6B00"]} style={styles.btnGradient}>
               <Text style={[styles.btnAvançarText, isAvançarDesabilitado() && { color: "#888" }]}>
-                {step === 8 ? "Finalizar Configuração" : "Avançar Etapa"}
+                {step === 10 ? "Finalizar Configuração" : "Avançar Etapa"}
               </Text>
-              {step < 8 && (
+              {step < 10 && (
                 <Ionicons name="arrow-forward" size={20} color={isAvançarDesabilitado() ? "#888" : "#000"} style={{ marginLeft: 8 }} />
               )}
             </LinearGradient>
