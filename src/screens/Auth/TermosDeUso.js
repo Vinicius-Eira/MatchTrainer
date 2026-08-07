@@ -3,17 +3,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Linking from "expo-linking";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
+import { moderateScale, scale, verticalScale } from "../../utils/responsive";
 
 const { width } = Dimensions.get("window");
 
@@ -152,15 +153,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingTop: 60,
+    paddingTop: verticalScale(60),
   },
 
   barraProgressoFundo: {
     width: "100%",
-    height: 4,
+    height: verticalScale(4),
     backgroundColor: "#222",
     position: "absolute",
-    top: 50,
+    top: verticalScale(50),
     left: 0,
   },
   barraProgressoPreenchida: {
@@ -168,61 +169,70 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
   },
 
-  header: { alignItems: "center", marginBottom: 20 },
-  logo: { marginBottom: 10 },
+  header: { alignItems: "center", marginBottom: verticalScale(20) },
+  logo: { marginBottom: verticalScale(10) },
   title: {
     fontFamily: theme.fonts.title,
-    fontSize: 32,
+    fontSize: moderateScale(32),
     color: theme.colors.text,
   },
 
-  textContainer: { flex: 1, paddingHorizontal: 25, marginBottom: 10 },
+  textContainer: {
+    flex: 1,
+    paddingHorizontal: scale(25),
+    marginBottom: verticalScale(10),
+  },
   termosText: {
     color: theme.colors.textSecondary,
     fontFamily: theme.fonts.body,
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: moderateScale(14),
+    lineHeight: moderateScale(22),
   },
   bold: { color: theme.colors.text, fontWeight: "bold" },
 
-  footer: { padding: 25, backgroundColor: theme.colors.background },
+  footer: {
+    paddingHorizontal: scale(25),
+    paddingVertical: verticalScale(25),
+    backgroundColor: theme.colors.background,
+  },
   checkboxContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
+    width: scale(22),
+    height: scale(22),
+    borderRadius: moderateScale(6),
     borderWidth: 2,
     borderColor: theme.colors.primary,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: scale(12),
   },
   checkboxChecked: { backgroundColor: theme.colors.primary },
   checkboxLabel: {
     color: theme.colors.textSecondary,
-    fontSize: 13,
+    fontSize: moderateScale(13),
     flex: 1,
-    lineHeight: 18,
+    lineHeight: moderateScale(18),
   },
 
   btnContinuar: {
     backgroundColor: theme.colors.primary,
-    padding: 16,
-    borderRadius: 12,
+    paddingVertical: verticalScale(16),
+    paddingHorizontal: scale(16),
+    borderRadius: moderateScale(12),
     alignItems: "center",
     justifyContent: "center",
   },
   btnDesabilitado: { opacity: 0.4 },
-  btnText: { color: "#000", fontSize: 16, fontWeight: "bold" },
+  btnText: { color: "#000", fontSize: moderateScale(16), fontWeight: "bold" },
 
-  linkContainer: { alignItems: "center", marginTop: 15 },
+  linkContainer: { alignItems: "center", marginTop: verticalScale(15) },
   linkText: {
     color: theme.colors.primary,
-    fontSize: 13,
+    fontSize: moderateScale(13),
     textDecorationLine: "underline",
   },
 });

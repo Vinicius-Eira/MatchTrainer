@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from "react";
-import { View, Animated, StyleSheet, StatusBar } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useRef } from "react";
+import { Animated, StatusBar, StyleSheet, View } from "react-native";
 import { supabase } from "../../services/supabase";
+import { moderateScale } from "../../utils/responsive";
 
 export default function SplashScreen({ navigation }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -10,12 +11,12 @@ export default function SplashScreen({ navigation }) {
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
-        toValue: 1, 
+        toValue: 1,
         duration: 1200,
         useNativeDriver: true,
       }),
       Animated.spring(scaleAnim, {
-        toValue: 1, 
+        toValue: 1,
         friction: 6,
         tension: 15,
         useNativeDriver: true,
@@ -23,12 +24,12 @@ export default function SplashScreen({ navigation }) {
     ]).start();
 
     const iniciarApp = async () => {
-      const tempoEspera = new Promise((resolve) => setTimeout(resolve, 4500)); 
-      
+      const tempoEspera = new Promise((resolve) => setTimeout(resolve, 4500));
+
       const rotaDestino = await checarSessao();
 
-      await tempoEspera; 
-      
+      await tempoEspera;
+
       navigation.replace(rotaDestino);
     };
 
@@ -40,8 +41,10 @@ export default function SplashScreen({ navigation }) {
       const termosAceitos = await AsyncStorage.getItem("termos_aceitos");
       if (!termosAceitos) return "TermosDeUso";
 
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (session?.user) {
         const { data: personalData } = await supabase
           .from("personals")
@@ -55,7 +58,7 @@ export default function SplashScreen({ navigation }) {
           return "UsuarioTabs";
         }
       }
-      return "ChoiceScreen"; 
+      return "ChoiceScreen";
     } catch (error) {
       console.log("Erro no Splash:", error);
       return "ChoiceScreen";
@@ -81,14 +84,14 @@ export default function SplashScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: "#000000", 
-    justifyContent: "center", 
-    alignItems: "center" 
+  container: {
+    flex: 1,
+    backgroundColor: "#000000",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  logo: { 
-    width: 360, 
-    height: 360 
+  logo: {
+    width: moderateScale(360),
+    height: moderateScale(360),
   },
-});             
+});

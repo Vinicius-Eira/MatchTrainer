@@ -1,16 +1,17 @@
-import React, { useState, useEffect, useRef } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
+  Animated,
   FlatList,
   Image,
-  Animated,
+  StyleSheet,
+  Text,
   TouchableOpacity,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { supabase } from "../../services/supabase";
-import { theme } from "../../theme/theme";
+import { supabase } from "../../../services/supabase";
+import { theme } from "../../../theme/theme";
+import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
 
 export default function Avaliacoes({ navigation }) {
   const [avaliacoes, setAvaliacoes] = useState([]);
@@ -102,7 +103,6 @@ export default function Avaliacoes({ navigation }) {
     return `há ${dias} dias`;
   };
 
-
   const renderSkeleton = () => (
     <View style={styles.listContainer}>
       {[1, 2, 3].map((key) => (
@@ -119,8 +119,7 @@ export default function Avaliacoes({ navigation }) {
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}
-      >
-      </TouchableOpacity>
+      ></TouchableOpacity>
 
       <Text style={styles.mediaText}>{metricas.media}</Text>
 
@@ -215,21 +214,36 @@ export default function Avaliacoes({ navigation }) {
   );
 
   return (
-
     <View style={styles.container}>
-      <View style={{ paddingTop: 60, paddingHorizontal: 20, paddingBottom: 10, zIndex: 10 }}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ alignSelf: 'flex-start', padding: 5 }}>
+      <View
+        style={{
+          paddingTop: 60,
+          paddingHorizontal: 20,
+          paddingBottom: 10,
+          zIndex: 10,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ alignSelf: "flex-start", padding: 5 }}
+        >
           <Ionicons name="arrow-back" size={28} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
 
       <FlatList
         data={avaliacoes}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         renderItem={renderCard}
-        ListHeaderComponent={!loading && avaliacoes.length > 0 ? renderHeader : null}
+        ListHeaderComponent={
+          !loading && avaliacoes.length > 0 ? renderHeader : null
+        }
         ListEmptyComponent={loading ? renderSkeleton : renderEmpty}
-        contentContainerStyle={avaliacoes.length === 0 && !loading ? { flex: 1 } : styles.listContainer}
+        contentContainerStyle={
+          avaliacoes.length === 0 && !loading
+            ? { flex: 1 }
+            : styles.listContainer
+        }
         showsVerticalScrollIndicator={false}
       />
     </View>
@@ -238,58 +252,87 @@ export default function Avaliacoes({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  listContainer: { padding: 20, paddingBottom: 50 },
+  listContainer: { padding: scale(20), paddingBottom: verticalScale(50) },
 
-  headerContainer: { alignItems: "center", marginBottom: 30, paddingTop: 40 },
-  backButton: { position: "absolute", top: 40, left: 0, padding: 10 },
+  headerContainer: {
+    alignItems: "center",
+    marginBottom: verticalScale(30),
+    paddingTop: verticalScale(40),
+  },
+  backButton: {
+    position: "absolute",
+    top: verticalScale(40),
+    left: 0,
+    padding: scale(10),
+  },
   mediaText: {
     fontFamily: theme.fonts.title,
-    fontSize: 64,
+    fontSize: moderateScale(64),
     color: theme.colors.primary,
-    lineHeight: 70,
+    lineHeight: moderateScale(70),
   },
-  starsContainer: { flexDirection: "row", gap: 4, marginBottom: 5 },
+  starsContainer: {
+    flexDirection: "row",
+    gap: scale(4),
+    marginBottom: verticalScale(5),
+  },
   totalAvaliacoesText: {
     color: theme.colors.textSecondary,
-    fontSize: 13,
-    marginBottom: 20,
+    fontSize: moderateScale(13),
+    marginBottom: verticalScale(20),
   },
 
-  distribuicaoContainer: { width: "100%", paddingHorizontal: 20 },
-  distRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
-  distNotaText: { color: theme.colors.textSecondary, width: 25, fontSize: 13 },
+  distribuicaoContainer: { width: "100%", paddingHorizontal: scale(20) },
+  distRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: verticalScale(6),
+  },
+  distNotaText: {
+    color: theme.colors.textSecondary,
+    width: scale(25),
+    fontSize: moderateScale(13),
+  },
   barraFundo: {
     flex: 1,
-    height: 8,
+    height: verticalScale(8),
     backgroundColor: theme.colors.surface,
-    borderRadius: 4,
-    marginHorizontal: 10,
+    borderRadius: moderateScale(4),
+    marginHorizontal: scale(10),
     overflow: "hidden",
   },
   barraPreenchida: {
     height: "100%",
     backgroundColor: theme.colors.primary,
-    borderRadius: 4,
+    borderRadius: moderateScale(4),
   },
   distCountText: {
     color: theme.colors.textSecondary,
-    width: 20,
+    width: scale(20),
     textAlign: "right",
-    fontSize: 13,
+    fontSize: moderateScale(13),
   },
 
   card: {
     backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: moderateScale(12),
+    padding: scale(16),
+    marginBottom: verticalScale(12),
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-  avatar: { width: 40, height: 40, borderRadius: 20 },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: verticalScale(12),
+  },
+  avatar: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(20),
+  },
   avatarFallback: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(20),
     backgroundColor: "#333",
     justifyContent: "center",
     alignItems: "center",
@@ -297,49 +340,49 @@ const styles = StyleSheet.create({
   avatarFallbackText: {
     color: theme.colors.text,
     fontWeight: "bold",
-    fontSize: 14,
+    fontSize: moderateScale(14),
   },
-  userInfo: { flex: 1, marginLeft: 12 },
+  userInfo: { flex: 1, marginLeft: scale(12) },
   userName: {
     color: theme.colors.text,
     fontWeight: "bold",
-    fontSize: 15,
-    marginBottom: 2,
+    fontSize: moderateScale(15),
+    marginBottom: verticalScale(2),
   },
-  starsRow: { flexDirection: "row", gap: 2 },
-  dateText: { color: theme.colors.textSecondary, fontSize: 11 },
+  starsRow: { flexDirection: "row", gap: scale(2) },
+  dateText: { color: theme.colors.textSecondary, fontSize: moderateScale(11) },
   commentText: {
     color: theme.colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: moderateScale(14),
+    lineHeight: moderateScale(20),
   },
 
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 40,
+    padding: scale(40),
   },
   emptyTitle: {
     color: theme.colors.text,
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: "bold",
-    marginTop: 15,
+    marginTop: verticalScale(15),
     textAlign: "center",
   },
   emptySub: {
     color: theme.colors.textSecondary,
-    fontSize: 14,
+    fontSize: moderateScale(14),
     textAlign: "center",
-    marginTop: 8,
-    lineHeight: 20,
+    marginTop: verticalScale(8),
+    lineHeight: moderateScale(20),
   },
 
   skeletonCard: {
     width: "100%",
-    height: 100,
+    height: verticalScale(100),
     backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: moderateScale(12),
+    marginBottom: verticalScale(12),
   },
 });

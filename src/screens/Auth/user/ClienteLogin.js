@@ -1,4 +1,4 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import {
@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { supabase } from "../../../services/supabase";
 import { theme } from "../../../theme/theme";
+import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
 
 const { width } = Dimensions.get("window");
 
@@ -32,7 +33,7 @@ export default function ClienteLogin({ navigation }) {
     if (!email || !senha)
       return Alert.alert(
         "Atenção",
-        "Preencha seu e-mail e senha para continuar."
+        "Preencha seu e-mail e senha para continuar.",
       );
 
     setLoading(true);
@@ -47,13 +48,48 @@ export default function ClienteLogin({ navigation }) {
       if (data?.user) {
         const { data: userData } = await supabase
           .from("usuarios")
-          .select("nome, cidade, telefone, preferencias") 
+          .select("nome, cidade, telefone, preferencias, peso")
           .eq("id", data.user.id)
           .single();
 
+        const { data: conexoesAtivas } = await supabase
+          .from("conexoes")
+          .select("id, status")
+          .eq("usuario_id", data.user.id)
+          .order("atualizado_em", { ascending: false })
+          .limit(1);
+
+        if (conexoesAtivas && conexoesAtivas.length > 0) {
+          const conexaoRecente = conexoesAtivas[0];
+
+          if (conexaoRecente.status === "aguardando_assinatura") {
+            if (!userData?.telefone || !userData?.peso) {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "MiniOnboarding", params: { conexaoId: conexaoRecente.id } }],
+              });
+              return;
+            } else {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "PropostaAluno", params: { conexaoId: conexaoRecente.id } }],
+              });
+              return; 
+            }
+          }
+        }
         if (userData) {
-          if (!userData.nome || !userData.cidade || !userData.telefone || !userData.preferencias) {
-            navigation.reset({ index: 0, routes: [{ name: "ClienteSetup" }] });
+          if (
+            !userData.nome ||
+            !userData.cidade ||
+            !userData.telefone ||
+            !userData.preferencias
+          ) {
+            if (userData.preferencias?.setup_completo === true || userData.setup_completo === true) {
+                 navigation.replace("UsuarioTabs");
+            } else {
+                 navigation.reset({ index: 0, routes: [{ name: "ClienteSetup" }] });
+            }
           } else {
             navigation.replace("UsuarioTabs");
           }
@@ -62,10 +98,7 @@ export default function ClienteLogin({ navigation }) {
         }
       }
     } catch (error) {
-      Alert.alert(
-        "Ops!",
-        "E-mail ou senha incorretos. Tente novamente."
-      );
+      Alert.alert("Ops!", "E-mail ou senha incorretos. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -73,7 +106,10 @@ export default function ClienteLogin({ navigation }) {
 
   return (
     <View style={styles.mainContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={theme.colors.background}
+      />
 
       <View style={styles.glowTopLeft} />
       <View style={styles.glowBottomRight} />
@@ -96,19 +132,22 @@ export default function ClienteLogin({ navigation }) {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0} 
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled" 
+          keyboardShouldPersistTaps="handled"
         >
           <View style={styles.innerContent}>
             <View style={styles.header}>
               <View style={styles.iconWrapper}>
                 <View style={styles.iconGlow} />
                 <LinearGradient
-                  colors={[theme.colors.primaryLight, "rgba(255, 107, 0, 0.02)"]}
+                  colors={[
+                    theme.colors.primaryLight,
+                    "rgba(255, 107, 0, 0.02)",
+                  ]}
                   style={styles.iconCircle}
                 >
                   <Ionicons
@@ -134,7 +173,9 @@ export default function ClienteLogin({ navigation }) {
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color={focoEmail ? theme.colors.primary : theme.colors.textMuted}
+                  color={
+                    focoEmail ? theme.colors.primary : theme.colors.textMuted
+                  }
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -162,7 +203,9 @@ export default function ClienteLogin({ navigation }) {
                 <Ionicons
                   name="lock-closed-outline"
                   size={20}
-                  color={focoSenha ? theme.colors.primary : theme.colors.textMuted}
+                  color={
+                    focoSenha ? theme.colors.primary : theme.colors.textMuted
+                  }
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -234,71 +277,83 @@ export default function ClienteLogin({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: theme.colors.background, position: "relative" },
+  mainContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    position: "relative",
+  },
 
   glowTopLeft: {
     position: "absolute",
-    top: -100,
-    left: -50,
-    width: 250,
-    height: 250,
-    borderRadius: 125,
+    top: verticalScale(-100),
+    left: scale(-50),
+    width: scale(250),
+    height: scale(250),
+    borderRadius: scale(125),
     backgroundColor: theme.colors.primary,
     opacity: 0.12,
     blurRadius: 60,
   },
   glowBottomRight: {
     position: "absolute",
-    bottom: -50,
-    right: -100,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
+    bottom: verticalScale(-50),
+    right: scale(-100),
+    width: scale(300),
+    height: scale(300),
+    borderRadius: scale(150),
     backgroundColor: theme.colors.primary,
     opacity: 0.08,
     blurRadius: 80,
   },
 
-  scrollContent: { flexGrow: 1 }, 
-  innerContent: { padding: 24, paddingTop: Platform.OS === "ios" ? 140 : 100, paddingBottom: 40 }, 
+  scrollContent: { flexGrow: 1 },
+  innerContent: {
+    paddingHorizontal: scale(24),
+    paddingTop: Platform.OS === "ios" ? verticalScale(140) : verticalScale(100),
+    paddingBottom: verticalScale(40),
+  },
 
   headerAbsolute: {
     position: "absolute",
-    top: Platform.OS === "ios" ? 60 : 30,
-    left: 24,
+    top: Platform.OS === "ios" ? verticalScale(60) : verticalScale(30),
+    left: scale(24),
     zIndex: 10,
   },
   btnVoltar: {
     backgroundColor: theme.colors.surface,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: scale(44),
+    height: scale(44),
+    borderRadius: scale(22),
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
     borderColor: theme.colors.borderLight,
   },
 
-  header: { alignItems: "center", marginBottom: 45, marginTop: 20 },
+  header: {
+    alignItems: "center",
+    marginBottom: verticalScale(45),
+    marginTop: verticalScale(20),
+  },
   iconWrapper: {
     position: "relative",
-    marginBottom: 25,
+    marginBottom: verticalScale(25),
     justifyContent: "center",
     alignItems: "center",
   },
   iconGlow: {
     position: "absolute",
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: scale(70),
+    height: scale(70),
+    borderRadius: scale(35),
     backgroundColor: theme.colors.primary,
     opacity: 0.3,
     blurRadius: 20,
   },
   iconCircle: {
-    width: 74,
-    height: 74,
-    borderRadius: 37,
+    width: scale(74),
+    height: scale(74),
+    borderRadius: scale(37),
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
@@ -307,19 +362,19 @@ const styles = StyleSheet.create({
 
   title: {
     fontFamily: theme.fonts.title,
-    fontSize: 38,
+    fontSize: moderateScale(38),
     color: theme.colors.text,
     letterSpacing: -0.5,
-    lineHeight: 44,
+    lineHeight: moderateScale(44),
     textAlign: "center",
   },
   titleHighlight: { color: theme.colors.primary },
   subtitle: {
     fontFamily: theme.fonts.body,
-    fontSize: 15,
+    fontSize: moderateScale(15),
     color: theme.colors.textSecondary,
-    marginTop: 12,
-    lineHeight: 22,
+    marginTop: verticalScale(12),
+    lineHeight: moderateScale(22),
     textAlign: "center",
   },
 
@@ -329,45 +384,49 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: theme.colors.surface,
-    borderRadius: 18,
+    borderRadius: moderateScale(18),
     borderWidth: 1,
     borderColor: theme.colors.border,
-    paddingLeft: 16,
-    marginBottom: 16,
-    height: 64,
+    paddingLeft: scale(16),
+    marginBottom: verticalScale(16),
+    height: verticalScale(64),
   },
   inputBoxFocused: {
     borderColor: theme.colors.primary,
     backgroundColor: theme.colors.primaryLight,
   },
-  inputIcon: { marginRight: 12 },
+  inputIcon: { marginRight: scale(12) },
   input: {
     flex: 1,
     color: theme.colors.text,
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontFamily: theme.fonts.body,
     height: "100%",
     backgroundColor: "transparent",
   },
-  eyeIcon: { paddingHorizontal: 16, height: "100%", justifyContent: "center" },
+  eyeIcon: {
+    paddingHorizontal: scale(16),
+    height: "100%",
+    justifyContent: "center",
+  },
 
   forgotPassword: {
     alignSelf: "flex-end",
-    marginBottom: 35,
-    marginTop: -5,
-    paddingVertical: 5,
+    marginBottom: verticalScale(35),
+    marginTop: verticalScale(-5),
+    paddingVertical: verticalScale(5),
   },
   forgotPasswordText: {
     color: theme.colors.textSecondary,
     fontFamily: theme.fonts.body,
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: "700",
   },
 
   btnPrimary: {
     backgroundColor: theme.colors.primary,
-    height: 64,
-    borderRadius: 18,
+    height: verticalScale(64),
+    borderRadius: moderateScale(18),
     justifyContent: "center",
     alignItems: "center",
     shadowColor: theme.colors.primary,
@@ -378,7 +437,7 @@ const styles = StyleSheet.create({
   },
   btnPrimaryText: {
     color: theme.colors.backgroundPure,
-    fontSize: 17,
+    fontSize: moderateScale(17),
     fontWeight: "900",
     letterSpacing: 0.5,
   },
@@ -387,15 +446,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 45,
+    marginTop: verticalScale(45),
   },
-  footerText: { color: theme.colors.textSecondary, fontFamily: theme.fonts.body, fontSize: 15 },
+  footerText: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.fonts.body,
+    fontSize: moderateScale(15),
+  },
   registerTextHighlight: {
     color: theme.colors.primary,
     fontFamily: theme.fonts.title,
-    fontSize: 15,
+    fontSize: moderateScale(15),
     fontWeight: "bold",
-    marginLeft: 6,
+    marginLeft: scale(6),
     letterSpacing: 0.5,
   },
 });

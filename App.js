@@ -10,9 +10,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useFonts } from "expo-font";
 import * as Linking from "expo-linking";
 import { useEffect } from "react";
-import { Alert, View } from "react-native";
-import { theme } from "./src/theme/theme";
-
+import { Alert, Text, TextInput, View } from "react-native";
 import { supabase } from "./src/services/supabase";
 
 import ChoiceScreen from "./src/screens/Auth/ChoiceScreen";
@@ -24,12 +22,15 @@ import ClienteCadastro from "./src/screens/Auth/user/ClienteCadastro";
 import ClienteLogin from "./src/screens/Auth/user/ClienteLogin";
 import ClienteSetup from "./src/screens/Onboarding/ClienteSetup";
 import PersonalSetup from "./src/screens/Onboarding/PersonalSetup";
+
+import MiniOnboarding from "./src/screens/Onboarding/AlunoOnboarding/MiniOnboarding";
+
 import PainelMeuTreinador from "./src/screens/User/PainelMeuTreinador";
 
-import Avaliacoes from "./src/screens/Personal/Avaliacoes";
-import FeedbackPersonal from "./src/screens/Personal/FeedbackPersonal";
-import PersonalDashboard from "./src/screens/Personal/PersonalDashboard";
-import VisaoAluno from "./src/screens/Personal/VisaoAluno";
+import PersonalDashboard from "./src/screens/Personal/CRM/Dashboard/PersonalDashboard";
+import VisaoAluno from "./src/screens/Personal/CRM/GestaoAlunos/VisaoAluno";
+import Avaliacoes from "./src/screens/Personal/Feedback/Avaliacoes";
+import FeedbackPersonal from "./src/screens/Personal/Feedback/FeedbackPersonal";
 
 import Avaliar from "./src/screens/User/Avaliar";
 import AvaliarPersonal from "./src/screens/User/AvaliarPersonal";
@@ -40,14 +41,24 @@ import PerfilPublicoPersonal from "./src/screens/User/PerfilPublicoPersonal";
 import EsqueciSenha from "./src/screens/Auth/password/EsqueciSenha";
 import RedefinirSenha from "./src/screens/Auth/password/RedefinirSenha";
 import AtivarConvite from "./src/screens/Auth/user/AtivarConta";
-import AdicionarAluno from "./src/screens/Personal/AdicionarAluno";
-import MeusAlunos from "./src/screens/Personal/MeusAlunos";
+import MeusAlunos from "./src/screens/Personal/CRM/GestaoAlunos/MeusAlunos";
+import AdicionarAluno from "./src/screens/Personal/CRM/NovoContrato/AdicionarAluno";
 import Chat from "./src/screens/Shared/Chat";
 import ConversasAluno from "./src/screens/Shared/Conversas";
 
-import Recebimentos from "./src/screens/Personal/Financeiro/recebimentos";
-import PainelCrescimento from "./src/screens/Personal/Financeiro/painelcrescimento";
+import PainelCrescimento from "./src/screens/Personal/CRM/Financeiro/painelcrescimento";
+import Recebimentos from "./src/screens/Personal/CRM/Financeiro/recebimentos";
+import PropostaAluno from "./src/screens/Personal/CRM/NovoContrato/PropostaAluno";
 
+if (Text.defaultProps == null) {
+  Text.defaultProps = {};
+}
+Text.defaultProps.maxFontSizeMultiplier = 1.2;
+
+if (TextInput.defaultProps == null) {
+  TextInput.defaultProps = {};
+}
+TextInput.defaultProps.maxFontSizeMultiplier = 1.2;
 const Stack = createNativeStackNavigator();
 const FeedStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -84,13 +95,13 @@ function UsuarioTabNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerTitleAlign: "center",
-        tabBarActiveTintColor: theme.colors.primary,
+        tabBarActiveTintColor: "#FF6B00",
         tabBarStyle: {
-          backgroundColor: theme.colors.surface,
+          backgroundColor: "#121212",
           borderTopColor: "#333",
         },
-        headerStyle: { backgroundColor: theme.colors.background },
-        headerTintColor: theme.colors.text,
+        headerStyle: { backgroundColor: "#000" },
+        headerTintColor: "#FFF",
       }}
     >
       <Tab.Screen
@@ -209,9 +220,7 @@ export default function App() {
   }, []);
 
   if (!fontsLoaded) {
-    return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.background }} />
-    );
+    return <View style={{ flex: 1, backgroundColor: "#000" }} />;
   }
 
   const linking = {
@@ -247,6 +256,13 @@ export default function App() {
           component={AtivarConvite}
           options={{ headerShown: false }}
         />
+
+        <RootStack.Screen
+          name="MiniOnboarding"
+          component={MiniOnboarding}
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+
         <RootStack.Screen
           name="AdicionarAluno"
           component={AdicionarAluno}
@@ -315,6 +331,11 @@ export default function App() {
         <RootStack.Screen
           name="PainelCrescimento"
           component={PainelCrescimento}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PropostaAluno"
+          component={PropostaAluno}
           options={{ headerShown: false }}
         />
       </RootStack.Navigator>

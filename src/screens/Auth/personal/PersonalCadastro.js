@@ -1,10 +1,12 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import {
   Alert,
   Dimensions,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -12,12 +14,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Modal,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import BotaoPrincipal from "../../../components/BotaoPrincipal";
 import { supabase } from "../../../services/supabase";
 import { theme } from "../../../theme/theme";
+import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
 
 const { width } = Dimensions.get("window");
 
@@ -38,6 +39,15 @@ export default function PersonalCadastro({ navigation }) {
     if (!nome || !email || !senha || !confirmarSenha || !cref) {
       return Alert.alert("Atenção", "Preencha todos os campos para continuar.");
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return Alert.alert(
+        "E-mail Inválido", 
+        "Por favor, digite um e-mail válido (exemplo: seu.nome@gmail.com)."
+      );
+    }
+    
     if (senha.length < 6) {
       return Alert.alert("Atenção", "A senha deve ter no mínimo 6 caracteres.");
     }
@@ -57,7 +67,7 @@ export default function PersonalCadastro({ navigation }) {
             cref: cref.trim(),
             tipo: "personal",
           },
-          emailRedirectTo: 'matchtrainer://PersonalLogin'
+          emailRedirectTo: "matchtrainer://PersonalLogin",
         },
       });
 
@@ -106,11 +116,11 @@ export default function PersonalCadastro({ navigation }) {
         >
           <View>
             <View style={styles.header}>
-              <Text style={styles.title}>
+              <Text style={[styles.title, {flex: 1, textAlign: "center"}]}>
                 Eleve sua carreira {"\n"}
                 <Text style={styles.titleHighlight}>ao próximo nível.</Text>
               </Text>
-              <Text style={styles.subtitle}>
+              <Text style={[styles.subtitle, {flex: 1, textAlign: "center"}]}>
                 Crie sua conta parceira para começar a captar alunos e gerenciar
                 seus treinos em um só lugar.
               </Text>
@@ -452,22 +462,22 @@ const styles = StyleSheet.create({
 
   glowTopLeft: {
     position: "absolute",
-    top: -50,
-    left: -50,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    top: verticalScale(-50),
+    left: scale(-50),
+    width: scale(200),
+    height: scale(200),
+    borderRadius: scale(100),
     backgroundColor: theme.colors.primary,
     opacity: 0.15,
     blurRadius: 50,
   },
   glowBottomRight: {
     position: "absolute",
-    bottom: -50,
-    right: -50,
-    width: 250,
-    height: 250,
-    borderRadius: 125,
+    bottom: verticalScale(-50),
+    right: scale(-50),
+    width: scale(250),
+    height: scale(250),
+    borderRadius: scale(125),
     backgroundColor: theme.colors.primary,
     opacity: 0.08,
     blurRadius: 60,
@@ -481,9 +491,9 @@ const styles = StyleSheet.create({
     zIndex: 100,
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 60 : 40,
-    paddingBottom: 15,
-    paddingHorizontal: 20,
+    paddingTop: Platform.OS === "ios" ? verticalScale(60) : verticalScale(40),
+    paddingBottom: verticalScale(15),
+    paddingHorizontal: scale(20),
     borderBottomWidth: 1,
     borderColor: theme.colors.borderLight,
     backgroundColor:
@@ -491,9 +501,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   btnVoltar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: scale(44),
+    height: scale(44),
+    borderRadius: scale(22),
     backgroundColor: theme.colors.surfaceLight,
     justifyContent: "center",
     alignItems: "center",
@@ -503,62 +513,66 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
-    paddingTop: Platform.OS === "ios" ? 130 : 110,
-    paddingBottom: 40,
+    paddingHorizontal: scale(24),
+    paddingTop: Platform.OS === "ios" ? verticalScale(130) : verticalScale(110),
+    paddingBottom: verticalScale(40),
   },
 
-  header: { marginBottom: 35 },
+  header: { marginBottom: verticalScale(35) },
   title: {
     fontFamily: theme.fonts.title,
-    fontSize: 36,
+    fontSize: moderateScale(36),
     color: theme.colors.text,
     letterSpacing: -0.5,
-    lineHeight: 42,
+    lineHeight: moderateScale(42),
   },
   titleHighlight: { color: theme.colors.primary },
   subtitle: {
     fontFamily: theme.fonts.body,
-    fontSize: 15,
+    fontSize: moderateScale(15),
     color: theme.colors.textSecondary,
-    marginTop: 12,
-    lineHeight: 24,
+    marginTop: verticalScale(12),
+    lineHeight: moderateScale(24),
   },
 
-  form: { width: "100%", gap: 16 },
+  form: { width: "100%", gap: verticalScale(16) },
 
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: theme.colors.surface,
-    borderRadius: 18,
+    borderRadius: moderateScale(18),
     borderWidth: 1,
     borderColor: theme.colors.border,
-    paddingLeft: 16,
-    height: 64,
+    paddingLeft: scale(16),
+    height: verticalScale(64),
   },
   inputContainerFocused: {
     borderColor: theme.colors.primary,
     backgroundColor: theme.colors.primaryLight,
   },
-  icon: { marginRight: 12 },
-  eyeIcon: { paddingHorizontal: 16, height: "100%", justifyContent: "center" },
+  icon: { marginRight: scale(12) },
+  eyeIcon: {
+    paddingHorizontal: scale(16),
+    height: "100%",
+    justifyContent: "center",
+  },
   input: {
     flex: 1,
     color: theme.colors.text,
     fontFamily: theme.fonts.body,
-    fontSize: 16,
+    fontSize: moderateScale(16),
     height: "100%",
     backgroundColor: "transparent",
   },
 
-  buttonContainer: { marginTop: 16 },
+  buttonContainer: { marginTop: verticalScale(16) },
 
-  benefitsWrapper: { marginTop: 45 },
+  benefitsWrapper: { marginTop: verticalScale(45) },
   benefitsHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   benefitsHeaderLine: {
     flex: 1,
@@ -567,62 +581,67 @@ const styles = StyleSheet.create({
   },
   benefitsTitle: {
     color: theme.colors.textSecondary,
-    fontSize: 11,
+    fontSize: moderateScale(11),
     textTransform: "uppercase",
     fontWeight: "900",
     letterSpacing: 1.5,
-    marginHorizontal: 12,
+    marginHorizontal: scale(12),
   },
 
   benefitCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: theme.colors.surface,
-    padding: 18,
-    borderRadius: 20,
-    marginBottom: 12,
+    paddingHorizontal: scale(18),
+    paddingVertical: verticalScale(18),
+    borderRadius: moderateScale(20),
+    marginBottom: verticalScale(12),
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
   benefitIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: scale(44),
+    height: scale(44),
+    borderRadius: scale(22),
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(255, 107, 0, 0.3)",
   },
-  benefitTextWrap: { flex: 1, marginLeft: 16 },
+  benefitTextWrap: { flex: 1, marginLeft: scale(16) },
   benefitTitle: {
     color: theme.colors.text,
-    fontSize: 15,
+    fontSize: moderateScale(15),
     fontWeight: "900",
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
     letterSpacing: 0.5,
   },
   benefitDesc: {
     color: theme.colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: moderateScale(13),
+    lineHeight: moderateScale(18),
   },
 
   footer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 40,
+    marginTop: verticalScale(40),
   },
   footerText: {
     color: theme.colors.textSecondary,
     fontFamily: theme.fonts.body,
-    fontSize: 15,
+    fontSize: moderateScale(15),
   },
-  footerButton: { flexDirection: "row", alignItems: "center", paddingLeft: 8 },
+  footerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: scale(8),
+  },
   footerLink: {
     color: theme.colors.primary,
     fontFamily: theme.fonts.title,
-    fontSize: 15,
+    fontSize: moderateScale(15),
     fontWeight: "bold",
     letterSpacing: 0.5,
   },
@@ -632,13 +651,15 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.85)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
+    paddingHorizontal: scale(24),
+    paddingVertical: verticalScale(24),
   },
   modalBox: {
     backgroundColor: theme.colors.surface,
     width: "100%",
-    borderRadius: 24,
-    padding: 32,
+    borderRadius: moderateScale(24),
+    paddingHorizontal: scale(32),
+    paddingVertical: verticalScale(32),
     alignItems: "center",
     borderWidth: 1,
     borderColor: theme.colors.borderLight,
@@ -649,30 +670,30 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   modalIconWrapper: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: scale(80),
+    height: scale(80),
+    borderRadius: scale(40),
     backgroundColor: theme.colors.primaryLight,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
     borderWidth: 1,
     borderColor: "rgba(255, 107, 0, 0.2)",
   },
   modalTitle: {
     color: theme.colors.text,
-    fontSize: 26,
+    fontSize: moderateScale(26),
     fontFamily: theme.fonts.title,
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
     textAlign: "center",
   },
   modalText: {
     color: theme.colors.textSecondary,
     fontFamily: theme.fonts.body,
-    fontSize: 15,
+    fontSize: moderateScale(15),
     textAlign: "center",
-    lineHeight: 24,
-    marginBottom: 30,
+    lineHeight: moderateScale(24),
+    marginBottom: verticalScale(30),
   },
   modalEmail: {
     color: theme.colors.text,
@@ -681,14 +702,14 @@ const styles = StyleSheet.create({
   modalBtn: {
     backgroundColor: theme.colors.primary,
     width: "100%",
-    height: 56,
-    borderRadius: 16,
+    height: verticalScale(56),
+    borderRadius: moderateScale(16),
     justifyContent: "center",
     alignItems: "center",
   },
   modalBtnText: {
     color: "#000",
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: "900",
     textTransform: "uppercase",
   },

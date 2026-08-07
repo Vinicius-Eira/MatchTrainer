@@ -192,7 +192,6 @@ const styles = StyleSheet.create({
   missionText: { flex: 1, color: '#E0E0E0', fontSize: 14, fontWeight: '600', letterSpacing: 0.2 },
   missionTextDone: { color: 'rgba(255,255,255,0.25)', textDecorationLine: 'line-through' },
 
-  // Estilos do Modal
   modalOverlay: {
     flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20,
   },

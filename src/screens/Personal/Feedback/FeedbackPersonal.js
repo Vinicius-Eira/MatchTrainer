@@ -1,21 +1,22 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  ActivityIndicator,
-  Keyboard,
-  TouchableWithoutFeedback,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { supabase } from "../../services/supabase";
-import { theme } from "../../theme/theme";
+import { useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
+} from "react-native";
+import { supabase } from "../../../services/supabase";
+import { theme } from "../../../theme/theme";
+import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
 
 export default function FeedbackPersonal({ navigation }) {
   const [categoria, setCategoria] = useState("");
@@ -33,8 +34,8 @@ export default function FeedbackPersonal({ navigation }) {
   ];
 
   const handleEnviar = async () => {
-    Keyboard.dismiss(); 
-    
+    Keyboard.dismiss();
+
     if (!categoria)
       return Alert.alert(
         "Atenção",
@@ -100,7 +101,7 @@ export default function FeedbackPersonal({ navigation }) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled" 
+        keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -113,8 +114,8 @@ export default function FeedbackPersonal({ navigation }) {
               />
               <Text style={styles.title}>Ajude a melhorar o MatchTrainer</Text>
               <Text style={styles.subtitle}>
-                Sua opinião como personal trainer é essencial para construirmos as
-                melhores ferramentas.
+                Sua opinião como personal trainer é essencial para construirmos
+                as melhores ferramentas.
               </Text>
             </View>
 
@@ -123,10 +124,13 @@ export default function FeedbackPersonal({ navigation }) {
             </Text>
             <View style={styles.starsContainer}>
               {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity key={star} onPress={() => {
-                  Keyboard.dismiss();
-                  setNotaApp(star);
-                }}>
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setNotaApp(star);
+                  }}
+                >
                   <Ionicons
                     name={star <= notaApp ? "star" : "star-outline"}
                     size={40}
@@ -174,7 +178,7 @@ export default function FeedbackPersonal({ navigation }) {
               onChangeText={setMensagem}
               textAlignVertical="top"
               returnKeyType="done"
-              onSubmitEditing={Keyboard.dismiss} 
+              onSubmitEditing={Keyboard.dismiss}
             />
 
             <TouchableOpacity
@@ -205,55 +209,59 @@ export default function FeedbackPersonal({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 10 },
-  scrollContent: { padding: 20, paddingBottom: 50 },
+  header: {
+    paddingTop: verticalScale(60),
+    paddingHorizontal: scale(20),
+    paddingBottom: verticalScale(10),
+  },
+  scrollContent: { padding: scale(20), paddingBottom: verticalScale(50) },
 
-  titleContainer: { alignItems: "center", marginBottom: 30 },
+  titleContainer: { alignItems: "center", marginBottom: verticalScale(30) },
   title: {
     fontFamily: theme.fonts.title,
-    fontSize: 32,
+    fontSize: moderateScale(32),
     color: theme.colors.text,
-    marginTop: 15,
+    marginTop: verticalScale(15),
     textAlign: "center",
   },
   subtitle: {
     color: theme.colors.textSecondary,
-    fontSize: 14,
+    fontSize: moderateScale(14),
     textAlign: "center",
-    marginTop: 8,
-    lineHeight: 20,
+    marginTop: verticalScale(8),
+    lineHeight: moderateScale(20),
   },
 
   label: {
     color: theme.colors.text,
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: "bold",
-    marginBottom: 15,
-    marginTop: 10,
+    marginBottom: verticalScale(15),
+    marginTop: verticalScale(10),
   },
 
   starsContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 10,
-    marginBottom: 30,
+    gap: scale(10),
+    marginBottom: verticalScale(30),
   },
 
   chipsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: 30,
+    marginBottom: verticalScale(30),
   },
   chip: {
     width: "48%",
     backgroundColor: theme.colors.surface,
-    paddingVertical: 14,
-    paddingHorizontal: 5,
-    borderRadius: 12,
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(5),
+    borderRadius: moderateScale(12),
     borderWidth: 1,
     borderColor: "#333",
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -263,7 +271,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: theme.colors.textSecondary,
-    fontSize: 13,
+    fontSize: moderateScale(13),
     textAlign: "center",
     fontWeight: "500",
   },
@@ -271,23 +279,27 @@ const styles = StyleSheet.create({
 
   inputArea: {
     backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    padding: 15,
+    borderRadius: moderateScale(12),
+    padding: scale(15),
     color: theme.colors.text,
-    fontSize: 15,
-    minHeight: 120,
+    fontSize: moderateScale(15),
+    minHeight: verticalScale(120),
     borderWidth: 1,
     borderColor: "#333",
-    marginBottom: 30,
+    marginBottom: verticalScale(30),
   },
 
   btnEnviar: {
     backgroundColor: theme.colors.primary,
     flexDirection: "row",
-    padding: 16,
-    borderRadius: 12,
+    padding: scale(16),
+    borderRadius: moderateScale(12),
     justifyContent: "center",
     alignItems: "center",
   },
-  btnEnviarText: { color: "#000", fontSize: 16, fontWeight: "bold" },
+  btnEnviarText: {
+    color: "#000",
+    fontSize: moderateScale(16),
+    fontWeight: "bold",
+  },
 });

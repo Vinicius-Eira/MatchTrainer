@@ -1,19 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
+import { moderateScale, scale, verticalScale } from "../../utils/responsive";
 
 export default function AvaliarPersonal({ route, navigation }) {
   const { personalId, nomePersonal, fotoPersonal } = route.params;
@@ -122,14 +123,14 @@ export default function AvaliarPersonal({ route, navigation }) {
           {nota === 0
             ? "Toque nas estrelas para avaliar"
             : nota === 1
-              ? "Muito ruim 😞"
-              : nota === 2
-                ? "Ruim 😕"
-                : nota === 3
-                  ? "Razoável 😐"
-                  : nota === 4
-                    ? "Muito bom! 🙂"
-                    : "Excelente! 🤩"}
+            ? "Muito ruim 😞"
+            : nota === 2
+            ? "Ruim 😕"
+            : nota === 3
+            ? "Razoável 😐"
+            : nota === 4
+            ? "Muito bom! 🙂"
+            : "Excelente! 🤩"}
         </Text>
 
         <View style={styles.inputContainer}>
@@ -168,87 +169,96 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === "ios" ? 60 : 30,
-    paddingBottom: 20,
+    paddingHorizontal: scale(20),
+    paddingTop: Platform.OS === "ios" ? verticalScale(60) : verticalScale(30),
+    paddingBottom: verticalScale(20),
   },
-  btnVoltar: { width: 40, height: 40, justifyContent: "center" },
+  btnVoltar: { width: scale(40), height: scale(40), justifyContent: "center" },
   headerTitle: {
     color: theme.colors.text,
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontFamily: theme.fonts.title,
     letterSpacing: 0.5,
   },
 
-  content: { flex: 1, paddingHorizontal: 25, paddingTop: 20 },
+  content: {
+    flex: 1,
+    paddingHorizontal: scale(25),
+    paddingTop: verticalScale(20),
+  },
 
-  profileSection: { alignItems: "center", marginBottom: 30 },
+  profileSection: { alignItems: "center", marginBottom: verticalScale(30) },
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: scale(90),
+    height: scale(90),
+    borderRadius: moderateScale(45),
     borderWidth: 2,
     borderColor: theme.colors.primary,
-    marginBottom: 15,
+    marginBottom: verticalScale(15),
   },
   questionText: {
     color: theme.colors.textSecondary,
-    fontSize: 15,
+    fontSize: moderateScale(15),
     fontFamily: theme.fonts.body,
   },
   nameText: {
     color: "#FFF",
-    fontSize: 24,
+    fontSize: moderateScale(24),
     fontFamily: theme.fonts.title,
-    marginTop: 4,
+    marginTop: verticalScale(4),
   },
 
   starsContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 8,
-    marginBottom: 15,
+    gap: scale(8),
+    marginBottom: verticalScale(15),
   },
-  starButton: { padding: 4 },
+  starButton: { padding: scale(4) },
   ratingHint: {
     textAlign: "center",
     color: theme.colors.primary,
-    fontSize: 15,
+    fontSize: moderateScale(15),
     fontWeight: "bold",
-    marginBottom: 35,
+    marginBottom: verticalScale(35),
   },
 
   inputContainer: {
     backgroundColor: "#121212",
-    borderRadius: 16,
+    borderRadius: moderateScale(16),
     borderWidth: 1,
     borderColor: "#262626",
-    padding: 5,
-    marginBottom: 30,
+    padding: scale(5),
+    marginBottom: verticalScale(30),
   },
   inputArea: {
     color: "#FFF",
-    fontSize: 15,
+    fontSize: moderateScale(15),
     fontFamily: theme.fonts.body,
-    minHeight: 120,
-    padding: 15,
+    minHeight: verticalScale(120),
+    paddingHorizontal: scale(15),
+    paddingVertical: verticalScale(15),
   },
   charCounter: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
+    fontSize: moderateScale(12),
     textAlign: "right",
-    paddingRight: 15,
-    paddingBottom: 10,
+    paddingRight: scale(15),
+    paddingBottom: verticalScale(10),
   },
 
   btnSubmit: {
     backgroundColor: theme.colors.primary,
-    height: 56,
-    borderRadius: 16,
+    height: verticalScale(56),
+    borderRadius: moderateScale(16),
     justifyContent: "center",
     alignItems: "center",
     marginTop: "auto",
-    marginBottom: 40,
+    marginBottom: verticalScale(40),
   },
-  btnSubmitText: { color: "#000", fontSize: 16, fontWeight: "bold" },
+  btnSubmitText: {
+    color: "#000",
+    fontSize: moderateScale(16),
+    fontWeight: "bold",
+  },
 });

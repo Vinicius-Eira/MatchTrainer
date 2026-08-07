@@ -53,19 +53,16 @@ export function useOnboarding() {
       if (dadosJornada) {
         let atualizacoes = {};
 
-        // 1. Perfil Completo (Basta ter um nome salvo)
         if (!dadosJornada.perfil_completo) {
           const { data: pData } = await supabase.from('personals').select('nome').eq('id', session.user.id).single();
           if (pData?.nome) atualizacoes.perfil_completo = true;
         }
 
-        // 2. Meta Definida (Verifica se já existe alguma meta no banco)
         if (!dadosJornada.meta_definida) {
           const { count } = await supabase.from('metas_negocio').select('*', { count: 'exact', head: true }).eq('personal_id', session.user.id);
           if (count > 0) atualizacoes.meta_definida = true;
         }
 
-        // 3. Aluno e Contrato (Verifica se já existe algum aluno nas conexões)
         if (!dadosJornada.primeiro_aluno || !dadosJornada.primeiro_contrato) {
           const { count } = await supabase.from('conexoes').select('*', { count: 'exact', head: true }).eq('personal_id', session.user.id);
           if (count > 0) {
@@ -74,13 +71,11 @@ export function useOnboarding() {
           }
         }
 
-        // 4. Recebimento (Verifica se já tem algo no histórico financeiro)
         if (!dadosJornada.primeiro_recebimento) {
           const { count } = await supabase.from('historico_financeiro_logs').select('*', { count: 'exact', head: true }).eq('personal_id', session.user.id);
           if (count > 0) atualizacoes.primeiro_recebimento = true;
         }
 
-        // Se o sistema encontrou dados que o usuário já tinha feito, salva no banco e atualiza a tela na hora!
         if (Object.keys(atualizacoes).length > 0) {
           await supabase.from('jornada_onboarding').update(atualizacoes).eq('personal_id', session.user.id);
           dadosJornada = { ...dadosJornada, ...atualizacoes };

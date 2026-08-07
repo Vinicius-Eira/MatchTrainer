@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StatusBar, Image, ActivityInd
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import { theme } from "../../../../theme/theme";
+import { theme } from "../../../../../theme/theme";
 
 import { MODALIDADES, STATUS_FILTROS, CATEGORIAS_EXTRA, FORMAS_PAGAMENTO, MOTIVOS_CONGELAMENTO, MESES_NOME, DIAS_SEMANA } from './RecebimentosConstants';
 import { styles } from './RecebimentosStyles';
