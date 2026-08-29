@@ -1,3 +1,4 @@
+/* eslint-disable import/no-unresolved */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { validateAiResponse } from "../utils/validation.ts";
 
