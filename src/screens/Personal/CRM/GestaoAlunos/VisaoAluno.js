@@ -68,6 +68,8 @@ export default function VisaoAluno({ route, navigation }) {
   const { conexaoId, aluno, statusAtual } = route.params;
   const [status, setStatus] = useState(statusAtual);
   
+  const [activeTab, setActiveTab] = useState("visao_geral"); 
+  
   const [isFetchingData, setIsFetchingData] = useState(true);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -280,7 +282,11 @@ export default function VisaoAluno({ route, navigation }) {
         <View style={{ width: 44 }} />
       </BlurView>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B00" />}>
+      <ScrollView 
+        contentContainerStyle={[styles.scrollContent, activeTab === "treinos" && { paddingBottom: verticalScale(60) }]} 
+        showsVerticalScrollIndicator={false} 
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B00" />}
+      >
         {alunoSolicitouSaida && status === "aluno_ativo" && (
           <View style={styles.bannerDesistencia}>
             <Ionicons name="warning" size={24} color={theme.colors.backgroundPure} />
@@ -334,195 +340,281 @@ export default function VisaoAluno({ route, navigation }) {
            </View>
         ) : (
           <>
-            {status === "aluno_ativo" && planoAtivo && (
-              <View style={styles.sectionContainer}>
-                <View style={styles.sectionHeaderRow}>
-                  <Ionicons name="document-text" size={20} color="#00E676" />
-                  <Text style={styles.sectionHeading}>Contrato Ativo</Text>
-                </View>
-                <View style={styles.contratoCard}>
-                  <LinearGradient colors={["rgba(0,230,118,0.1)", "rgba(0,0,0,0)"]} style={StyleSheet.absoluteFill} borderRadius={20} />
-                  <View style={styles.contratoRowTop}>
-                    <Text style={styles.contratoValueTop}>{planoAtivo.frequencia}</Text>
-                    <Text style={styles.contratoLabelTop}>Dia {planoAtivo.dia_vencimento}</Text>
-                  </View>
-                  <View style={styles.contratoRow}>
-                    <View style={styles.contratoCol}>
-                      <Text style={styles.contratoLabel}>Serviços Contratados</Text>
-                      <Text style={styles.contratoValue}>{planoAtivo.servicos_inclusos ? planoAtivo.servicos_inclusos.join(" + ") : "Não informado"}</Text>
-                    </View>
-                    <View style={styles.contratoColRight}>
-                      <Text style={styles.contratoLabel}>Valor Total</Text>
-                      <Text style={[styles.contratoValue, { color: "#00E676", fontSize: 20 }]}>R$ {Number(planoAtivo.valor_mensal).toFixed(2)}</Text>
-                    </View>
-                  </View>
-                  {planoAtivo.observacoes ? <Text style={styles.contratoObsText}>Obs: {planoAtivo.observacoes}</Text> : null}
-                  <TouchableOpacity style={styles.btnEditarContrato} onPress={irParaNovoContrato}>
-                    <Text style={styles.btnEditarContratoText}>Ajustar Contrato</Text>
-                    <Ionicons name="chevron-forward" size={14} color="#888" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            {status === "aluno_ativo" && !planoAtivo && !isFetchingData && (
-              <View style={styles.sectionContainer}>
-                <View style={styles.bannerAlertaSemContrato}>
-                  <Ionicons name="warning" size={22} color="#FFD700" style={{ marginRight: 10 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.bannerAlertaTitle}>Atenção: Aluno Sem Contrato</Text>
-                    <Text style={styles.bannerAlertaText}>Este aluno é um cadastro antigo e não possui vínculo no Recebimentos.</Text>
-                  </View>
-                </View>
-                <TouchableOpacity style={styles.btnCriarContratoUrgente} onPress={irParaNovoContrato} activeOpacity={0.8}>
-                  <Text style={styles.btnCriarContratoUrgenteText}>Configurar Contrato Agora</Text>
+            {status === "aluno_ativo" && (
+              <View style={styles.tabContainer}>
+                <TouchableOpacity style={[styles.tabBtn, activeTab === "visao_geral" && styles.tabBtnActive]} onPress={() => setActiveTab("visao_geral")}>
+                  <Text style={[styles.tabText, activeTab === "visao_geral" && styles.tabTextActive]}>Visão Geral</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.tabBtn, activeTab === "treinos" && styles.tabBtnActive]} onPress={() => setActiveTab("treinos")}>
+                  <Text style={[styles.tabText, activeTab === "treinos" && styles.tabTextActive]}>Treinos & Evolução</Text>
                 </TouchableOpacity>
               </View>
             )}
 
-            <View style={styles.sectionContainer}>
-              <View style={styles.sectionHeaderRow}>
-                <FontAwesome5 name="clipboard-list" size={18} color={theme.colors.primary} />
-                <Text style={styles.sectionHeading}>Raio-X do Treinamento</Text>
-              </View>
-              <View style={styles.goalPremiumCard}>
-                <LinearGradient colors={["rgba(255,107,0,0.12)", "rgba(255,107,0,0.02)"]} style={StyleSheet.absoluteFillObject} />
-                <View style={styles.goalIconBox}>
-                  <Feather name="target" size={24} color={theme.colors.primary} />
-                </View>
-                <View style={styles.goalTextContent}>
-                  <Text style={styles.goalLabel}>Objetivo Principal</Text>
-                  <Text style={styles.goalValue} numberOfLines={1}>{objetivoFinal}</Text>
-                </View>
-              </View>
-
-              {prefs.sub_objetivo && prefs.sub_objetivo.length > 0 && (
-                <View style={styles.subTagsContainer}>
-                  {prefs.sub_objetivo.map((sub, index) => (
-                    <View key={index} style={styles.subTagPill}>
-                      <Text style={styles.subTagText}>{sub}</Text>
+            {activeTab === "visao_geral" || status !== "aluno_ativo" ? (
+              <>
+                {status === "aluno_ativo" && planoAtivo && (
+                  <View style={styles.sectionContainer}>
+                    <View style={styles.sectionHeaderRow}>
+                      <Ionicons name="document-text" size={20} color="#00E676" />
+                      <Text style={styles.sectionHeading}>Contrato Ativo</Text>
                     </View>
-                  ))}
-                </View>
-              )}
-
-              <View style={styles.trainingGrid}>
-                <View style={styles.trainingGridRow}>
-                  <View style={styles.trainingGridItem}>
-                    <MaterialCommunityIcons name="medal-outline" size={22} color={theme.colors.primary} style={styles.tgIcon} />
-                    <Text style={styles.tgLabel}>Histórico Físico</Text>
-                    <Text style={styles.tgValue} numberOfLines={1}>{displayHistorico}</Text>
-                  </View>
-                  <View style={styles.trainingGridItem}>
-                    <Ionicons name="calendar-outline" size={22} color={theme.colors.primary} style={styles.tgIcon} />
-                    <Text style={styles.tgLabel}>Frequência</Text>
-                    <Text style={styles.tgValue} numberOfLines={1}>{displayFrequencia}</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.sectionContainer}>
-              <View style={styles.sectionHeaderRow}>
-                <MaterialCommunityIcons name="heart-pulse" size={20} color={theme.colors.primary} />
-                <Text style={styles.sectionHeading}>Biometria & Saúde</Text>
-              </View>
-              
-              <View style={styles.statsContainer}>
-                <View style={styles.statBox}>
-                  <Ionicons name="calendar-outline" size={20} color={theme.colors.primary} style={styles.statIcon} />
-                  <Text style={styles.statValue}>{calcularIdade(aluno.data_nascimento)}</Text>
-                  <Text style={styles.statLabel}>Anos</Text>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statBox}>
-                  <MaterialCommunityIcons name="human-male-height" size={20} color={theme.colors.primary} style={styles.statIcon} />
-                  <Text style={styles.statValue}>{aluno.altura ? `${aluno.altura}` : "--"}</Text>
-                  <Text style={styles.statLabel}>Cm</Text>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statBox}>
-                  <MaterialCommunityIcons name="weight-kilogram" size={20} color={theme.colors.text} style={styles.statIcon} />
-                  <Text style={styles.statValue}>{aluno.peso ? `${aluno.peso}` : "--"}</Text>
-                  <Text style={styles.statLabel}>Atual</Text>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statBox}>
-                  <Ionicons name="flag" size={20} color={theme.colors.success} style={styles.statIcon} />
-                  <Text style={[styles.statValue, { color: theme.colors.success }]}>{metaDePeso ? `${metaDePeso}` : "--"}</Text>
-                  <Text style={[styles.statLabel, { color: theme.colors.success }]}>Meta (Kg)</Text>
-                </View>
-              </View>
-
-              {dadosIMC && (
-                <View style={[styles.imcCard, { borderColor: `${dadosIMC.cor}40`, backgroundColor: `${dadosIMC.cor}08` }]}>
-                  <View style={styles.imcHeaderRow}>
-                    <Text style={styles.imcTitle}>Índice de Massa Corporal (IMC)</Text>
-                  </View>
-                  <View style={styles.imcValueRow}>
-                    <Text style={styles.imcNumber}>{dadosIMC.valor}</Text>
-                    <View style={[styles.imcBadge, { backgroundColor: `${dadosIMC.cor}20`, borderColor: dadosIMC.cor }]}>
-                      <View style={[styles.imcBadgeDot, { backgroundColor: dadosIMC.cor }]} />
-                      <Text style={[styles.imcBadgeText, { color: dadosIMC.cor }]}>{dadosIMC.classificacao}</Text>
+                    <View style={styles.contratoCard}>
+                      <LinearGradient colors={["rgba(0,230,118,0.1)", "rgba(0,0,0,0)"]} style={StyleSheet.absoluteFill} borderRadius={20} />
+                      <View style={styles.contratoRowTop}>
+                        <Text style={styles.contratoValueTop}>{planoAtivo.frequencia}</Text>
+                        <Text style={styles.contratoLabelTop}>Dia {planoAtivo.dia_vencimento}</Text>
+                      </View>
+                      <View style={styles.contratoRow}>
+                        <View style={styles.contratoCol}>
+                          <Text style={styles.contratoLabel}>Serviços Contratados</Text>
+                          <Text style={styles.contratoValue}>{planoAtivo.servicos_inclusos ? planoAtivo.servicos_inclusos.join(" + ") : "Não informado"}</Text>
+                        </View>
+                        <View style={styles.contratoColRight}>
+                          <Text style={styles.contratoLabel}>Valor Total</Text>
+                          <Text style={[styles.contratoValue, { color: "#00E676", fontSize: 20 }]}>R$ {Number(planoAtivo.valor_mensal).toFixed(2)}</Text>
+                        </View>
+                      </View>
+                      {planoAtivo.observacoes ? <Text style={styles.contratoObsText}>Obs: {planoAtivo.observacoes}</Text> : null}
+                      <TouchableOpacity style={styles.btnEditarContrato} onPress={irParaNovoContrato}>
+                        <Text style={styles.btnEditarContratoText}>Ajustar Contrato</Text>
+                        <Ionicons name="chevron-forward" size={14} color="#888" />
+                      </TouchableOpacity>
                     </View>
-                  </View>
-                </View>
-              )}
-
-              <View style={[styles.medicalAlertCard, isRestrito ? styles.medicalAlertDanger : styles.medicalAlertSafe]}>
-                <View style={styles.medicalAlertHeader}>
-                  <Ionicons name={isRestrito ? "warning" : "checkmark-circle"} size={22} color={isRestrito ? theme.colors.danger : theme.colors.success} />
-                  <Text style={[styles.medicalAlertTitle, isRestrito ? { color: theme.colors.danger } : { color: theme.colors.success }]}>
-                    {isRestrito ? "Atenção: Restrições Físicas" : "Nenhuma Restrição Relatada"}
-                  </Text>
-                </View>
-                {isRestrito && descRestricao && (
-                  <View style={styles.medicalAlertBody}>
-                    <Text style={styles.medicalConditionDesc}>{descRestricao}</Text>
                   </View>
                 )}
-              </View>
-            </View>
 
-            <View style={styles.sectionContainer}>
-              <View style={styles.sectionHeaderRow}>
-                <Ionicons name="briefcase" size={20} color={theme.colors.primary} />
-                <Text style={styles.sectionHeading}>Alinhamento Comercial</Text>
-              </View>
-              <View style={styles.commercialCard}>
-                <View style={styles.commercialRow}>
-                  <View style={styles.commercialIconBg}><FontAwesome5 name="user-tie" size={16} color={theme.colors.primary} /></View>
-                  <View style={styles.commercialContent}>
-                    <Text style={styles.commercialLabel}>Professor Desejado</Text>
-                    <Text style={styles.commercialValue}>{MAP_PERFIL[prefs.perfil_treinador] || "Sem preferência exata"}</Text>
+                {status === "aluno_ativo" && !planoAtivo && !isFetchingData && (
+                  <View style={styles.sectionContainer}>
+                    <View style={styles.bannerAlertaSemContrato}>
+                      <Ionicons name="warning" size={22} color="#FFD700" style={{ marginRight: 10 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.bannerAlertaTitle}>Atenção: Aluno Sem Contrato</Text>
+                        <Text style={styles.bannerAlertaText}>Este aluno é um cadastro antigo e não possui vínculo no Recebimentos.</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity style={styles.btnCriarContratoUrgente} onPress={irParaNovoContrato} activeOpacity={0.8}>
+                      <Text style={styles.btnCriarContratoUrgenteText}>Configurar Contrato Agora</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                <View style={styles.sectionContainer}>
+                  <View style={styles.sectionHeaderRow}>
+                    <FontAwesome5 name="clipboard-list" size={18} color={theme.colors.primary} />
+                    <Text style={styles.sectionHeading}>Raio-X do Treinamento</Text>
+                  </View>
+                  <View style={styles.goalPremiumCard}>
+                    <LinearGradient colors={["rgba(255,107,0,0.12)", "rgba(255,107,0,0.02)"]} style={StyleSheet.absoluteFillObject} />
+                    <View style={styles.goalIconBox}>
+                      <Feather name="target" size={24} color={theme.colors.primary} />
+                    </View>
+                    <View style={styles.goalTextContent}>
+                      <Text style={styles.goalLabel}>Objetivo Principal</Text>
+                      <Text style={styles.goalValue} numberOfLines={1}>{objetivoFinal}</Text>
+                    </View>
+                  </View>
+
+                  {prefs.sub_objetivo && prefs.sub_objetivo.length > 0 && (
+                    <View style={styles.subTagsContainer}>
+                      {prefs.sub_objetivo.map((sub, index) => (
+                        <View key={index} style={styles.subTagPill}>
+                          <Text style={styles.subTagText}>{sub}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  <View style={styles.trainingGrid}>
+                    <View style={styles.trainingGridRow}>
+                      <View style={styles.trainingGridItem}>
+                        <MaterialCommunityIcons name="medal-outline" size={22} color={theme.colors.primary} style={styles.tgIcon} />
+                        <Text style={styles.tgLabel}>Histórico Físico</Text>
+                        <Text style={styles.tgValue} numberOfLines={1}>{displayHistorico}</Text>
+                      </View>
+                      <View style={styles.trainingGridItem}>
+                        <Ionicons name="calendar-outline" size={22} color={theme.colors.primary} style={styles.tgIcon} />
+                        <Text style={styles.tgLabel}>Frequência</Text>
+                        <Text style={styles.tgValue} numberOfLines={1}>{displayFrequencia}</Text>
+                      </View>
+                    </View>
                   </View>
                 </View>
-                <View style={styles.dividerCommercial} />
-                <View style={styles.commercialRow}>
-                  <View style={styles.commercialIconBg}><FontAwesome5 name="money-bill-wave" size={16} color={theme.colors.success} /></View>
-                  <View style={styles.commercialContent}>
-                    <Text style={styles.commercialLabel}>Orçamento / Investimento</Text>
-                    <Text style={[styles.commercialValue, { color: theme.colors.success }]}>{MAP_INVESTIMENTO[prefs.investimento] || "Aberto a propostas"}</Text>
+
+                <View style={styles.sectionContainer}>
+                  <View style={styles.sectionHeaderRow}>
+                    <MaterialCommunityIcons name="heart-pulse" size={20} color={theme.colors.primary} />
+                    <Text style={styles.sectionHeading}>Biometria & Saúde</Text>
+                  </View>
+                  
+                  <View style={styles.statsContainer}>
+                    <View style={styles.statBox}>
+                      <Ionicons name="calendar-outline" size={20} color={theme.colors.primary} style={styles.statIcon} />
+                      <Text style={styles.statValue}>{calcularIdade(aluno.data_nascimento)}</Text>
+                      <Text style={styles.statLabel}>Anos</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statBox}>
+                      <MaterialCommunityIcons name="human-male-height" size={20} color={theme.colors.primary} style={styles.statIcon} />
+                      <Text style={styles.statValue}>{aluno.altura ? `${aluno.altura}` : "--"}</Text>
+                      <Text style={styles.statLabel}>Cm</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statBox}>
+                      <MaterialCommunityIcons name="weight-kilogram" size={20} color={theme.colors.text} style={styles.statIcon} />
+                      <Text style={styles.statValue}>{aluno.peso ? `${aluno.peso}` : "--"}</Text>
+                      <Text style={styles.statLabel}>Atual</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statBox}>
+                      <Ionicons name="flag" size={20} color={theme.colors.success} style={styles.statIcon} />
+                      <Text style={[styles.statValue, { color: theme.colors.success }]}>{metaDePeso ? `${metaDePeso}` : "--"}</Text>
+                      <Text style={[styles.statLabel, { color: theme.colors.success }]}>Meta (Kg)</Text>
+                    </View>
+                  </View>
+
+                  {dadosIMC && (
+                    <View style={[styles.imcCard, { borderColor: `${dadosIMC.cor}40`, backgroundColor: `${dadosIMC.cor}08` }]}>
+                      <View style={styles.imcHeaderRow}>
+                        <Text style={styles.imcTitle}>Índice de Massa Corporal (IMC)</Text>
+                      </View>
+                      <View style={styles.imcValueRow}>
+                        <Text style={styles.imcNumber}>{dadosIMC.valor}</Text>
+                        <View style={[styles.imcBadge, { backgroundColor: `${dadosIMC.cor}20`, borderColor: dadosIMC.cor }]}>
+                          <View style={[styles.imcBadgeDot, { backgroundColor: dadosIMC.cor }]} />
+                          <Text style={[styles.imcBadgeText, { color: dadosIMC.cor }]}>{dadosIMC.classificacao}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+
+                  <View style={[styles.medicalAlertCard, isRestrito ? styles.medicalAlertDanger : styles.medicalAlertSafe]}>
+                    <View style={styles.medicalAlertHeader}>
+                      <Ionicons name={isRestrito ? "warning" : "checkmark-circle"} size={22} color={isRestrito ? theme.colors.danger : theme.colors.success} />
+                      <Text style={[styles.medicalAlertTitle, isRestrito ? { color: theme.colors.danger } : { color: theme.colors.success }]}>
+                        {isRestrito ? "Atenção: Restrições Físicas" : "Nenhuma Restrição Relatada"}
+                      </Text>
+                    </View>
+                    {isRestrito && descRestricao && (
+                      <View style={styles.medicalAlertBody}>
+                        <Text style={styles.medicalConditionDesc}>{descRestricao}</Text>
+                      </View>
+                    )}
                   </View>
                 </View>
-              </View>
-            </View>
 
-            {status === "aluno_ativo" && (
-              <View style={styles.dangerZone}>
-                <TouchableOpacity style={styles.btnDangerOutline} onPress={handlePersonalEncerraParceria}>
-                  <Text style={styles.btnDangerText}>Encerrar Contrato</Text>
+                <View style={styles.sectionContainer}>
+                  <View style={styles.sectionHeaderRow}>
+                    <Ionicons name="briefcase" size={20} color={theme.colors.primary} />
+                    <Text style={styles.sectionHeading}>Alinhamento Comercial</Text>
+                  </View>
+                  <View style={styles.commercialCard}>
+                    <View style={styles.commercialRow}>
+                      <View style={styles.commercialIconBg}><FontAwesome5 name="user-tie" size={16} color={theme.colors.primary} /></View>
+                      <View style={styles.commercialContent}>
+                        <Text style={styles.commercialLabel}>Professor Desejado</Text>
+                        <Text style={styles.commercialValue}>{MAP_PERFIL[prefs.perfil_treinador] || "Sem preferência exata"}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.dividerCommercial} />
+                    <View style={styles.commercialRow}>
+                      <View style={styles.commercialIconBg}><FontAwesome5 name="money-bill-wave" size={16} color={theme.colors.success} /></View>
+                      <View style={styles.commercialContent}>
+                        <Text style={styles.commercialLabel}>Orçamento / Investimento</Text>
+                        <Text style={[styles.commercialValue, { color: theme.colors.success }]}>{MAP_INVESTIMENTO[prefs.investimento] || "Aberto a propostas"}</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {status === "aluno_ativo" && (
+                  <View style={styles.dangerZone}>
+                    <TouchableOpacity style={styles.btnDangerOutline} onPress={handlePersonalEncerraParceria}>
+                      <Text style={styles.btnDangerText}>Encerrar Contrato</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.dangerZoneHelp}>O aluno perderá acesso aos treinos e será movido para o histórico.</Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              <View style={styles.sectionContainer}>
+                
+                <View style={styles.sectionHeaderRow}>
+                  <FontAwesome5 name="dumbbell" size={20} color={theme.colors.primary} />
+                  <Text style={styles.sectionHeading}>Programas de Treino</Text>
+                </View>
+                
+                <TouchableOpacity 
+                  style={styles.btnCriarTreino} 
+                  onPress={() => navigation.navigate("WorkoutCreator", { 
+                    alunoId: aluno?.id, 
+                    studentId: aluno?.id, 
+                    usuarioId: aluno?.id, 
+                    alunoNome: aluno?.nome 
+                  })}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="add-circle" size={24} color="#000" />
+                  <Text style={styles.btnCriarTreinoText}>Montar Novo Treino</Text>
                 </TouchableOpacity>
-                <Text style={styles.dangerZoneHelp}>O aluno perderá acesso aos treinos e será movido para o histórico.</Text>
+
+                <View style={styles.treinosMainCard}>
+                  <View style={styles.treinosCardHeader}>
+                    <View style={styles.treinosIconBg}>
+                      <Ionicons name="list" size={28} color={theme.colors.primary} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.treinosCardTitle}>Gestão de Treinos</Text>
+                      <Text style={styles.treinosCardDesc}>Controle as fichas e rotinas deste aluno</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.treinosActionRow}>
+                    <TouchableOpacity 
+                      style={styles.btnVerTreinos} 
+                      onPress={() => navigation.navigate("ListaTreinosAluno", { 
+                        alunoId: aluno?.id, 
+                        alunoNome: aluno?.nome 
+                      })}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="eye" size={18} color={theme.colors.primary} />
+                      <Text style={styles.btnVerTreinosText}>Ver Treinos</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                    style={styles.btnVerTreinos} 
+                    onPress={() => Alert.alert("Histórico", "Aqui você poderá ver as fichas antigas e arquivadas deste aluno.")}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="archive-outline" size={18} color={theme.colors.primary} />
+                    <Text style={styles.btnVerTreinosText}>Histórico</Text>
+                  </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={[styles.sectionHeaderRow, { marginTop: verticalScale(20) }]}>
+                  <Ionicons name="trending-up" size={24} color={theme.colors.primary} />
+                  <Text style={styles.sectionHeading}>Evolução do Aluno</Text>
+                </View>
+
+                <View style={styles.evolutionCard}>
+                  <View style={styles.evolutionIconBg}>
+                    <Ionicons name="bar-chart" size={32} color={theme.colors.primary} />
+                  </View>
+                  <Text style={styles.evolutionTitle}>Histórico de Progresso</Text>
+                  <Text style={styles.evolutionDesc}>Os gráficos de progressão de cargas e consistência de treinos deste aluno aparecerão aqui à medida que ele finalizar as sessões no aplicativo.</Text>
+                </View>
+
               </View>
             )}
           </>
         )}
       </ScrollView>
 
-      {status !== "inativo" && (
+      {/* RENDERIZAÇÃO CONDICIONAL DA BARRA FLUTUANTE */}
+      {status !== "inativo" && activeTab === "visao_geral" && (
         <View style={styles.floatingActionBar}>
-          
           {status === "aguardando_assinatura" ? (
             <View style={styles.actionColumn}>
               <View style={styles.actionRow}>
@@ -606,6 +698,28 @@ const styles = StyleSheet.create({
   quickInfoRow: { flexDirection: "row", gap: scale(8), justifyContent: "center", paddingHorizontal: scale(20), width: "100%" },
   quickInfoPill: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.surfaceLight, paddingHorizontal: scale(10), paddingVertical: verticalScale(8), borderRadius: moderateScale(20), borderWidth: 1, borderColor: theme.colors.border, gap: scale(6), overflow: "hidden" },
   quickInfoText: { color: theme.colors.textBody, fontSize: moderateScale(11), fontWeight: "700", letterSpacing: 0.3, flexShrink: 1 },
+
+  tabContainer: { flexDirection: 'row', paddingHorizontal: scale(20), marginBottom: verticalScale(25), gap: scale(15) },
+  tabBtn: { flex: 1, paddingVertical: verticalScale(12), alignItems: 'center', borderBottomWidth: 3, borderBottomColor: 'transparent' },
+  tabBtnActive: { borderBottomColor: theme.colors.primary },
+  tabText: { color: theme.colors.textSecondary, fontSize: moderateScale(14), fontWeight: 'bold' },
+  tabTextActive: { color: theme.colors.primary },
+
+  treinosMainCard: { backgroundColor: theme.colors.surfaceLight, borderRadius: moderateScale(16), padding: scale(20), borderWidth: 1, borderColor: theme.colors.borderLight },
+  treinosCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: verticalScale(20) },
+  treinosIconBg: { width: scale(48), height: scale(48), borderRadius: moderateScale(14), backgroundColor: "rgba(255,107,0,0.1)", justifyContent: 'center', alignItems: 'center' },
+  treinosCardTitle: { color: theme.colors.text, fontSize: moderateScale(16), fontFamily: theme.fonts.title },
+  treinosCardDesc: { color: theme.colors.textSecondary, fontSize: moderateScale(12), marginTop: verticalScale(2) },
+  treinosActionRow: { flexDirection: 'row', gap: scale(10) },
+  btnVerTreinos: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: verticalScale(14), borderRadius: moderateScale(12), borderWidth: 1, borderColor: theme.colors.primary, gap: scale(6) },
+  btnVerTreinosText: { color: theme.colors.primary, fontSize: moderateScale(13), fontWeight: 'bold', textTransform: 'uppercase' },
+  btnCriarTreinoSmall: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primary, paddingVertical: verticalScale(14), borderRadius: moderateScale(12), gap: scale(6), shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 4 },
+  btnCriarTreinoSmallText: { color: '#000', fontSize: moderateScale(13), fontWeight: 'bold', textTransform: 'uppercase' },
+
+  evolutionCard: { backgroundColor: theme.colors.surfaceLight, borderRadius: moderateScale(16), padding: scale(24), alignItems: 'center', borderWidth: 1, borderColor: theme.colors.borderLight },
+  evolutionIconBg: { width: scale(64), height: scale(64), borderRadius: moderateScale(32), backgroundColor: "rgba(255, 107, 0, 0.1)", justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(12) },
+  evolutionTitle: { color: theme.colors.text, fontSize: moderateScale(18), fontFamily: theme.fonts.title, marginBottom: verticalScale(8) },
+  evolutionDesc: { color: theme.colors.textSecondary, fontSize: moderateScale(13), textAlign: 'center', lineHeight: moderateScale(20) },
 
   sectionContainer: { paddingHorizontal: scale(20), marginBottom: verticalScale(35) },
   sectionHeaderRow: { flexDirection: "row", alignItems: "center", marginBottom: verticalScale(16) },
