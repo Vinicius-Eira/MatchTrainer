@@ -14,12 +14,12 @@ import { Alert, Text, TextInput, View } from "react-native";
 import { supabase } from "./src/services/supabase";
 
 import ChoiceScreen from "./src/screens/Auth/ChoiceScreen";
-import PersonalCadastro from "./src/screens/Auth/personal/PersonalCadastro";
-import PersonalLogin from "./src/screens/Auth/personal/PersonalLogin";
+import PersonalCadastro from "./src/screens/Auth/Personal/PersonalCadastro";
+import PersonalLogin from "./src/screens/Auth/Personal/PersonalLogin";
 import SplashScreen from "./src/screens/Auth/SplashScreen";
 import TermosDeUso from "./src/screens/Auth/TermosDeUso";
-import ClienteCadastro from "./src/screens/Auth/user/ClienteCadastro";
-import ClienteLogin from "./src/screens/Auth/user/ClienteLogin";
+import ClienteCadastro from "./src/screens/Auth/User/ClienteCadastro";
+import ClienteLogin from "./src/screens/Auth/User/ClienteLogin";
 import ClienteSetup from "./src/screens/Onboarding/ClienteSetup";
 import PersonalSetup from "./src/screens/Onboarding/PersonalSetup";
 
@@ -28,9 +28,21 @@ import MiniOnboarding from "./src/screens/Onboarding/AlunoOnboarding/MiniOnboard
 import PainelMeuTreinador from "./src/screens/User/PainelMeuTreinador";
 
 import PersonalDashboard from "./src/screens/Personal/CRM/Dashboard/PersonalDashboard";
+import { InsightDetailScreen } from "./src/screens/Personal/CRM/Dashboard/InsightDetailScreen";
 import VisaoAluno from "./src/screens/Personal/CRM/GestaoAlunos/VisaoAluno";
+import MeusAlunos from "./src/screens/Personal/CRM/GestaoAlunos/MeusAlunos";
+import ListaTreinosAluno from "./src/screens/Personal/CRM/GestaoAlunos/ListaTreinosAluno";
+import AdicionarAluno from "./src/screens/Personal/CRM/NovoContrato/AdicionarAluno";
+import PropostaAluno from "./src/screens/Personal/CRM/NovoContrato/PropostaAluno";
+import PainelCrescimento from "./src/screens/Personal/CRM/Financeiro/painelcrescimento";
+import Recebimentos from "./src/screens/Personal/CRM/Financeiro/recebimentos";
+
 import Avaliacoes from "./src/screens/Personal/Feedback/Avaliacoes";
 import FeedbackPersonal from "./src/screens/Personal/Feedback/FeedbackPersonal";
+
+import { ExerciseLibraryScreen } from "./src/screens/Personal/ExerciseLibrary/ExerciseLibrary";
+import { Presets } from "./src/screens/Personal/MeusPresets/Presets"; 
+import { WorkoutCreator } from "./src/screens/Personal/WorkoutCreator/WorkoutCreator"; 
 
 import Avaliar from "./src/screens/User/Avaliar";
 import AvaliarPersonal from "./src/screens/User/AvaliarPersonal";
@@ -40,15 +52,10 @@ import PerfilPublicoPersonal from "./src/screens/User/PerfilPublicoPersonal";
 
 import EsqueciSenha from "./src/screens/Auth/password/EsqueciSenha";
 import RedefinirSenha from "./src/screens/Auth/password/RedefinirSenha";
-import AtivarConvite from "./src/screens/Auth/user/AtivarConta";
-import MeusAlunos from "./src/screens/Personal/CRM/GestaoAlunos/MeusAlunos";
-import AdicionarAluno from "./src/screens/Personal/CRM/NovoContrato/AdicionarAluno";
+import AtivarConvite from "./src/screens/Auth/User/AtivarConta";
 import Chat from "./src/screens/Shared/Chat";
 import ConversasAluno from "./src/screens/Shared/Conversas";
 
-import PainelCrescimento from "./src/screens/Personal/CRM/Financeiro/painelcrescimento";
-import Recebimentos from "./src/screens/Personal/CRM/Financeiro/recebimentos";
-import PropostaAluno from "./src/screens/Personal/CRM/NovoContrato/PropostaAluno";
 
 if (Text.defaultProps == null) {
   Text.defaultProps = {};
@@ -284,10 +291,18 @@ export default function App() {
           component={MeusAlunos}
           options={{ headerShown: false }}
         />
+        <RootStack.Screen name="ListaTreinosAluno" component={ListaTreinosAluno} />
         <RootStack.Screen
           name="PersonalDashboard"
           component={PersonalDashboard}
         />
+        
+        {/* NOVAS ROTAS DO CRM E TREINO ADICIONADAS */}
+        <RootStack.Screen name="InsightDetailScreen" component={InsightDetailScreen} />
+        <RootStack.Screen name="ExerciseLibrary" component={ExerciseLibraryScreen} />
+        <RootStack.Screen name="Presets" component={Presets} />
+        <RootStack.Screen name="WorkoutCreator" component={WorkoutCreator} />
+        
         <RootStack.Screen
           name="FeedbackPersonal"
           component={FeedbackPersonal}
@@ -333,7 +348,7 @@ export default function App() {
           component={PainelCrescimento}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
+        <RootStack.Screen
           name="PropostaAluno"
           component={PropostaAluno}
           options={{ headerShown: false }}

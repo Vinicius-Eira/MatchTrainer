@@ -12,8 +12,13 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Dimensions
+  Dimensions,
+  FlatList, 
+  RefreshControl, 
+  TextInput, 
+  Modal
 } from "react-native";
+import { InsightCard } from '../../../../components/personal/InsightCard';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -22,7 +27,6 @@ import { scale, verticalScale, moderateScale } from "../../../../utils/responsiv
 import { supabase } from "../../../../services/supabase"; 
 import WidgetOnboarding from "../../../../components/WidgetOnboarding";
 import { useOnboarding } from "../../../../hooks/useOnboarding";
-import { FlatList, RefreshControl, TextInput, Modal } from "react-native";
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -38,6 +42,8 @@ export default function PersonalDashboard({ navigation }) {
     loadingJornada,
     recarregarJornada,
   } = useOnboarding();
+
+  const [insightsReais, setInsightsReais] = useState([]);
 
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("aluno_ativo");
@@ -78,6 +84,10 @@ export default function PersonalDashboard({ navigation }) {
       idade--;
     }
     return idade;
+  };
+
+  const handleOpenInsight = (insightId) => {
+    navigation.navigate("InsightDetailScreen", { insightId: insightId });
   };
 
   const carregarDados = async () => {
@@ -288,6 +298,36 @@ export default function PersonalDashboard({ navigation }) {
       setInativos(dataInativos);
       setNotaMedia(mediaRes.data || 0);
 
+      const { data: insightsData } = await supabase
+        .from('insights')
+        .select('*')
+        .eq('personal_id', session.user.id)
+        .eq('is_resolved', false)
+        .order('created_at', { ascending: false });
+
+      if (insightsData) {
+        const insightsFormatados = insightsData.map(ins => {
+          const alunoEncontrado = todasConexoes.find(
+            a => a.usuario_id === ins.aluno_id
+          );
+
+          return {
+            id: ins.id,
+            aluno: { 
+              id: ins.aluno_id, 
+              nome: alunoEncontrado?.usuarios?.nome || 'Aluno' 
+            },
+            priority: ins.priority,
+            exerciseName: ins.exercise_name,
+            painLocation: ins.pain_location,
+            painIntensity: ins.pain_intensity,
+            type: ins.type,
+            createdAt: ins.created_at
+          };
+        });
+        setInsightsReais(insightsFormatados);
+      }
+
       if (emContatoReais.length === 0 && ativosReais.length > 0) setActiveTab("aluno_ativo");
 
     } catch (error) {
@@ -369,11 +409,9 @@ export default function PersonalDashboard({ navigation }) {
       dataFormatada = `${d.getDate()} de ${mes.charAt(0).toUpperCase() + mes.slice(1)}`;
     }
 
-    // Cores Semânticas de Origem solicitadas
     let leftBorderColor = isVIP ? "#0A84FF" : "#00E676"; 
-    if (isInativo) leftBorderColor = "#FF3B30"; // Vermelho inativo sobrepõe
+    if (isInativo) leftBorderColor = "#FF3B30";
 
-    // Dados Extras do Aluno (Peso e Frequência)
     const prefs = userData?.preferencias || {};
     const pesoStr = userData?.peso ? `${userData.peso}kg` : null;
     const freqBruta = prefs?.frequencia_semanal || prefs?.frequencia;
@@ -591,6 +629,43 @@ export default function PersonalDashboard({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        <TouchableOpacity style={styles.fullWidthCard} activeOpacity={0.8} onPress={() => navigation.navigate("Presets")}>
+          <View style={styles.fullWidthCardIconBg}>
+            <MaterialCommunityIcons name="dumbbell" size={moderateScale(24)} color={theme.colors.primary} />
+          </View>
+          <View style={styles.fullWidthCardText}>
+            <Text style={styles.fullWidthCardTitle}>Modelos de Treino</Text>
+            <Text style={styles.fullWidthCardSubtitle}>Gerencie suas fichas e presets globais</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={moderateScale(20)} color={theme.colors.textSecondary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.fullWidthCard} activeOpacity={0.8} onPress={() => navigation.navigate("ExerciseLibrary")}>
+          <View style={[styles.fullWidthCardIconBg, { backgroundColor: "rgba(0, 230, 118, 0.15)" }]}>
+            <Ionicons name="play-circle-outline" size={moderateScale(26)} color="#00E676" />
+          </View>
+          <View style={styles.fullWidthCardText}>
+            <Text style={styles.fullWidthCardTitle}>Meus Exercícios e Vídeos</Text>
+            <Text style={styles.fullWidthCardSubtitle}>Crie exercícios e suba vídeos da galeria</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={moderateScale(20)} color={theme.colors.textSecondary} />
+        </TouchableOpacity>
+
+        {insightsReais.length > 0 && (
+          <View style={{ marginBottom: verticalScale(20), marginTop: verticalScale(15) }}>
+            <Text style={[styles.sectionTitle, { marginBottom: verticalScale(10) }]}>
+                🚨 Atenção Necessária
+            </Text>
+            {insightsReais.map((insight) => (
+              <InsightCard 
+                key={insight.id} 
+                insight={insight} 
+                onPress={handleOpenInsight} 
+              />
+            ))}
+          </View>
+        )}
+
         <View style={styles.crmHeader}>
           <Text style={styles.sectionTitle}>Gestão de Alunos</Text>
           <View style={styles.headerActions}>
@@ -735,12 +810,19 @@ const styles = StyleSheet.create({
 
   scrollContent: { padding: scale(20), paddingBottom: verticalScale(80) },
 
-  quickAccessGrid: { flexDirection: "row", justifyContent: "space-between", gap: scale(12), marginTop: verticalScale(10), marginBottom: verticalScale(5) },
+  quickAccessGrid: { flexDirection: "row", justifyContent: "space-between", gap: scale(12), marginTop: verticalScale(10), marginBottom: verticalScale(12) },
   quickAccessCard: { flex: 1, backgroundColor: theme.colors.surface, borderRadius: moderateScale(20), padding: scale(16), borderWidth: 1, borderColor: theme.colors.borderLight, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
   quickAccessHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: verticalScale(12) },
   quickAccessIcon: { width: scale(40), height: scale(40), borderRadius: moderateScale(12), justifyContent: "center", alignItems: "center" },
   quickAccessTitle: { color: theme.colors.text, fontSize: moderateScale(15), fontWeight: "bold", marginBottom: verticalScale(2), letterSpacing: 0.2 },
   quickAccessSubtitle: { color: theme.colors.textSecondary, fontSize: moderateScale(12) },
+
+  // Estilos do novo Botão de Presets Full-Width
+  fullWidthCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, borderRadius: moderateScale(20), padding: scale(16), marginBottom: verticalScale(15), borderWidth: 1, borderColor: theme.colors.borderLight, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
+  fullWidthCardIconBg: { width: scale(48), height: scale(48), borderRadius: moderateScale(14), backgroundColor: "rgba(255, 107, 0, 0.15)", justifyContent: 'center', alignItems: 'center', marginRight: scale(12) },
+  fullWidthCardText: { flex: 1 },
+  fullWidthCardTitle: { color: theme.colors.text, fontSize: moderateScale(16), fontWeight: 'bold', marginBottom: verticalScale(2) },
+  fullWidthCardSubtitle: { color: theme.colors.textSecondary, fontSize: moderateScale(13) },
 
   crmHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: verticalScale(20), marginTop: verticalScale(25) },
   sectionTitle: { color: theme.colors.text, fontSize: moderateScale(22), fontFamily: theme.fonts.title },
@@ -780,7 +862,6 @@ const styles = StyleSheet.create({
   sheetBtnClose: { marginTop: verticalScale(25), backgroundColor: theme.colors.primary, paddingVertical: verticalScale(16), borderRadius: moderateScale(16), alignItems: "center", shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
   sheetBtnCloseText: { color: "#000", fontSize: moderateScale(15), fontWeight: "900", textTransform: "uppercase" },
 
-  /* === CARDS DE GESTÃO - DESIGN PREMIUM E LIMPO === */
   studentCardPremium: {
     backgroundColor: "#111", 
     borderRadius: moderateScale(16),
@@ -995,4 +1076,4 @@ const styles = StyleSheet.create({
   emptyIconBg: { width: scale(88), height: scale(88), borderRadius: moderateScale(44), backgroundColor: theme.colors.surface, justifyContent: "center", alignItems: "center", marginBottom: verticalScale(20), borderWidth: 1, borderColor: theme.colors.borderLight },
   emptyTitle: { color: theme.colors.text, fontSize: moderateScale(20), fontWeight: "bold", marginBottom: verticalScale(10) },
   emptyText: { color: theme.colors.textSecondary, fontSize: moderateScale(14), textAlign: "center", lineHeight: moderateScale(22), paddingHorizontal: scale(20) },
-}); 
+});
