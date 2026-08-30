@@ -1,3 +1,4 @@
+/* eslint-disable import/no-unresolved */
 import { z } from "npm:zod";
 
 export const StructuredSuggestionSchema = z.object({

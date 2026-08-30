@@ -1,4 +1,4 @@
-import { supabase } from './supabase';   
+import { supabase } from './supabase';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -38,6 +38,43 @@ export class ExerciseService {
     }
   }
 
+  static async updateExerciseMedia(exerciseId: string, mediaUrl: string) {
+    try {
+      console.log(`\n--- INICIANDO UPDATE NO BANCO ---`);
+      console.log(`ID do Exercício Alvo: ${exerciseId}`);
+      console.log(`URL da Mídia enviada: ${mediaUrl}`);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Usuário não autenticado.");
+
+      const { data, error } = await supabase
+        .from('exercises')
+        .update({ 
+          video_url: mediaUrl, 
+          gif_url: mediaUrl,
+          personal_id: session.user.id
+        })
+        .eq('id', exerciseId)
+        .select();
+
+      console.log(`RESPOSTA DO SUPABASE (Error):`, error);
+      console.log(`RESPOSTA DO SUPABASE (Data):`, data);
+
+      if (error) throw new Error(error.message);
+      
+      if (!data || data.length === 0) {
+        console.log(`❌ ALERTA: O banco retornou vazio. A edição foi BLOQUEADA silenciosamente.`);
+        throw new Error("O banco bloqueou a edição (Provável erro de permissão RLS).");
+      }
+
+      console.log(`✅ SUCESSO: Exercício atualizado no banco!`);
+      return { success: true };
+    } catch (error: any) {
+      console.log(`🚨 ERRO NO UPDATE:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
   static async createCustomExercise(
     name: string, 
     muscleGroup: string, 
@@ -50,12 +87,12 @@ export class ExerciseService {
       
       const personalId = session.user.id;
       const newExercise = {
-        id: uuidv4(),
         name: name,
         muscle_group: muscleGroup,
         equipment: equipment,
         video_url: mediaUrl || null,
-        created_by: personalId 
+        gif_url: mediaUrl || null,
+        personal_id: personalId 
       };
 
       const { error } = await supabase.from('exercises').insert(newExercise);

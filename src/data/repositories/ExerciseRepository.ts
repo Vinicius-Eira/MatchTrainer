@@ -56,8 +56,8 @@ export class SupabaseExerciseRepository implements IExerciseRepository {
         instructions: [],
         tips: [],
         isActive: true,
-        video_url: item.video_url || item.gif_url || null, 
-        gif_url: item.video_url || item.gif_url || null,
+        video_url: item.video_url || item.gif_url || '', 
+        gif_url: item.gif_url || item.video_url || '',
         personal_id: item.personal_id,
       }));
 

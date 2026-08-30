@@ -25,7 +25,6 @@ export class GeminiProvider implements AIProvider {
         }],
         generationConfig: {
           responseMimeType: "application/json",
-          // No plano gratuito, pedimos JSON puro e confiamos na nossa barreira Zod para validar o formato
         }
       })
     });
@@ -37,12 +36,10 @@ export class GeminiProvider implements AIProvider {
     const data = await response.json();
     const latencyMs = Date.now() - startTime;
     
-    // O Gemini também retorna o uso de tokens na resposta
     const tokensInput = data.usageMetadata?.promptTokenCount || 0;
     const tokensOutput = data.usageMetadata?.candidatesTokenCount || 0;
-    const costUsd = 0; // CUSTO ZERO NO PLANO GRATUITO! 🎉
+    const costUsd = 0; 
 
-    // O Gemini retorna o JSON dentro de uma string na propriedade 'text'
     const jsonString = data.candidates[0].content.parts[0].text;
 
     return {

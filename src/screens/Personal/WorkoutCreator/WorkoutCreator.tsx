@@ -6,7 +6,7 @@ import { useWorkoutCreatorStore } from '../../../store/useWorkoutCreatorStore';
 import { DraftExerciseCard } from '../../../components/Exercise/DraftExerciseCard';
 import { supabase } from '../../../services/supabase';
 import { WorkoutService } from '../../../services/WorkoutService';
-// import { AIGeneratorModal, AITrainingParams } from '../../../components/AI/AIGeneratorModal';
+import { AIGeneratorModal, AITrainingParams } from '../../../components/AI/AIGeneratorModal';
 import { GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 
@@ -138,19 +138,47 @@ export const WorkoutCreator = ({ navigation, route }: any) => {
     }
   };
 
-  // const handleGenerateAITraining = async (params: AITrainingParams) => {
-  //   setIsGeneratingAI(true);
-  //   try {
-  //     setTimeout(() => {
-  //       setIsGeneratingAI(false);
-  //       setIsAIModalVisible(false);
-  //       Alert.alert("Copiloto IA 🚀", `Parâmetros aplicados com sucesso! Nível: ${params.nivel}, Objetivo: ${params.objetivo}, Frequência: ${params.frequencia}x.`);
-  //     }, 1500);
-  //   } catch (error) {
-  //     Alert.alert("Erro", "Falha ao gerar treino com IA.");
-  //     setIsGeneratingAI(false);
-  //   }
-  // };
+  const handleGenerateAITraining = async (params: AITrainingParams) => {
+    setIsGeneratingAI(true);
+    try {
+      console.log("Enviando requisição para a IA...");
+      
+      const { data, error } = await supabase.functions.invoke('AI-Treino', {
+        body: params,
+      });
+
+      if (error) {
+        console.log("❌ ERRO COMPLETO DA FUNÇÃO:", error);
+        if (error.context) {
+          const errorDetails = await error.context.text();
+          console.log("🔍 DETALHES DO SERVIDOR:", errorDetails);
+        }
+        throw error;
+      }
+
+      if (data && data.success && data.data) {
+        const treinoIA = data.data;
+        store.hydrateWorkout(
+          treinoIA.programName,
+          treinoIA.objective,
+          treinoIA.days,
+          null,
+          treinoIA.generalObservation
+        );
+        
+        setIsAIModalVisible(false);
+        Alert.alert("Sucesso! 🪄", "A base do treino foi gerada. Ajuste as cargas e exercícios conforme necessário antes de publicar.");
+      } else {
+        console.log("Retorno inesperado da IA:", data);
+        throw new Error("Formato de retorno inválido");
+      }
+
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível gerar a ficha no momento. Tente novamente.");
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
 
   const handleSaveAndPublish = async () => {
     if (!store.programName) {
@@ -250,22 +278,41 @@ export const WorkoutCreator = ({ navigation, route }: any) => {
             renderItem={renderExerciseItem}
             ListHeaderComponent={
               <View style={styles.listHeaderContainer}>
+                
                 <View style={styles.infoSection}>
                   {!isPresetMode && (
-                    <View style={styles.actionButtonsRow}>
-                      <TouchableOpacity style={styles.aiBtn} onPress={() => setIsAIModalVisible(true)}>
-                        <MaterialCommunityIcons name="auto-fix" size={16} color="#FF5100" style={{ marginRight: 6 }} />
-                        <Text style={styles.aiBtnText}>Copiloto IA</Text>
+                    <View style={styles.topActionsContainer}>
+                      <TouchableOpacity style={styles.premiumAIBtn} onPress={() => setIsAIModalVisible(true)}>
+                        <MaterialCommunityIcons name="auto-fix" size={20} color="#FF5100" style={{ marginRight: 8 }} />
+                        <Text style={styles.premiumAIBtnText}>Copiloto IA</Text>
                       </TouchableOpacity>
 
-                      <TouchableOpacity style={styles.importPresetBtn} onPress={handleOpenImportModal}>
-                        <Feather name="download" size={16} color="#FF5100" style={{ marginRight: 6 }} />
-                        <Text style={styles.importPresetText}>Modelos</Text>
+                      <TouchableOpacity style={styles.premiumModelBtn} onPress={handleOpenImportModal}>
+                        <Feather name="download" size={20} color="#A0A0A5" style={{ marginRight: 8 }} />
+                        <Text style={styles.premiumModelBtnText}>Modelos</Text>
                       </TouchableOpacity>
                     </View>
                   )}
-                  <TextInput style={styles.inputTitleLarge} placeholder={isPresetMode ? "Nome do Modelo Global" : "Nome da Ficha"} placeholderTextColor="#666" value={store.programName} onChangeText={store.setProgramName} />
-                  <TextInput style={styles.inputSubtitle} placeholder={isPresetMode ? "Ex: Foco em iniciantes para emagrecimento" : "Objetivo (Ex: Foco em hipertrofia)"} placeholderTextColor="#555" value={store.objective} onChangeText={store.setObjective} />
+
+                  <View style={styles.formContainer}>
+                    <Text style={styles.inputLabel}>NOME DA FICHA</Text>
+                    <TextInput 
+                      style={styles.inputTitleLarge} 
+                      placeholder={isPresetMode ? "Ex: Modelo Global Hipertrofia" : "Ex: Treino A - Costas e Bíceps"} 
+                      placeholderTextColor="#555" 
+                      value={store.programName} 
+                      onChangeText={store.setProgramName} 
+                    />
+                    
+                    <Text style={[styles.inputLabel, { marginTop: verticalScale(12) }]}>OBJETIVO PRINCIPAL</Text>
+                    <TextInput 
+                      style={styles.inputSubtitle} 
+                      placeholder={isPresetMode ? "Ex: Foco em iniciantes para emagrecimento" : "Ex: Foco em força e hipertrofia"} 
+                      placeholderTextColor="#555" 
+                      value={store.objective} 
+                      onChangeText={store.setObjective} 
+                    />
+                  </View>
                 </View>
 
                 <View style={styles.daysWrapper}>
@@ -307,12 +354,12 @@ export const WorkoutCreator = ({ navigation, route }: any) => {
           />
         </View>
 
-        {/* <AIGeneratorModal
+        <AIGeneratorModal
           visible={isAIModalVisible}
           onClose={() => setIsAIModalVisible(false)}
           onGenerate={handleGenerateAITraining}
           isLoading={isGeneratingAI}
-        /> */}
+        />
 
         <Modal visible={isImportModalVisible} animationType="slide" transparent={true} onRequestClose={() => setIsImportModalVisible(false)}>
           <View style={styles.modalOverlay}>
@@ -361,52 +408,61 @@ export const WorkoutCreator = ({ navigation, route }: any) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#121214' },
+  safeArea: { flex: 1, backgroundColor: '#0D0D0F' }, 
   container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121214' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingTop: Platform.OS === 'android' ? verticalScale(30) : verticalScale(10), paddingBottom: verticalScale(16), borderBottomWidth: 1, borderBottomColor: '#2A2A32' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0D0D0F' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingTop: Platform.OS === 'android' ? verticalScale(30) : verticalScale(10), paddingBottom: verticalScale(16), borderBottomWidth: 1, borderBottomColor: '#1E1E24', backgroundColor: '#0D0D0F' },
   backBtn: { padding: scale(4) },
   headerTitle: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
   headerActionsRight: { flexDirection: 'row', alignItems: 'center', gap: scale(12) },
   deleteHeaderBtn: { padding: scale(6), backgroundColor: 'rgba(255, 59, 48, 0.1)', borderRadius: scale(8) },
-  publishBtn: { backgroundColor: '#FF5100', paddingHorizontal: scale(14), paddingVertical: verticalScale(8), borderRadius: scale(8), minWidth: scale(80), alignItems: 'center' },
+  publishBtn: { backgroundColor: '#FF5100', paddingHorizontal: scale(14), paddingVertical: verticalScale(8), borderRadius: scale(8), minWidth: scale(80), alignItems: 'center', shadowColor: '#FF5100', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 5 },
   publishText: { color: '#000', fontSize: scale(13), fontWeight: 'bold' },
   scrollContent: { paddingBottom: verticalScale(80) },
   listHeaderContainer: { paddingBottom: verticalScale(10) },
-  infoSection: { paddingHorizontal: scale(20), paddingTop: verticalScale(20), paddingBottom: verticalScale(10), position: 'relative' },
-  actionButtonsRow: { flexDirection: 'row', gap: scale(10), marginBottom: verticalScale(12) },
-  aiBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 81, 0, 0.15)', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(16), borderWidth: 1, borderColor: 'rgba(255, 81, 0, 0.4)' },
-  aiBtnText: { color: '#FF5100', fontSize: scale(12), fontWeight: 'bold' },
-  importPresetBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 81, 0, 0.1)', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: scale(16), borderWidth: 1, borderColor: 'rgba(255, 81, 0, 0.3)' },
-  importPresetText: { color: '#FF5100', fontSize: scale(12), fontWeight: 'bold' },
-  inputTitleLarge: { color: '#FFF', fontSize: scale(24), fontFamily: 'System', fontWeight: '900', marginBottom: verticalScale(8), borderBottomWidth: 0 },
-  inputSubtitle: { color: '#A0A0A5', fontSize: scale(14), fontWeight: '500' },
-  daysWrapper: { borderBottomWidth: 1, borderBottomColor: '#2A2A32', paddingBottom: verticalScale(16), marginBottom: verticalScale(16) },
-  daysScroll: { flexDirection: 'row', paddingHorizontal: scale(20), gap: scale(10), alignItems: 'center' },
-  dayPill: { paddingHorizontal: scale(20), paddingVertical: verticalScale(10), borderRadius: scale(20), backgroundColor: '#1E1E24', borderWidth: 1, borderColor: '#2A2A32' },
-  dayPillActive: { backgroundColor: 'rgba(255, 81, 0, 0.15)', borderColor: '#FF5100' },
-  dayPillText: { color: '#A0A0A5', fontSize: scale(13), fontWeight: '700' },
+  
+  infoSection: { paddingHorizontal: scale(20), paddingTop: verticalScale(24), paddingBottom: verticalScale(16) },
+  topActionsContainer: { flexDirection: 'row', gap: scale(12), marginBottom: verticalScale(24) },
+  
+  premiumAIBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#161619', borderWidth: 1.5, borderColor: '#FF5100', paddingVertical: verticalScale(14), borderRadius: scale(12), shadowColor: '#FF5100', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 8 },
+  premiumAIBtnText: { color: '#FF5100', fontSize: scale(14), fontWeight: '800', textTransform: 'uppercase' },
+  
+  premiumModelBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1E1E24', borderWidth: 1, borderColor: '#2A2A32', paddingVertical: verticalScale(14), borderRadius: scale(12) },
+  premiumModelBtnText: { color: '#A0A0A5', fontSize: scale(14), fontWeight: '700', textTransform: 'uppercase' },
+  
+  formContainer: { backgroundColor: '#161619', borderRadius: scale(16), padding: scale(16), borderWidth: 1, borderColor: '#1E1E24' },
+  inputLabel: { color: '#666', fontSize: scale(10), fontWeight: 'bold', marginBottom: verticalScale(4), textTransform: 'uppercase', letterSpacing: 1 },
+  inputTitleLarge: { color: '#FFF', fontSize: scale(20), fontWeight: '800', borderBottomWidth: 1, borderBottomColor: '#2A2A32', paddingBottom: verticalScale(8) },
+  inputSubtitle: { color: '#FFF', fontSize: scale(14), fontWeight: '500', borderBottomWidth: 1, borderBottomColor: '#2A2A32', paddingBottom: verticalScale(8) },
+  
+  daysWrapper: { paddingBottom: verticalScale(16), marginBottom: verticalScale(16) },
+  daysScroll: { flexDirection: 'row', paddingHorizontal: scale(20), gap: scale(12), alignItems: 'center' },
+  dayPill: { paddingHorizontal: scale(24), paddingVertical: verticalScale(12), borderRadius: scale(24), backgroundColor: '#161619', borderWidth: 1, borderColor: '#1E1E24' },
+  dayPillActive: { backgroundColor: '#1E1410', borderColor: '#FF5100', shadowColor: '#FF5100', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  dayPillText: { color: '#A0A0A5', fontSize: scale(14), fontWeight: '600' },
   dayPillTextActive: { color: '#FF5100', fontWeight: '900' },
-  addDayPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: scale(16), paddingVertical: verticalScale(10), borderRadius: scale(20), backgroundColor: 'transparent', borderWidth: 1, borderColor: '#444', borderStyle: 'dashed' },
-  addDayText: { color: '#A0A0A5', fontSize: scale(12), fontWeight: 'bold', marginLeft: scale(6) },
+  addDayPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: scale(16), paddingVertical: verticalScale(12), borderRadius: scale(24), backgroundColor: 'transparent', borderWidth: 1, borderColor: '#444', borderStyle: 'dashed' },
+  addDayText: { color: '#A0A0A5', fontSize: scale(13), fontWeight: 'bold', marginLeft: scale(6) },
+  
   listFooterContainer: { paddingHorizontal: scale(20), marginTop: verticalScale(10) },
-  addExerciseBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: verticalScale(16), borderRadius: scale(12), backgroundColor: 'rgba(255, 81, 0, 0.1)', borderWidth: 1, borderColor: 'rgba(255, 81, 0, 0.3)', borderStyle: 'dashed' },
-  addExerciseText: { color: '#FF5100', fontSize: scale(14), fontWeight: 'bold', marginLeft: scale(8) },
+  addExerciseBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: verticalScale(16), borderRadius: scale(12), backgroundColor: 'rgba(255, 81, 0, 0.05)', borderWidth: 1, borderColor: 'rgba(255, 81, 0, 0.4)', borderStyle: 'dashed' },
+  addExerciseText: { color: '#FF5100', fontSize: scale(14), fontWeight: 'bold', marginLeft: scale(8), textTransform: 'uppercase' },
   generalObsSection: { marginTop: verticalScale(24), marginBottom: verticalScale(40) },
-  generalObsHeader: { flexDirection: 'row', alignItems: 'center', gap: scale(6), marginBottom: verticalScale(8) },
-  generalObsTitle: { color: '#A0A0A5', fontSize: scale(12), fontWeight: 'bold', textTransform: 'uppercase' },
-  generalObsInput: { backgroundColor: '#1E1E24', borderWidth: 1, borderColor: '#2A2A32', borderRadius: scale(12), color: '#FFF', fontSize: scale(14), padding: scale(14), minHeight: verticalScale(80) },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalContainer: { backgroundColor: '#1E1E24', borderTopLeftRadius: scale(24), borderTopRightRadius: scale(24), minHeight: '50%', maxHeight: '80%', padding: scale(20) },
+  generalObsHeader: { flexDirection: 'row', alignItems: 'center', gap: scale(6), marginBottom: verticalScale(12) },
+  generalObsTitle: { color: '#A0A0A5', fontSize: scale(12), fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.5 },
+  generalObsInput: { backgroundColor: '#161619', borderWidth: 1, borderColor: '#1E1E24', borderRadius: scale(12), color: '#FFF', fontSize: scale(14), padding: scale(16), minHeight: verticalScale(100) },
+  
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' },
+  modalContainer: { backgroundColor: '#161619', borderTopLeftRadius: scale(24), borderTopRightRadius: scale(24), minHeight: '50%', maxHeight: '80%', padding: scale(20), borderWidth: 1, borderColor: '#2A2A32' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: verticalScale(20) },
   modalTitle: { color: '#FFF', fontSize: scale(18), fontWeight: 'bold' },
   modalLoading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   modalLoadingText: { color: '#A0A0A5', marginTop: verticalScale(10), fontSize: scale(14) },
   modalEmpty: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: verticalScale(40) },
   modalEmptyText: { color: '#A0A0A5', marginTop: verticalScale(10), fontSize: scale(14) },
-  presetCard: { backgroundColor: '#2A2A32', borderRadius: scale(12), padding: scale(16), marginBottom: verticalScale(12) },
+  presetCard: { backgroundColor: '#1E1E24', borderRadius: scale(12), padding: scale(16), marginBottom: verticalScale(12), borderWidth: 1, borderColor: '#2A2A32' },
   presetCardTitle: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold', marginBottom: verticalScale(4) },
   presetCardObjective: { color: '#A0A0A5', fontSize: scale(13), marginBottom: verticalScale(12) },
-  presetCardAction: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: scale(6), marginTop: verticalScale(8), borderTopWidth: 1, borderTopColor: '#3A3A42', paddingTop: verticalScale(12) },
+  presetCardAction: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: scale(6), marginTop: verticalScale(8), borderTopWidth: 1, borderTopColor: '#2A2A32', paddingTop: verticalScale(12) },
   presetCardActionText: { color: '#FF5100', fontSize: scale(13), fontWeight: 'bold' }
 });

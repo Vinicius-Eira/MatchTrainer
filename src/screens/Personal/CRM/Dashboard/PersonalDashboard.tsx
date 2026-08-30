@@ -7,7 +7,6 @@ import {
   ScrollView,
   StatusBar,
   Platform,
-  LayoutAnimation,
   UIManager,
   ActivityIndicator,
   Alert,
@@ -19,8 +18,7 @@ import {
   Modal
 } from "react-native";
 import { InsightCard } from '../../../../components/personal/InsightCard';
-import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { theme } from "../../../../theme/theme";
 import { scale, verticalScale, moderateScale } from "../../../../utils/responsive"; 
@@ -34,7 +32,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const { width } = Dimensions.get("window");
 
-export default function PersonalDashboard({ navigation }) {
+export default function PersonalDashboard({ navigation }: any) {
   const {
     jornada,
     progressoPct,
@@ -43,28 +41,28 @@ export default function PersonalDashboard({ navigation }) {
     recarregarJornada,
   } = useOnboarding();
 
-  const [insightsReais, setInsightsReais] = useState([]);
+  const [insightsReais, setInsightsReais] = useState<any[]>([]);
 
-  const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState("aluno_ativo");
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>("aluno_ativo");
   
-  const [modalidadeFilter, setModalidadeFilter] = useState("Todos");
-  const [filtrosDinamicos, setFiltrosDinamicos] = useState(["Todos"]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [modalidadeFilter, setModalidadeFilter] = useState<string>("Todos");
+  const [filtrosDinamicos, setFiltrosDinamicos] = useState<string[]>(["Todos"]);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   
-  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [sortOrder, setSortOrder] = useState("recentes");
-  const [origemFilter, setOrigemFilter] = useState("Todos");
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState<boolean>(false);
+  const [sortOrder, setSortOrder] = useState<string>("recentes");
+  const [origemFilter, setOrigemFilter] = useState<string>("Todos");
 
-  const [loading, setLoading] = useState(true);
-  const [personal, setPersonal] = useState(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [personal, setPersonal] = useState<any>(null);
 
-  const [emContato, setEmContato] = useState([]);
-  const [ativos, setAtivos] = useState([]);
-  const [inativos, setInativos] = useState([]);
+  const [emContato, setEmContato] = useState<any[]>([]);
+  const [ativos, setAtivos] = useState<any[]>([]);
+  const [inativos, setInativos] = useState<any[]>([]);
 
-  const [notaMedia, setNotaMedia] = useState(0);
-  const [naoLidas, setNaoLidas] = useState({});
+  const [notaMedia, setNotaMedia] = useState<number>(0);
+  const [naoLidas, setNaoLidas] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -74,7 +72,7 @@ export default function PersonalDashboard({ navigation }) {
     return unsubscribe;
   }, [navigation, recarregarJornada]);
 
-  const calcularIdade = (dataNascimento) => {
+  const calcularIdade = (dataNascimento: string | null): number | null => {
     if (!dataNascimento) return null;
     const hoje = new Date();
     const nasc = new Date(dataNascimento);
@@ -86,7 +84,7 @@ export default function PersonalDashboard({ navigation }) {
     return idade;
   };
 
-  const handleOpenInsight = (insightId) => {
+  const handleOpenInsight = (insightId: string) => {
     navigation.navigate("InsightDetailScreen", { insightId: insightId });
   };
 
@@ -111,13 +109,7 @@ export default function PersonalDashboard({ navigation }) {
           .from("conexoes")
           .select("*, usuarios(*)")
           .eq("personal_id", session.user.id)
-          .in("status", [
-            "pendente",
-            "em_contato",
-            "lead",
-            "aguardando_personal",
-            "aceito_personal"
-          ]),
+          .in("status", ["pendente", "em_contato", "lead", "aguardando_personal", "aceito_personal"]),
         supabase.rpc("get_media_avaliacoes", { p_id: session.user.id }),
         supabase
           .from("conexoes")
@@ -156,12 +148,12 @@ export default function PersonalDashboard({ navigation }) {
 
       const anamneseMap = new Map();
       if (anamnesesRes.data) {
-        anamnesesRes.data.forEach(a => { if (a.objetivo) anamneseMap.set(a.usuario_id, a.objetivo); });
+        anamnesesRes.data.forEach((a: any) => { if (a.objetivo) anamneseMap.set(a.usuario_id, a.objetivo); });
       }
 
       const convitesMap = new Map();
       if (convitesRes.data) {
-          convitesRes.data.forEach(convite => {
+          convitesRes.data.forEach((convite: any) => {
              const email = convite.email?.toLowerCase().trim();
              if(email) {
                  let servicosEncontrados = [];
@@ -184,7 +176,7 @@ export default function PersonalDashboard({ navigation }) {
 
       const planosMap = new Map();
       if (planosRes.data) {
-        planosRes.data.forEach((p) => {
+        planosRes.data.forEach((p: any) => {
           let servicosMapeados = [];
           if (p.servicos_inclusos) {
             if (Array.isArray(p.servicos_inclusos)) servicosMapeados = p.servicos_inclusos;
@@ -212,13 +204,12 @@ export default function PersonalDashboard({ navigation }) {
         });
       }
 
-      const formatarAluno = (c) => {
+      const formatarAluno = (c: any) => {
         const planoData = planosMap.get(c.usuario_id) || planosMap.get(c.id) || { temPlano: false, servicos: [], vencimento: 99 };
         let servicosDoAluno = [...planoData.servicos];
 
         const emailUsuario = c.usuarios?.email?.toLowerCase().trim();
         const prefs = c.usuarios?.preferencias || {};
-        const cPrefs = c.preferencias || {}; 
         const isVIP = c.origem === 'convite' || prefs.criado_pelo_personal === true || c.status === "aguardando_assinatura";
 
         if (servicosDoAluno.length === 0) {
@@ -277,7 +268,7 @@ export default function PersonalDashboard({ navigation }) {
       const emContatoReais = (leadsRes.data || []).map(formatarAluno);
       const dataInativos = (inativosRes.data || []).map(formatarAluno);
 
-      const contagemNaoLidas = {};
+      const contagemNaoLidas: Record<string, number> = {};
       const todasConexoes = [...emContatoReais, ...ativosReais, ...dataInativos];
 
       await Promise.all(
@@ -306,7 +297,7 @@ export default function PersonalDashboard({ navigation }) {
         .order('created_at', { ascending: false });
 
       if (insightsData) {
-        const insightsFormatados = insightsData.map(ins => {
+        const insightsFormatados = insightsData.map((ins: any) => {
           const alunoEncontrado = todasConexoes.find(
             a => a.usuario_id === ins.aluno_id
           );
@@ -356,7 +347,7 @@ export default function PersonalDashboard({ navigation }) {
   };
 
   const getListaAtiva = () => {
-    let lista = [];
+    let lista: any[] = [];
 
     if (activeTab === "em_contato") lista = [...emContato];
     else if (activeTab === "inativo") lista = [...inativos];
@@ -370,7 +361,7 @@ export default function PersonalDashboard({ navigation }) {
     if (origemFilter !== "Todos") lista = lista.filter((a) => a.origem === origemFilter);
 
     if (searchQuery.trim() !== "") {
-      const removerAcentos = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const removerAcentos = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
       const q = removerAcentos(searchQuery);
       lista = lista.filter((item) => removerAcentos(item.usuarios?.nome || "").includes(q));
     }
@@ -380,13 +371,13 @@ export default function PersonalDashboard({ navigation }) {
     } else if (sortOrder === "vencimento" && activeTab === "aluno_ativo") {
       lista.sort((a, b) => a.dia_vencimento - b.dia_vencimento);
     } else {
-      lista.sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em));
+      lista.sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime());
     }
 
     return lista;
   };
 
-  const renderItem = ({ item }) => {
+  const renderItem = ({ item }: { item: any }) => {
     const isAtivo = activeTab === "aluno_ativo";
     const isInativo = activeTab === "inativo";
     const isNovo = activeTab === "em_contato";
@@ -640,7 +631,11 @@ export default function PersonalDashboard({ navigation }) {
           <Ionicons name="chevron-forward" size={moderateScale(20)} color={theme.colors.textSecondary} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.fullWidthCard} activeOpacity={0.8} onPress={() => navigation.navigate("ExerciseLibrary")}>
+        <TouchableOpacity 
+          style={styles.fullWidthCard} 
+          activeOpacity={0.8} 
+          onPress={() => navigation.navigate("ExerciseLibrary", { isSelectionMode: false, isStudioMode: true })}
+        >
           <View style={[styles.fullWidthCardIconBg, { backgroundColor: "rgba(0, 230, 118, 0.15)" }]}>
             <Ionicons name="play-circle-outline" size={moderateScale(26)} color="#00E676" />
           </View>
@@ -817,7 +812,6 @@ const styles = StyleSheet.create({
   quickAccessTitle: { color: theme.colors.text, fontSize: moderateScale(15), fontWeight: "bold", marginBottom: verticalScale(2), letterSpacing: 0.2 },
   quickAccessSubtitle: { color: theme.colors.textSecondary, fontSize: moderateScale(12) },
 
-  // Estilos do novo Botão de Presets Full-Width
   fullWidthCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, borderRadius: moderateScale(20), padding: scale(16), marginBottom: verticalScale(15), borderWidth: 1, borderColor: theme.colors.borderLight, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
   fullWidthCardIconBg: { width: scale(48), height: scale(48), borderRadius: moderateScale(14), backgroundColor: "rgba(255, 107, 0, 0.15)", justifyContent: 'center', alignItems: 'center', marginRight: scale(12) },
   fullWidthCardText: { flex: 1 },
@@ -837,7 +831,7 @@ const styles = StyleSheet.create({
 
   searchSortContainer: { flexDirection: "row", alignItems: "center", marginBottom: verticalScale(20), gap: scale(10) },
   searchBar: { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.surfaceLight, height: verticalScale(50), borderRadius: moderateScale(16), paddingHorizontal: scale(16), borderWidth: 1, borderColor: theme.colors.border },
-  searchInput: { flex: 1, color: theme.colors.text, fontSize: moderateScale(15), marginLeft: scale(10), fontFamily: theme.fonts.body, height: "100%", outlineStyle: 'none' },
+  searchInput: { flex: 1, color: theme.colors.text, fontSize: moderateScale(15), marginLeft: scale(10), fontFamily: theme.fonts.body, height: "100%" },
   sortBtn: { width: scale(50), height: scale(50), borderRadius: moderateScale(16), backgroundColor: "rgba(255, 107, 0, 0.1)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.3)" },
 
   secondaryFilterContainer: { flexDirection: "row", gap: scale(10), marginBottom: verticalScale(20), paddingHorizontal: scale(2) },
@@ -862,216 +856,35 @@ const styles = StyleSheet.create({
   sheetBtnClose: { marginTop: verticalScale(25), backgroundColor: theme.colors.primary, paddingVertical: verticalScale(16), borderRadius: moderateScale(16), alignItems: "center", shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
   sheetBtnCloseText: { color: "#000", fontSize: moderateScale(15), fontWeight: "900", textTransform: "uppercase" },
 
-  studentCardPremium: {
-    backgroundColor: "#111", 
-    borderRadius: moderateScale(16),
-    marginBottom: verticalScale(16),
-    borderWidth: 1,
-    borderColor: "#222",
-    borderLeftWidth: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 4,
-    overflow: 'hidden',
-  },
-  cardHeaderArea: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: scale(16),
-  },
-  avatarWrapper: { 
-    position: "relative", 
-    marginRight: scale(14) 
-  },
-  avatarImage: { 
-    width: scale(50), 
-    height: scale(50), 
-    borderRadius: moderateScale(25), 
-    backgroundColor: "#222" 
-  },
-  avatarPlaceholder: { 
-    width: scale(50), 
-    height: scale(50), 
-    borderRadius: moderateScale(25), 
-    backgroundColor: "#1A1A1A", 
-    justifyContent: "center", 
-    alignItems: "center", 
-    borderWidth: 1, 
-    borderColor: "#333" 
-  },
-  statusIndicatorOnline: { 
-    position: "absolute", 
-    bottom: -2, 
-    right: -2, 
-    width: scale(14), 
-    height: scale(14), 
-    borderRadius: scale(7), 
-    backgroundColor: "#00E676", 
-    borderWidth: 2, 
-    borderColor: "#111" 
-  },
-  statusIndicatorMessage: { 
-    position: "absolute", 
-    top: -2, 
-    right: -2, 
-    width: scale(16), 
-    height: scale(16), 
-    borderRadius: scale(8), 
-    backgroundColor: theme.colors.primary, 
-    borderWidth: 2, 
-    borderColor: "#111" 
-  },
-  headerInfoWrapper: { 
-    flex: 1, 
-    justifyContent: "center" 
-  },
-  nameAndDateRow: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    alignItems: "center", 
-    marginBottom: verticalScale(6) 
-  },
-  studentNameText: { 
-    color: "#FFF", 
-    fontSize: moderateScale(16), 
-    fontWeight: "700", 
-    letterSpacing: 0.2, 
-    flexShrink: 1 
-  },
-  studentAgeText: { 
-    color: "#888", 
-    fontWeight: "500" 
-  },
-  dateText: {
-    color: "#666",
-    fontSize: moderateScale(11),
-    fontWeight: "600",
-    marginLeft: scale(8),
-  },
-  tagsRow: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    gap: scale(6),
-    marginBottom: verticalScale(6)
-  },
-  orangePill: { 
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 107, 0, 0.1)", 
-    borderWidth: 1,
-    borderColor: "rgba(255, 107, 0, 0.25)",
-    paddingHorizontal: scale(8), 
-    paddingVertical: verticalScale(4), 
-    borderRadius: moderateScale(6) 
-  },
-  orangePillText: { 
-    color: theme.colors.primary, 
-    fontSize: moderateScale(10), 
-    fontWeight: "700", 
-    textTransform: "uppercase",
-    letterSpacing: 0.5
-  },
-  metricsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  metricBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1A1A1A',
-    paddingHorizontal: scale(6),
-    paddingVertical: verticalScale(2),
-    borderRadius: moderateScale(4),
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-    marginRight: scale(6)
-  },
-  metricBadgeText: {
-    color: '#888',
-    fontSize: moderateScale(10),
-    fontWeight: '600',
-    marginLeft: scale(4)
-  },
-  cardDivider: {
-    height: 1,
-    backgroundColor: "#222",
-    marginHorizontal: scale(16),
-  },
-  cardFooterArea: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: scale(16),
-    paddingVertical: verticalScale(12),
-  },
-  originIndicator: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    gap: scale(4) 
-  },
-  originIndicatorText: { 
-    fontSize: moderateScale(10), 
-    fontWeight: "800", 
-    letterSpacing: 0.5 
-  },
-  alertWrapper: { 
-    flexDirection: "row", 
-    alignItems: "center" 
-  },
-  badgeAlertGold: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    backgroundColor: "rgba(255, 215, 0, 0.1)", 
-    borderWidth: 1,
-    borderColor: "rgba(255, 215, 0, 0.2)",
-    paddingHorizontal: scale(8), 
-    paddingVertical: verticalScale(4), 
-    borderRadius: moderateScale(6), 
-    gap: scale(4) 
-  },
-  badgeAlertGoldText: { 
-    color: "#FFD700", 
-    fontSize: moderateScale(9), 
-    fontWeight: "800", 
-    textTransform: "uppercase" 
-  },
-  badgeAlertDanger: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    backgroundColor: "rgba(255, 59, 48, 0.1)", 
-    borderWidth: 1,
-    borderColor: "rgba(255, 59, 48, 0.2)",
-    paddingHorizontal: scale(8), 
-    paddingVertical: verticalScale(4), 
-    borderRadius: moderateScale(6), 
-    gap: scale(4) 
-  },
-  badgeAlertDangerText: { 
-    color: "#FF3B30", 
-    fontSize: moderateScale(9), 
-    fontWeight: "800", 
-    textTransform: "uppercase" 
-  },
-  badgeAlertNeutral: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    backgroundColor: "#1A1A1A", 
-    borderWidth: 1,
-    borderColor: "#333",
-    paddingHorizontal: scale(8), 
-    paddingVertical: verticalScale(4), 
-    borderRadius: moderateScale(6), 
-    gap: scale(4) 
-  },
-  badgeAlertNeutralText: { 
-    color: "#AAA", 
-    fontSize: moderateScale(9), 
-    fontWeight: "800", 
-    textTransform: "uppercase" 
-  },
-
+  studentCardPremium: { backgroundColor: "#111", borderRadius: moderateScale(16), marginBottom: verticalScale(16), borderWidth: 1, borderColor: "#222", borderLeftWidth: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 4, overflow: 'hidden' },
+  cardHeaderArea: { flexDirection: "row", alignItems: "center", padding: scale(16) },
+  avatarWrapper: { position: "relative", marginRight: scale(14) },
+  avatarImage: { width: scale(50), height: scale(50), borderRadius: moderateScale(25), backgroundColor: "#222" },
+  avatarPlaceholder: { width: scale(50), height: scale(50), borderRadius: moderateScale(25), backgroundColor: "#1A1A1A", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#333" },
+  statusIndicatorOnline: { position: "absolute", bottom: -2, right: -2, width: scale(14), height: scale(14), borderRadius: scale(7), backgroundColor: "#00E676", borderWidth: 2, borderColor: "#111" },
+  statusIndicatorMessage: { position: "absolute", top: -2, right: -2, width: scale(16), height: scale(16), borderRadius: scale(8), backgroundColor: theme.colors.primary, borderWidth: 2, borderColor: "#111" },
+  headerInfoWrapper: { flex: 1, justifyContent: "center" },
+  nameAndDateRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: verticalScale(6) },
+  studentNameText: { color: "#FFF", fontSize: moderateScale(16), fontWeight: "700", letterSpacing: 0.2, flexShrink: 1 },
+  studentAgeText: { color: "#888", fontWeight: "500" },
+  dateText: { color: "#666", fontSize: moderateScale(11), fontWeight: "600", marginLeft: scale(8) },
+  tagsRow: { flexDirection: "row", alignItems: "center", gap: scale(6), marginBottom: verticalScale(6) },
+  orangePill: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255, 107, 0, 0.1)", borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.25)", paddingHorizontal: scale(8), paddingVertical: verticalScale(4), borderRadius: moderateScale(6) },
+  orangePillText: { color: theme.colors.primary, fontSize: moderateScale(10), fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  metricsRow: { flexDirection: "row", alignItems: "center" },
+  metricBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1A1A1A', paddingHorizontal: scale(6), paddingVertical: verticalScale(2), borderRadius: moderateScale(4), borderWidth: 1, borderColor: '#2A2A2A', marginRight: scale(6) },
+  metricBadgeText: { color: '#888', fontSize: moderateScale(10), fontWeight: '600', marginLeft: scale(4) },
+  cardDivider: { height: 1, backgroundColor: "#222", marginHorizontal: scale(16) },
+  cardFooterArea: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: scale(16), paddingVertical: verticalScale(12) },
+  originIndicator: { flexDirection: "row", alignItems: "center", gap: scale(4) },
+  originIndicatorText: { fontSize: moderateScale(10), fontWeight: "800", letterSpacing: 0.5 },
+  alertWrapper: { flexDirection: "row", alignItems: "center" },
+  badgeAlertGold: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255, 215, 0, 0.1)", borderWidth: 1, borderColor: "rgba(255, 215, 0, 0.2)", paddingHorizontal: scale(8), paddingVertical: verticalScale(4), borderRadius: moderateScale(6), gap: scale(4) },
+  badgeAlertGoldText: { color: "#FFD700", fontSize: moderateScale(9), fontWeight: "800", textTransform: "uppercase" },
+  badgeAlertDanger: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255, 59, 48, 0.1)", borderWidth: 1, borderColor: "rgba(255, 59, 48, 0.2)", paddingHorizontal: scale(8), paddingVertical: verticalScale(4), borderRadius: moderateScale(6), gap: scale(4) },
+  badgeAlertDangerText: { color: "#FF3B30", fontSize: moderateScale(9), fontWeight: "800", textTransform: "uppercase" },
+  badgeAlertNeutral: { flexDirection: "row", alignItems: "center", backgroundColor: "#1A1A1A", borderWidth: 1, borderColor: "#333", paddingHorizontal: scale(8), paddingVertical: verticalScale(4), borderRadius: moderateScale(6), gap: scale(4) },
+  badgeAlertNeutralText: { color: "#AAA", fontSize: moderateScale(9), fontWeight: "800", textTransform: "uppercase" },
   emptyState: { alignItems: "center", marginTop: verticalScale(40), padding: scale(20) },
   emptyIconBg: { width: scale(88), height: scale(88), borderRadius: moderateScale(44), backgroundColor: theme.colors.surface, justifyContent: "center", alignItems: "center", marginBottom: verticalScale(20), borderWidth: 1, borderColor: theme.colors.borderLight },
   emptyTitle: { color: theme.colors.text, fontSize: moderateScale(20), fontWeight: "bold", marginBottom: verticalScale(10) },

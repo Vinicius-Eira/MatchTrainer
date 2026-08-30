@@ -1,3 +1,4 @@
+/* eslint-disable import/no-unresolved */
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.33.1";
 
 export async function claimNextJob(supabase: SupabaseClient, workerId: string) {
