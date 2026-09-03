@@ -13,21 +13,33 @@ export interface AIProvider {
   modelName: string;
   generateSuggestion(
     systemPrompt: string, 
-    contextSnapshot: Record<string, any>
+    userText: string,
+    base64Image?: string
   ): Promise<{ suggestion: any; telemetry: Telemetry }>;
 }
 
 export class GeminiProvider implements AIProvider {
   providerName = "GOOGLE_GEMINI";
-  modelName = "gemini-3.6-flash"; 
+  modelName = "gemini-1.5-flash"; 
 
-  async generateSuggestion(systemPrompt: string, contextSnapshot: Record<string, any>) {
+  async generateSuggestion(systemPrompt: string, userText: string, base64Image?: string) {
     const startTime = Date.now();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     
     if (!apiKey) throw new Error("GEMINI_API_KEY não configurada no Supabase Secrets.");
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent?key=${apiKey}`;
+
+    const parts: any[] = [{ text: userText }];
+    
+    if (base64Image) {
+      parts.push({
+        inline_data: {
+          mime_type: "image/jpeg", 
+          data: base64Image
+        }
+      });
+    }
 
     const response = await fetch(url, {
       method: "POST",
@@ -38,7 +50,7 @@ export class GeminiProvider implements AIProvider {
         },
         contents: [{
           role: "user",
-          parts: [{ text: JSON.stringify(contextSnapshot) }]
+          parts: parts
         }],
         generationConfig: {
           responseMimeType: "application/json",
@@ -77,127 +89,114 @@ serve(async (req) => {
   }
 
   try {
-    const { nivel, objetivo, frequencia, restricoes } = await req.json()
+    const body = await req.json();
+    const { isImport, base64Image, rawText, nivel, objetivo, frequencia, restricoes } = body;
+    
     const aiProvider = new GeminiProvider();
+    
+    let systemPrompt = "";
+    let userText = "";
 
-    const systemPrompt = `
-      Você é um Personal Trainer de Elite, especialista em prescrição de treinamento, hipertrofia, emagrecimento, força, condicionamento físico e periodização.
+    if (isImport) {
+      systemPrompt = `
+      Você é um Personal Trainer de Elite e um Extrator Avançado de Dados.
+      Sua missão é olhar para a ficha de treino fornecida (seja uma imagem, uma planilha ou um texto bagunçado) e estruturá-la EXATAMENTE no formato JSON exigido pelo nosso aplicativo.
 
-Sua função é criar uma estrutura BASE de treino personalizada para um aluno a partir das informações fornecidas.
+      REGRAS DE EXTRAÇÃO:
+      - Identifique os dias de treino (Ex: "Treino A", "Costas", "Dia 1") e agrupe os exercícios dentro dos seus respectivos dias.
+      - Para cada exercício, extraia: Nome, Séries (sets), Repetições (reps_target) e Descanso (rest_seconds).
+      - Se a ficha listar repetições como "10-12", mantenha "10-12". Se for "Fadiga" ou "Falha", escreva "Falha".
+      - Se o tempo de descanso não estiver visível, presuma "60".
+      - Agrupe quaisquer anotações extras do treino no campo "generalObservation".
+      - O campo "programName" deve ser o título encontrado na ficha (ou um título coerente com o que foi lido).
+      - Os IDs dos dias devem ser "day_1", "day_2", etc.
+      - Os IDs dos exercícios devem ser "ex_1", "ex_2", etc.
 
-IMPORTANTE:
-- A ficha deve ser coerente com o objetivo, nível de experiência e frequência semanal do aluno.
-- Respeite rigorosamente a frequência semanal solicitada.
-- Não invente informações pessoais que não foram fornecidas.
-- A divisão dos treinos deve ser lógica e equilibrada, evitando trabalhar excessivamente o mesmo grupo muscular em dias consecutivos sem necessidade.
-- Priorize exercícios conhecidos, seguros e adequados ao objetivo do aluno.
-- Organize os exercícios em uma sequência lógica, priorizando exercícios compostos e de maior demanda no início do treino.
-- Utilize uma quantidade adequada de exercícios por sessão, evitando treinos excessivamente longos.
-- Defina séries, repetições e descanso de acordo com o objetivo do aluno.
-- Para hipertrofia, priorize predominantemente faixas de 6–15 repetições.
-- Para força, priorize predominantemente faixas de 3–6 repetições nos exercícios principais.
-- Para resistência muscular, utilize predominantemente faixas de 12–20 repetições.
-- Para emagrecimento, mantenha o treinamento de musculação estruturado de acordo com o nível do aluno, sem transformar automaticamente a ficha em um circuito.
-- O descanso deve ser compatível com o exercício e objetivo: exercícios compostos e pesados geralmente exigem mais descanso que exercícios isolados.
-- Não prescreva cargas absolutas se o peso utilizado pelo aluno não tiver sido informado.
-- Não inclua exercícios de mobilidade, alongamento ou cardio dentro de "exercises", a menos que isso seja explicitamente solicitado.
-- Não repita exercícios desnecessariamente.
-- Caso o aluno tenha alguma limitação, lesão ou restrição informada, adapte a seleção dos exercícios de acordo com essa informação.
+      ESTRUTURA JSON OBRIGATÓRIA:
+      {
+        "programName": "Nome da Ficha",
+        "objective": "Objetivo (Força, Hipertrofia, etc)",
+        "generalObservation": "Observações do treinador (se houver)",
+        "days": [
+          {
+            "id": "day_1",
+            "name": "Treino A - Peito",
+            "exercises": [
+              {
+                "id": "ex_1",
+                "exercise_name": "Supino Reto",
+                "sets": "4",
+                "reps_target": "10-12",
+                "rest_seconds": "90"
+              }
+            ]
+          }
+        ]
+      }
 
-REGRAS SOBRE A FREQUÊNCIA:
-- O campo "Frequencia Semanal" determina EXATAMENTE a quantidade de objetos dentro de "days".
-- Se "Frequencia Semanal" = 3, retorne exatamente 3 dias.
-- Se "Frequencia Semanal" = 4, retorne exatamente 4 dias.
-- Se "Frequencia Semanal" = 5, retorne exatamente 5 dias.
-- NUNCA retorne mais ou menos dias do que a frequência solicitada.
-- Os IDs dos dias devem seguir sequencialmente: "day_1", "day_2", "day_3"... 
+      RETORNE EXATAMENTE UM JSON VÁLIDO. NADA ALÉM DISSO. SEM MARKDOWN.
+      `;
 
-REGRAS DOS EXERCÍCIOS:
-- Cada exercício deve possuir um ID único dentro da ficha.
-- Os IDs devem seguir sequencialmente: "ex_1", "ex_2", "ex_3"... 
-- "sets", "reps_target" e "rest_seconds" devem ser retornados como strings.
-- "reps_target" pode ser uma faixa, como "8-10", "10-12" ou "12-15".
-- "rest_seconds" deve conter apenas o número em segundos, como "60", "90" ou "120".
-- Não coloque unidades como "seg", "segundos" ou "min" dentro de "rest_seconds".
-- Não coloque informações extras dentro dos campos estruturados.
+      if (base64Image) {
+        userText = "Analise a imagem da ficha de treinamento em anexo e extraia a estrutura de treino para o JSON.";
+      } else {
+        userText = `Aqui está o texto bruto da ficha que o personal colou:\n\n${rawText}\n\nAnalise e converta para o JSON.`;
+      }
 
-REGRAS DO JSON:
-- RETORNE EXATAMENTE UM JSON VÁLIDO.
-- NÃO escreva nenhuma introdução, explicação, comentário ou texto antes ou depois do JSON.
-- NÃO utilize Markdown.
-- NÃO utilize blocos de código.
-- NÃO utilize comentários dentro do JSON.
-- Utilize aspas duplas em todas as propriedades e valores.
-- Não deixe vírgulas sobrando.
-- O resultado precisa poder ser convertido diretamente com JSON.parse().
-- Todos os campos obrigatórios devem estar presentes.
+    } 
 
-ENTRADAS DO ALUNO:
-- Objetivo: ${objetivo}
-- Frequencia Semanal: ${frequencia}
-- Nivel: ${nivel}
-- Restrições/lesões: ${restricoes || 'Nenhuma'}
+    else {
+      systemPrompt = `
+      Você é um Personal Trainer de Elite, especialista em prescrição de treinamento.
+      Sua função é criar uma estrutura BASE de treino personalizada para um aluno a partir das informações fornecidas.
 
-ESTRUTURA DE SAÍDA OBRIGATÓRIA:
+      IMPORTANTE:
+      - A ficha deve ser coerente com o objetivo, nível de experiência e frequência.
+      - Respeite rigorosamente a frequência semanal solicitada (Ex: 3 dias = 3 objetos na lista).
+      - Os IDs dos dias devem seguir sequencialmente: "day_1", "day_2"...
+      - Cada exercício deve possuir um ID sequencial: "ex_1", "ex_2"...
+      - "sets", "reps_target" e "rest_seconds" devem ser strings contendo apenas números ou intervalos (ex: "8-10", "60").
+      - Retorne APENAS um JSON estrito, pronto para JSON.parse(). Sem formatação markdown, sem comentários extras.
 
-{
-  "programName": "Nome sugerido para o programa",
-  "objective": "Objetivo do programa em 1 linha",
-  "generalObservation": "Orientação geral curta sobre a execução e progressão do treino",
-  "days": [
-    {
-      "id": "day_1",
-      "name": "Treino A - Peito e Tríceps",
-      "exercises": [
-        {
-          "id": "ex_1",
-          "exercise_name": "Supino Reto com Barra",
-          "sets": "4",
-          "reps_target": "8-10",
-          "rest_seconds": "120"
-        },
-        {
-          "id": "ex_2",
-          "exercise_name": "Supino Inclinado com Halteres",
-          "sets": "3",
-          "reps_target": "10-12",
-          "rest_seconds": "90"
-        }
-      ]
+      ESTRUTURA DE SAÍDA OBRIGATÓRIA:
+      {
+        "programName": "Nome sugerido para o programa",
+        "objective": "Objetivo do programa em 1 linha",
+        "generalObservation": "Orientação geral curta",
+        "days": [
+          {
+            "id": "day_1",
+            "name": "Treino A - Exemplo",
+            "exercises": [
+              {
+                "id": "ex_1",
+                "exercise_name": "Nome do Exercício",
+                "sets": "4",
+                "reps_target": "8-10",
+                "rest_seconds": "120"
+              }
+            ]
+          }
+        ]
+      }
+      `; 
+
+      userText = JSON.stringify({
+        aluno_nivel: nivel,
+        objetivo_principal: objetivo,
+        frequencia_semanal_dias: frequencia,
+        restricoes_ou_foco_especifico: restricoes || "Nenhuma restrição"
+      });
     }
-  ]
-}
 
-VALIDAÇÃO FINAL ANTES DE RESPONDER:
-1. O resultado é um JSON válido?
-2. Existe exatamente um objeto JSON?
-3. "days" possui exatamente ${frequencia} objetos?
-4. Os IDs dos dias estão em sequência?
-5. Os IDs dos exercícios são únicos e sequenciais?
-6. Todos os exercícios possuem "exercise_name", "sets", "reps_target" e "rest_seconds"?
-7. "sets", "reps_target" e "rest_seconds" estão como strings?
-8. Não existe nenhum texto fora do JSON?
-9. A divisão dos treinos é coerente com o objetivo e frequência?
-10. Não existem campos adicionais fora da estrutura definida?
-
-Se qualquer item da validação falhar, corrija antes de retornar a resposta.
-`; 
-
-    const contextSnapshot = {
-      aluno_nivel: nivel,
-      objetivo_principal: objetivo,
-      frequencia_semanal_dias: frequencia,
-      restricoes_ou_foco_especifico: restricoes || "Nenhuma restrição"
-    };
-
-    const { suggestion, telemetry } = await aiProvider.generateSuggestion(systemPrompt, contextSnapshot);
+    const { suggestion, telemetry } = await aiProvider.generateSuggestion(systemPrompt, userText, base64Image);
 
     return new Response(JSON.stringify({ success: true, data: suggestion, telemetry }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
 
-  } catch (error) {
+  } catch (error: any) {
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

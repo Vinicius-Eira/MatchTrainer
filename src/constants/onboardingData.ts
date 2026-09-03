@@ -1,5 +1,25 @@
+// Tipagens (Interfaces)
+export interface IOpcao {
+  id: string;
+  titulo: string;
+  desc: string;
+  icon: string;
+  hasSub?: boolean;
+}
+
+export interface ISubOpcao {
+  titulo: string;
+  icon: string;
+}
+
+export interface IOpcaoSimples {
+  id: string;
+  titulo: string;
+  icon: string;
+}
+
 // Cliente
-export const OPCOES_MODALIDADE = [
+export const OPCOES_MODALIDADE: IOpcao[] = [
   {
     id: "Consultoria",
     titulo: "Consultoria no App",
@@ -20,7 +40,7 @@ export const OPCOES_MODALIDADE = [
   },
 ];
 
-export const OPCOES_OBJETIVO = [
+export const OPCOES_OBJETIVO: IOpcao[] = [
   {
     id: "emagrecimento",
     titulo: "Emagrecimento",
@@ -49,7 +69,7 @@ export const OPCOES_OBJETIVO = [
   },
 ];
 
-export const OPCOES_HISTORICO = [
+export const OPCOES_HISTORICO: IOpcao[] = [
   {
     id: "iniciante",
     titulo: "Iniciante Total",
@@ -76,7 +96,7 @@ export const OPCOES_HISTORICO = [
   },
 ];
 
-export const OPCOES_LIMITACAO = [
+export const OPCOES_LIMITACAO: IOpcao[] = [
   {
     id: "gestante",
     titulo: "Gestante / Pós-parto",
@@ -105,7 +125,7 @@ export const OPCOES_LIMITACAO = [
   },
 ];
 
-export const OPCOES_PERFIL = [
+export const OPCOES_PERFIL: IOpcao[] = [
   {
     id: "acolhedor",
     titulo: "O Acolhedor",
@@ -132,7 +152,7 @@ export const OPCOES_PERFIL = [
   },
 ];
 
-export const OPCOES_GENERO_TREINADOR = [
+export const OPCOES_GENERO_TREINADOR: IOpcao[] = [
   {
     id: "Indiferente",
     titulo: "Indiferente",
@@ -153,7 +173,7 @@ export const OPCOES_GENERO_TREINADOR = [
   },
 ];
 
-export const OPCOES_TURNO = [
+export const OPCOES_TURNO: IOpcao[] = [
   {
     id: "Manhã",
     titulo: "Manhã (06h às 12h)",
@@ -180,7 +200,7 @@ export const OPCOES_TURNO = [
   },
 ];
 
-export const OPCOES_FREQUENCIA = [
+export const OPCOES_FREQUENCIA: IOpcao[] = [
   {
     id: "1-2",
     titulo: "1 a 2 dias por semana",
@@ -207,7 +227,7 @@ export const OPCOES_FREQUENCIA = [
   },
 ];
 
-export const OPCOES_LOCAL = [
+export const OPCOES_LOCAL: IOpcao[] = [
   {
     id: "academia",
     titulo: "Academia Comercial",
@@ -234,7 +254,7 @@ export const OPCOES_LOCAL = [
   },
 ];
 
-export const OPCOES_INVESTIMENTO = [
+export const OPCOES_INVESTIMENTO: IOpcao[] = [
   {
     id: "base",
     titulo: "R$ 90 a R$ 110 / mês",
@@ -255,14 +275,15 @@ export const OPCOES_INVESTIMENTO = [
   },
 ];
 
-export const SUB_SAUDE = [
+export const SUB_SAUDE: ISubOpcao[] = [
   { titulo: "Melhorar Postura", icon: "body-outline" },
   { titulo: "Dores nas Costas", icon: "bandage-outline" },
   { titulo: "Recomendação Médica", icon: "medkit-outline" },
   { titulo: "Reduzir Stress / Sono", icon: "moon-outline" },
   { titulo: "Terceira Idade", icon: "walk-outline" },
 ];
-export const SUB_ESPORTE = [
+
+export const SUB_ESPORTE: ISubOpcao[] = [
   { titulo: "Corrida / Maratona", icon: "walk-outline" },
   { titulo: "Artes Marciais", icon: "hand-left-outline" },
   { titulo: "Natação", icon: "water-outline" },
@@ -271,7 +292,8 @@ export const SUB_ESPORTE = [
   { titulo: "Ciclismo", icon: "bicycle-outline" },
   { titulo: "Outro", icon: "star-outline" },
 ];
-export const SUB_LESAO = [
+
+export const SUB_LESAO: ISubOpcao[] = [
   { titulo: "Joelho", icon: "accessibility-outline" },
   { titulo: "Lombar / Coluna", icon: "body-outline" },
   { titulo: "Ombro", icon: "fitness-outline" },
@@ -280,7 +302,8 @@ export const SUB_LESAO = [
   { titulo: "Tornozelo", icon: "footsteps-outline" },
   { titulo: "Outra", icon: "add-circle-outline" },
 ];
-export const SUB_CLINICA = [
+
+export const SUB_CLINICA: ISubOpcao[] = [
   { titulo: "Hipertensão", icon: "pulse-outline" },
   { titulo: "Diabetes", icon: "water-outline" },
   { titulo: "Asma", icon: "leaf-outline" },
@@ -288,15 +311,13 @@ export const SUB_CLINICA = [
   { titulo: "Outra", icon: "add-circle-outline" },
 ];
 
-
-
 // Personal
-export const OPCOES_GENERO_PERSONAL = [
+export const OPCOES_GENERO_PERSONAL: IOpcaoSimples[] = [
   { id: "Homem", titulo: "Homem", icon: "man-outline" },
   { id: "Mulher", titulo: "Mulher", icon: "woman-outline" },
 ];
 
-export const OPCOES_AGENDA = [
+export const OPCOES_AGENDA: IOpcao[] = [
   {
     id: "Disponível",
     titulo: "Agenda Livre",
@@ -317,7 +338,7 @@ export const OPCOES_AGENDA = [
   },
 ];
 
-export const OPCOES_SERVICOS = [
+export const OPCOES_SERVICOS: IOpcao[] = [
   {
     id: "Consultoria",
     titulo: "Consultoria no App",
@@ -332,7 +353,7 @@ export const OPCOES_SERVICOS = [
   },
 ];
 
-export const OPCOES_PUBLICO = [
+export const OPCOES_PUBLICO: string[] = [
   "Homens",
   "Mulheres",
   "Idosos",
@@ -341,7 +362,7 @@ export const OPCOES_PUBLICO = [
   "Iniciantes",
 ];
 
-export const OPCOES_EXPERIENCIA = [
+export const OPCOES_EXPERIENCIA: string[] = [
   "Menos de 1 ano",
   "1 a 3 anos",
   "3 a 5 anos",

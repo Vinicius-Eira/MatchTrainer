@@ -210,13 +210,13 @@ export const WorkoutCreator = ({ navigation, route }: any) => {
     }
   };
 
-  const handleDeleteWorkout = () => {
+  const handleArchiveWorkout = () => {
     Alert.alert(
       "Arquivar Ficha",
       "Deseja arquivar esta ficha? Ela deixará de aparecer nos treinos ativos e irá para o histórico do aluno.",
       [
         { text: "Cancelar", style: "cancel" },
-        { text: "Arquivar", style: "destructive", onPress: async () => {
+        { text: "Arquivar", onPress: async () => {
             setIsLoading(true);
             const { error } = await supabase
               .from('training_programs')
@@ -226,6 +226,29 @@ export const WorkoutCreator = ({ navigation, route }: any) => {
             if (error) Alert.alert("Erro", "Não foi possível arquivar.");
             else {
               Alert.alert("Sucesso", "Ficha movida para o histórico.");
+              navigation.goBack();
+            }
+        }}
+      ]
+    );
+  };
+
+  const handleDeleteWorkout = () => {
+    Alert.alert(
+      "Excluir Permanentemente",
+      "Esta ação apagará a ficha do banco de dados definitivamente. Deseja continuar?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Excluir", style: "destructive", onPress: async () => {
+            setIsLoading(true);
+            const { error } = await supabase
+              .from('training_programs')
+              .delete()
+              .eq('id', programIdToEdit);
+            setIsLoading(false);
+            if (error) Alert.alert("Erro", "Não foi possível excluir.");
+            else {
+              Alert.alert("Sucesso", "Ficha excluída com sucesso.");
               navigation.goBack();
             }
         }}
@@ -257,11 +280,19 @@ export const WorkoutCreator = ({ navigation, route }: any) => {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{isPresetMode ? (programIdToEdit ? 'Editar Modelo' : 'Novo Modelo') : (programIdToEdit ? 'Editar Ficha' : 'Montar Ficha')}</Text>
           <View style={styles.headerActionsRight}>
+            
+            {programIdToEdit && !isPresetMode && (
+              <TouchableOpacity onPress={handleArchiveWorkout} style={styles.archiveHeaderBtn}>
+                <Feather name="archive" size={20} color="#A0A0A5" />
+              </TouchableOpacity>
+            )}
+
             {programIdToEdit && (
               <TouchableOpacity onPress={handleDeleteWorkout} style={styles.deleteHeaderBtn}>
                 <Feather name="trash-2" size={20} color="#FF3B30" />
               </TouchableOpacity>
             )}
+
             <TouchableOpacity style={styles.publishBtn} onPress={handleSaveAndPublish} disabled={isPublishing || (activeDayData?.exercises.length === 0)}>
               {isPublishing ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.publishText}>{isPresetMode ? 'Salvar Modelo' : 'Publicar'}</Text>}
             </TouchableOpacity>
@@ -414,9 +445,12 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingTop: Platform.OS === 'android' ? verticalScale(30) : verticalScale(10), paddingBottom: verticalScale(16), borderBottomWidth: 1, borderBottomColor: '#1E1E24', backgroundColor: '#0D0D0F' },
   backBtn: { padding: scale(4) },
   headerTitle: { color: '#FFF', fontSize: scale(16), fontWeight: 'bold' },
-  headerActionsRight: { flexDirection: 'row', alignItems: 'center', gap: scale(12) },
-  deleteHeaderBtn: { padding: scale(6), backgroundColor: 'rgba(255, 59, 48, 0.1)', borderRadius: scale(8) },
-  publishBtn: { backgroundColor: '#FF5100', paddingHorizontal: scale(14), paddingVertical: verticalScale(8), borderRadius: scale(8), minWidth: scale(80), alignItems: 'center', shadowColor: '#FF5100', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 5 },
+  headerActionsRight: { flexDirection: 'row', alignItems: 'center', gap: scale(10) },
+  
+  archiveHeaderBtn: { padding: scale(8), backgroundColor: '#1E1E24', borderRadius: scale(8) },
+  deleteHeaderBtn: { padding: scale(8), backgroundColor: 'rgba(255, 59, 48, 0.1)', borderRadius: scale(8) },
+  
+  publishBtn: { backgroundColor: '#FF5100', paddingHorizontal: scale(14), paddingVertical: verticalScale(10), borderRadius: scale(8), minWidth: scale(80), alignItems: 'center', shadowColor: '#FF5100', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 5 },
   publishText: { color: '#000', fontSize: scale(13), fontWeight: 'bold' },
   scrollContent: { paddingBottom: verticalScale(80) },
   listHeaderContainer: { paddingBottom: verticalScale(10) },

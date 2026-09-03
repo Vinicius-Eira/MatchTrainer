@@ -1,30 +1,36 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { supabase } from "../../../services/supabase";
 import { theme } from "../../../theme/theme";
 import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
 
-export default function FeedbackPersonal({ navigation }) {
-  const [categoria, setCategoria] = useState("");
-  const [mensagem, setMensagem] = useState("");
-  const [notaApp, setNotaApp] = useState(0);
-  const [loading, setLoading] = useState(false);
+interface FeedbackPersonalProps {
+  navigation: {
+    goBack: () => void;
+  };
+}
 
-  const categorias = [
+export default function FeedbackPersonal({ navigation }: FeedbackPersonalProps) {
+  const [categoria, setCategoria] = useState<string>("");
+  const [mensagem, setMensagem] = useState<string>("");
+  const [notaApp, setNotaApp] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const categorias: string[] = [
     "Quero mais visibilidade",
     "Preciso de mais ferramentas",
     "Bug no app",
@@ -33,24 +39,30 @@ export default function FeedbackPersonal({ navigation }) {
     "Outro",
   ];
 
-  const handleEnviar = async () => {
+  const handleEnviar = async (): Promise<void> => {
     Keyboard.dismiss();
 
-    if (!categoria)
-      return Alert.alert(
+    if (!categoria) {
+      Alert.alert(
         "Atenção",
         "Selecione uma categoria sobre o seu feedback.",
       );
-    if (!mensagem.trim())
-      return Alert.alert(
+      return;
+    }
+    if (!mensagem.trim()) {
+      Alert.alert(
         "Atenção",
         "Por favor, detalhe sua sugestão ou problema.",
       );
-    if (notaApp === 0)
-      return Alert.alert(
+      return;
+    }
+    if (notaApp === 0) {
+      Alert.alert(
         "Atenção",
         "Avalie sua experiência geral com o aplicativo.",
       );
+      return;
+    }
 
     setLoading(true);
     try {

@@ -1,5 +1,5 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
+import { NavigationProp, useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -19,20 +19,39 @@ import {
   verticalScale,
 } from "../../../../utils/responsive";
 
-export default function MeusAlunos({ navigation }) {
-  const [alunosAtivos, setAlunosAtivos] = useState([]);
-  const [convitesPendentes, setConvitesPendentes] = useState([]);
-  const [loading, setLoading] = useState(true);
+export interface BaseUser {
+  id: string;
+  nome: string;
+  tipo_acompanhamento: string;
+}
 
-  const [busca, setBusca] = useState("");
-  const [abaAtiva, setAbaAtiva] = useState("ativos");
-  const [filtroTipo, setFiltroTipo] = useState("todos");
-  const [ordemAZ, setOrdemAZ] = useState(true);
+export interface Aluno extends BaseUser {
+  objetivo_principal: string | null;
+  dia_vencimento: string | number | null;
+}
+
+export interface ConvitePendente extends BaseUser {
+  codigo_convite: string;
+}
+
+interface MeusAlunosProps {
+  navigation: NavigationProp<any>; 
+}
+
+export default function MeusAlunos({ navigation }: MeusAlunosProps) {
+  const [alunosAtivos, setAlunosAtivos] = useState<Aluno[]>([]);
+  const [convitesPendentes, setConvitesPendentes] = useState<ConvitePendente[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const [busca, setBusca] = useState<string>("");
+  const [abaAtiva, setAbaAtiva] = useState<"ativos" | "pendentes">("ativos");
+  const [filtroTipo, setFiltroTipo] = useState<"todos" | "consultoria" | "presencial">("todos");
+  const [ordemAZ, setOrdemAZ] = useState<boolean>(true);
 
   useFocusEffect(
     useCallback(() => {
       buscarAlunos();
-    }, []),
+    }, [])
   );
 
   const buscarAlunos = async () => {
@@ -45,9 +64,7 @@ export default function MeusAlunos({ navigation }) {
 
       const { data: ativos } = await supabase
         .from("usuarios")
-        .select(
-          "id, nome, tipo_acompanhamento, objetivo_principal, dia_vencimento",
-        )
+        .select("id, nome, tipo_acompanhamento, objetivo_principal, dia_vencimento")
         .eq("personal_id", user.id)
         .eq("tipo", "cliente");
 
@@ -57,8 +74,8 @@ export default function MeusAlunos({ navigation }) {
         .eq("personal_id", user.id)
         .eq("status", "pendente");
 
-      setAlunosAtivos(ativos || []);
-      setConvitesPendentes(pendentes || []);
+      setAlunosAtivos((ativos as Aluno[]) || []);
+      setConvitesPendentes((pendentes as ConvitePendente[]) || []);
     } catch (error) {
       console.error("Erro ao buscar alunos:", error);
     } finally {
@@ -66,12 +83,13 @@ export default function MeusAlunos({ navigation }) {
     }
   };
 
-  const processarFiltros = () => {
-    let base = abaAtiva === "ativos" ? alunosAtivos : convitesPendentes;
+  const processarFiltros = (): (Aluno | ConvitePendente)[] => {
+    let base: (Aluno | ConvitePendente)[] =
+      abaAtiva === "ativos" ? [...alunosAtivos] : [...convitesPendentes];
 
     if (busca) {
       base = base.filter((a) =>
-        a.nome.toLowerCase().includes(busca.toLowerCase()),
+        a.nome.toLowerCase().includes(busca.toLowerCase())
       );
     }
 
@@ -90,59 +108,64 @@ export default function MeusAlunos({ navigation }) {
 
   const alunosFiltrados = processarFiltros();
 
-  const renderCardAluno = (aluno, isPendente) => (
-    <TouchableOpacity
-      key={aluno.id}
-      style={styles.card}
-      activeOpacity={0.7}
-      onPress={() => {
-        if (!isPendente) {
-          console.log("Abrir aluno:", aluno.id);
-        }
-      }}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.avatarContainer}>
-          <Text style={styles.avatarText}>
-            {aluno.nome.charAt(0).toUpperCase()}
-          </Text>
-        </View>
-        <View style={styles.infoContainer}>
-          <Text style={styles.alunoNome}>{aluno.nome}</Text>
-          <View style={styles.tagRow}>
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>
-                {aluno.tipo_acompanhamento === "consultoria"
-                  ? "Consultoria"
-                  : "Presencial"}
-              </Text>
-            </View>
-            {!isPendente && aluno.dia_vencimento && (
-              <View
-                style={[
-                  styles.tag,
-                  { backgroundColor: "rgba(255, 107, 0, 0.1)" },
-                ]}
-              >
-                <Text style={[styles.tagText, { color: theme.colors.primary }]}>
-                  Vence dia {aluno.dia_vencimento}
+  const renderCardAluno = (aluno: Aluno | ConvitePendente, isPendente: boolean) => {
+    const alunoAtivo = aluno as Aluno;
+    const convite = aluno as ConvitePendente;
+
+    return (
+      <TouchableOpacity
+        key={aluno.id}
+        style={styles.card}
+        activeOpacity={0.7}
+        onPress={() => {
+          if (!isPendente) {
+            console.log("Abrir aluno:", aluno.id);
+          }
+        }}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatarText}>
+              {aluno.nome.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+          <View style={styles.infoContainer}>
+            <Text style={styles.alunoNome}>{aluno.nome}</Text>
+            <View style={styles.tagRow}>
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>
+                  {aluno.tipo_acompanhamento === "consultoria"
+                    ? "Consultoria"
+                    : "Presencial"}
                 </Text>
               </View>
-            )}
+              {!isPendente && alunoAtivo.dia_vencimento && (
+                <View
+                  style={[
+                    styles.tag,
+                    { backgroundColor: "rgba(255, 107, 0, 0.1)" },
+                  ]}
+                >
+                  <Text style={[styles.tagText, { color: theme.colors.primary }]}>
+                    Vence dia {alunoAtivo.dia_vencimento}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
-      </View>
 
-      {isPendente && (
-        <View style={styles.pendenteFooter}>
-          <Text style={styles.pendenteTexto}>Aguardando ativação</Text>
-          <View style={styles.codigoBox}>
-            <Text style={styles.codigoText}>Cód: {aluno.codigo_convite}</Text>
+        {isPendente && (
+          <View style={styles.pendenteFooter}>
+            <Text style={styles.pendenteTexto}>Aguardando ativação</Text>
+            <View style={styles.codigoBox}>
+              <Text style={styles.codigoText}>Cód: {convite.codigo_convite}</Text>
+            </View>
           </View>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.mainContainer}>
@@ -294,7 +317,7 @@ export default function MeusAlunos({ navigation }) {
           />
         ) : alunosFiltrados.length > 0 ? (
           alunosFiltrados.map((aluno) =>
-            renderCardAluno(aluno, abaAtiva === "pendentes"),
+            renderCardAluno(aluno, abaAtiva === "pendentes")
           )
         ) : (
           <View style={styles.emptyState}>

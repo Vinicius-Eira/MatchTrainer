@@ -11,16 +11,13 @@ import {
   Alert,
   RefreshControl
 } from "react-native";
-import { Ionicons, FontAwesome5, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../../../../services/supabase";
-import { theme } from "../../../../theme/theme"; 
 import { scale, verticalScale, moderateScale } from "../../../../utils/responsive";
 
 const MATCH_COLORS = {
   primary: '#FF5100',
-  primaryGlow: 'rgba(255, 81, 0, 0.15)',
   surface: '#161619',
   surfaceDark: '#0D0D0F',
   border: '#2A2A32',
@@ -29,7 +26,9 @@ const MATCH_COLORS = {
   textMuted: '#A0A0A5',
   textDim: '#555555',
   danger: '#FF3B30',
-  dangerGlow: 'rgba(255, 59, 48, 0.1)'
+  dangerGlow: 'rgba(255, 59, 48, 0.1)',
+  success: '#00E676',
+  successGlow: 'rgba(0, 230, 118, 0.1)'
 };
 
 interface Treino {
@@ -40,32 +39,26 @@ interface Treino {
   status: string;
 }
 
-interface ListaTreinosAlunoProps {
-  route: any;
-  navigation: any;
-}
-
-export default function ListaTreinosAluno({ route, navigation }: ListaTreinosAlunoProps) {
+export default function HistoricoTreinosAluno({ route, navigation }: any) {
   const { alunoId, alunoNome } = route.params;
   const [treinos, setTreinos] = useState<Treino[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const carregarTreinos = async () => {
+  const carregarHistorico = async () => {
     try {
       const { data, error } = await supabase
         .from("training_programs")
         .select("*")
         .eq("student_id", alunoId)
-        .eq("is_template", false)
-        .neq("status", "arquivado") 
+        .eq("status", "arquivado")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       setTreinos(data || []);
     } catch (error) {
-      console.log("Erro ao buscar treinos:", error);
-      Alert.alert("Erro", "Não foi possível carregar as fichas deste aluno.");
+      console.log("Erro ao buscar histórico:", error);
+      Alert.alert("Erro", "Não foi possível carregar o histórico de fichas.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -75,36 +68,37 @@ export default function ListaTreinosAluno({ route, navigation }: ListaTreinosAlu
   useEffect(() => {
     setLoading(true);
     const unsubscribe = navigation.addListener("focus", () => {
-      carregarTreinos();
+      carregarHistorico();
     });
     return unsubscribe;
   }, [navigation, alunoId]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    carregarTreinos();
+    carregarHistorico();
   };
 
-  const arquivarTreino = (id: string) => {
+  const restaurarTreino = (id: string) => {
     Alert.alert(
-      "Arquivar Ficha",
-      "Deseja remover esta ficha da lista principal? Ela ficará salva no Histórico do aluno.",
+      "Restaurar Ficha",
+      "Deseja voltar esta ficha para a lista de treinos ativos do aluno?",
       [
         { text: "Cancelar", style: "cancel" },
         { 
-          text: "Arquivar", 
+          text: "Restaurar", 
           onPress: async () => {
             setLoading(true);
             const { error } = await supabase
               .from("training_programs")
-              .update({ status: "arquivado" })
+              .update({ status: "ativo" }) 
               .eq("id", id);
             
             if (error) {
-              Alert.alert("Erro", "Falha ao arquivar a ficha.");
+              Alert.alert("Erro", "Falha ao restaurar a ficha.");
               setLoading(false);
             } else {
-              carregarTreinos();
+              Alert.alert("Sucesso", "Ficha restaurada para os treinos ativos.");
+              carregarHistorico();
             }
           } 
         }
@@ -112,10 +106,10 @@ export default function ListaTreinosAluno({ route, navigation }: ListaTreinosAlu
     );
   };
 
-  const deletarTreino = (id: string) => {
+  const deletarDefinitivamente = (id: string) => {
     Alert.alert(
-      "Excluir Definitivamente",
-      "Tem certeza que deseja excluir esta ficha? Essa ação é permanente.",
+      "Excluir Permanentemente",
+      "Tem certeza? Esta ação apagará a ficha do banco de dados definitivamente.",
       [
         { text: "Cancelar", style: "cancel" },
         { 
@@ -132,7 +126,7 @@ export default function ListaTreinosAluno({ route, navigation }: ListaTreinosAlu
               Alert.alert("Erro", "Falha ao excluir a ficha.");
               setLoading(false);
             } else {
-              carregarTreinos();
+              carregarHistorico();
             }
           } 
         }
@@ -151,10 +145,10 @@ export default function ListaTreinosAluno({ route, navigation }: ListaTreinosAlu
       >
         <View style={styles.cardHeader}>
           <View style={styles.iconGlowBox}>
-            <MaterialCommunityIcons name="dumbbell" size={22} color={MATCH_COLORS.primary} />
+            <Feather name="archive" size={20} color={MATCH_COLORS.textMuted} />
           </View>
           <View style={styles.cardInfo}>
-            <Text style={styles.treinoTitle} numberOfLines={1}>{item.name || "Ficha de Treino"}</Text>
+            <Text style={styles.treinoTitle} numberOfLines={1}>{item.name || "Ficha Arquivada"}</Text>
             <Text style={styles.treinoObjective} numberOfLines={1}>
               {item.objective ? item.objective.toUpperCase() : "TREINAMENTO GERAL"}
             </Text>
@@ -169,23 +163,22 @@ export default function ListaTreinosAluno({ route, navigation }: ListaTreinosAlu
         <View style={styles.cardFooter}>
           <View style={styles.dateWrapper}>
             <Feather name="calendar" size={14} color={MATCH_COLORS.textMuted} />
-            <Text style={styles.treinoDate}>{dataCriacao}</Text>
+            <Text style={styles.treinoDate}>Arquivada de: {dataCriacao}</Text>
           </View>
 
           <View style={styles.footerActions}>
             <TouchableOpacity 
-              style={styles.btnArquivar} 
+              style={styles.btnRestaurar} 
               activeOpacity={0.6}
-              onPress={() => arquivarTreino(item.id)}
+              onPress={() => restaurarTreino(item.id)}
             >
-              <Feather name="archive" size={14} color={MATCH_COLORS.textMuted} />
-              <Text style={styles.btnArquivarText}>Arquivar</Text>
+              <Feather name="refresh-ccw" size={14} color={MATCH_COLORS.success} />
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.btnDeletar} 
               activeOpacity={0.6}
-              onPress={() => deletarTreino(item.id)}
+              onPress={() => deletarDefinitivamente(item.id)}
             >
               <Feather name="trash-2" size={16} color={MATCH_COLORS.danger} />
             </TouchableOpacity>
@@ -206,7 +199,7 @@ export default function ListaTreinosAluno({ route, navigation }: ListaTreinosAlu
         </TouchableOpacity>
         
         <View style={styles.headerTextCenter}>
-          <Text style={styles.headerSubtitle}>GERENCIAR ALUNO</Text>
+          <Text style={styles.headerSubtitle}>HISTÓRICO ARQUIVADO</Text>
           <Text style={styles.headerTitle} numberOfLines={1}>{alunoNome}</Text>
         </View>
         
@@ -235,34 +228,16 @@ export default function ListaTreinosAluno({ route, navigation }: ListaTreinosAlu
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <View style={styles.emptyIconBg}>
-                <MaterialCommunityIcons name="text-box-remove-outline" size={38} color={MATCH_COLORS.textDim} />
+                <Feather name="inbox" size={38} color={MATCH_COLORS.textDim} />
               </View>
-              <Text style={styles.emptyTitle}>Nenhuma Ficha Ativa</Text>
+              <Text style={styles.emptyTitle}>Arquivo Vazio</Text>
               <Text style={styles.emptyText}>
-                O campo está livre. Crie o primeiro planejamento para iniciar a evolução do aluno.
+                Nenhuma ficha foi arquivada para este aluno ainda.
               </Text>
             </View>
           }
         />
       )}
-
-      <View style={styles.floatingContainer}>
-        <TouchableOpacity 
-          style={styles.btnPrimary} 
-          onPress={() => navigation.navigate("WorkoutCreator", { alunoId, alunoNome })}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={[MATCH_COLORS.primary, '#E64900']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.btnGradient}
-          >
-            <Feather name="plus" size={22} color="#000" />
-            <Text style={styles.btnPrimaryText}>CRIAR NOVA FICHA</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -273,35 +248,29 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: scale(20), paddingTop: Platform.OS === "ios" ? verticalScale(60) : verticalScale(50), paddingBottom: verticalScale(16), borderBottomWidth: 1, borderColor: MATCH_COLORS.border, backgroundColor: 'rgba(13, 13, 15, 0.85)' },
   iconButton: { width: scale(40), height: scale(40), borderRadius: moderateScale(12), backgroundColor: MATCH_COLORS.surface, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: MATCH_COLORS.border },
   headerTextCenter: { alignItems: "center", justifyContent: "center", flex: 1, paddingHorizontal: scale(10) },
-  headerSubtitle: { color: MATCH_COLORS.primary, fontSize: moderateScale(10), fontWeight: "800", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: verticalScale(2) },
+  headerSubtitle: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(10), fontWeight: "800", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: verticalScale(2) },
   headerTitle: { color: MATCH_COLORS.text, fontSize: moderateScale(16), fontWeight: "800", letterSpacing: 0.5 },
-  listContent: { padding: scale(20), paddingTop: verticalScale(24), paddingBottom: verticalScale(140) },
+  listContent: { padding: scale(20), paddingTop: verticalScale(24), paddingBottom: verticalScale(40) },
   
-  cardTreino: { backgroundColor: MATCH_COLORS.surface, borderRadius: moderateScale(20), padding: scale(20), marginBottom: verticalScale(16), borderWidth: 1, borderColor: MATCH_COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 },
+  cardTreino: { backgroundColor: MATCH_COLORS.surface, borderRadius: moderateScale(20), padding: scale(20), marginBottom: verticalScale(16), borderWidth: 1, borderColor: MATCH_COLORS.border, borderStyle: 'dashed' },
   cardHeader: { flexDirection: "row", alignItems: "center" },
-  iconGlowBox: { width: scale(48), height: scale(48), borderRadius: moderateScale(14), backgroundColor: MATCH_COLORS.primaryGlow, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: 'rgba(255, 81, 0, 0.3)' },
+  iconGlowBox: { width: scale(48), height: scale(48), borderRadius: moderateScale(14), backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: MATCH_COLORS.borderLight },
   cardInfo: { flex: 1, marginLeft: scale(16), paddingRight: scale(10) },
-  treinoTitle: { color: MATCH_COLORS.text, fontSize: moderateScale(16), fontWeight: "900", marginBottom: verticalScale(4), letterSpacing: 0.3 },
-  treinoObjective: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(11), fontWeight: "700", letterSpacing: 0.5 },
+  treinoTitle: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(16), fontWeight: "900", marginBottom: verticalScale(4), letterSpacing: 0.3 },
+  treinoObjective: { color: MATCH_COLORS.textDim, fontSize: moderateScale(11), fontWeight: "700", letterSpacing: 0.5 },
   btnEditarIcon: { width: scale(32), height: scale(32), justifyContent: "center", alignItems: "flex-end" },
   cardDivider: { height: 1, backgroundColor: MATCH_COLORS.border, marginVertical: verticalScale(16) },
   
   cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   dateWrapper: { flexDirection: "row", alignItems: "center", gap: scale(8) },
-  treinoDate: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(12), fontWeight: "600" },
+  treinoDate: { color: MATCH_COLORS.textDim, fontSize: moderateScale(12), fontWeight: "600" },
   
   footerActions: { flexDirection: "row", gap: scale(8) },
-  btnArquivar: { flexDirection: "row", alignItems: "center", gap: scale(6), paddingHorizontal: scale(14), paddingVertical: verticalScale(8), borderRadius: moderateScale(12), backgroundColor: MATCH_COLORS.surfaceDark, borderWidth: 1, borderColor: MATCH_COLORS.border },
-  btnArquivarText: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(12), fontWeight: "700" },
-  btnDeletar: { justifyContent: "center", alignItems: "center", paddingHorizontal: scale(12), paddingVertical: verticalScale(8), borderRadius: moderateScale(12), backgroundColor: MATCH_COLORS.dangerGlow, borderWidth: 1, borderColor: 'rgba(255, 59, 48, 0.3)' },
+  btnRestaurar: { justifyContent: "center", alignItems: "center", paddingHorizontal: scale(14), paddingVertical: verticalScale(8), borderRadius: moderateScale(12), backgroundColor: MATCH_COLORS.successGlow, borderWidth: 1, borderColor: 'rgba(0, 230, 118, 0.3)' },
+  btnDeletar: { justifyContent: "center", alignItems: "center", paddingHorizontal: scale(14), paddingVertical: verticalScale(8), borderRadius: moderateScale(12), backgroundColor: MATCH_COLORS.dangerGlow, borderWidth: 1, borderColor: 'rgba(255, 59, 48, 0.3)' },
 
   emptyState: { alignItems: "center", marginTop: verticalScale(80) },
   emptyIconBg: { width: scale(72), height: scale(72), borderRadius: moderateScale(24), backgroundColor: MATCH_COLORS.surface, justifyContent: "center", alignItems: "center", marginBottom: verticalScale(20), borderWidth: 1, borderColor: MATCH_COLORS.borderLight },
   emptyTitle: { color: MATCH_COLORS.text, fontSize: moderateScale(18), fontWeight: "900", marginBottom: verticalScale(8) },
   emptyText: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(14), textAlign: "center", paddingHorizontal: scale(30), lineHeight: moderateScale(22) },
-  
-  floatingContainer: { position: "absolute", bottom: Platform.OS === "ios" ? verticalScale(40) : verticalScale(30), left: scale(20), right: scale(20), shadowColor: MATCH_COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 10 },
-  btnPrimary: { borderRadius: moderateScale(16), overflow: 'hidden' },
-  btnGradient: { flexDirection: "row", height: verticalScale(56), justifyContent: "center", alignItems: "center", gap: scale(8) },
-  btnPrimaryText: { color: "#000", fontSize: moderateScale(14), fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.8 },
 });
