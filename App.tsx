@@ -9,7 +9,7 @@ import {
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useFonts } from "expo-font";
 import * as Linking from "expo-linking";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { Alert, Text, TextInput, View } from "react-native";
 import { supabase } from "./src/services/supabase";
 
@@ -32,6 +32,10 @@ import { InsightDetailScreen } from "./src/screens/Personal/CRM/Dashboard/Insigh
 import VisaoAluno from "./src/screens/Personal/CRM/GestaoAlunos/VisaoAluno";
 import MeusAlunos from "./src/screens/Personal/CRM/GestaoAlunos/MeusAlunos";
 import ListaTreinosAluno from "./src/screens/Personal/CRM/GestaoAlunos/ListaTreinosAluno";
+import HistoricoTreinosAluno from "./src/screens/Personal/CRM/GestaoAlunos/HistoricoTreinosAluno";
+
+import AnamneseBuilder from "./src/screens/Personal/CRM/GestaoAlunos/Anamnese";
+
 import AdicionarAluno from "./src/screens/Personal/CRM/NovoContrato/AdicionarAluno";
 import PropostaAluno from "./src/screens/Personal/CRM/NovoContrato/PropostaAluno";
 import PainelCrescimento from "./src/screens/Personal/CRM/Financeiro/painelcrescimento";
@@ -56,22 +60,22 @@ import AtivarConvite from "./src/screens/Auth/User/AtivarConta";
 import Chat from "./src/screens/Shared/Chat";
 import ConversasAluno from "./src/screens/Shared/Conversas";
 
-
-if (Text.defaultProps == null) {
-  Text.defaultProps = {};
+if ((Text as any).defaultProps == null) {
+  (Text as any).defaultProps = {};
 }
-Text.defaultProps.maxFontSizeMultiplier = 1.2;
+(Text as any).defaultProps.maxFontSizeMultiplier = 1.2;
 
-if (TextInput.defaultProps == null) {
-  TextInput.defaultProps = {};
+if ((TextInput as any).defaultProps == null) {
+  (TextInput as any).defaultProps = {};
 }
-TextInput.defaultProps.maxFontSizeMultiplier = 1.2;
+(TextInput as any).defaultProps.maxFontSizeMultiplier = 1.2;
+
 const Stack = createNativeStackNavigator();
 const FeedStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
 
-export const navigationRef = createNavigationContainerRef();
+export const navigationRef = createNavigationContainerRef<any>();
 
 function PersonalStackNavigator() {
   return (
@@ -143,7 +147,7 @@ export default function App() {
   });
 
   useEffect(() => {
-    const forcarNavegacao = (telaDestino) => {
+    const forcarNavegacao = (telaDestino: string) => {
       const tentativa = setInterval(() => {
         if (navigationRef.isReady()) {
           navigationRef.navigate(telaDestino);
@@ -152,7 +156,7 @@ export default function App() {
       }, 100);
     };
 
-    const processarLinkBruto = async (url) => {
+    const processarLinkBruto = async (url: string | null) => {
       if (
         !url ||
         (!url.includes("type=recovery") && !url.includes("type=signup"))
@@ -164,9 +168,9 @@ export default function App() {
         const fragmentos = url.split(separador)[1];
 
         if (fragmentos) {
-          let accessToken = null;
-          let refreshToken = null;
-          let type = null;
+          let accessToken: string | null = null;
+          let refreshToken: string | null = null;
+          let type: string | null = null;
 
           fragmentos.split("&").forEach((par) => {
             const [chave, valor] = par.split("=");
@@ -209,7 +213,7 @@ export default function App() {
       },
     );
 
-    const handleDeepLink = (event) => {
+    const handleDeepLink = (event: { url: string }) => {
       processarLinkBruto(event.url);
     };
 
@@ -291,13 +295,21 @@ export default function App() {
           component={MeusAlunos}
           options={{ headerShown: false }}
         />
+        
+        <RootStack.Screen 
+          name="AnamneseBuilder" 
+          component={AnamneseBuilder} 
+          options={{ headerShown: false }} 
+        />
+
         <RootStack.Screen name="ListaTreinosAluno" component={ListaTreinosAluno} />
+        <RootStack.Screen name="HistoricoTreinosAluno" component={HistoricoTreinosAluno} />
+        
         <RootStack.Screen
           name="PersonalDashboard"
           component={PersonalDashboard}
         />
         
-        {/* NOVAS ROTAS DO CRM E TREINO ADICIONADAS */}
         <RootStack.Screen name="InsightDetailScreen" component={InsightDetailScreen} />
         <RootStack.Screen name="ExerciseLibrary" component={ExerciseLibraryScreen} />
         <RootStack.Screen name="Presets" component={Presets} />

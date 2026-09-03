@@ -15,7 +15,7 @@ import {
   Dimensions,
   Modal
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { theme } from "../../../../theme/theme";
@@ -28,16 +28,16 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const { width } = Dimensions.get("window");
 
-export default function PropostaAluno({ route, navigation }) {
+export default function PropostaAluno({ route, navigation }: any) {
   const conexaoId = route?.params?.conexaoId;
 
-  const [proposta, setProposta] = useState(null);
-  const [personalNome, setPersonalNome] = useState("Treinador");
-  const [personalFoto, setPersonalFoto] = useState(null);
-  const [regrasExpandidas, setRegrasExpandidas] = useState(false);
-  const [loadingData, setLoadingData] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [modalSucessoVisivel, setModalSucessoVisivel] = useState(false);
+  const [proposta, setProposta] = useState<any>(null);
+  const [personalNome, setPersonalNome] = useState<string>("Treinador");
+  const [personalFoto, setPersonalFoto] = useState<string | null>(null);
+  const [regrasExpandidas, setRegrasExpandidas] = useState<boolean>(false);
+  const [loadingData, setLoadingData] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [modalSucessoVisivel, setModalSucessoVisivel] = useState<boolean>(false);
 
   const regrasPadrao = "✅ **1. Atrasos**\nA tolerância para os treinos ou avaliações é de 15 minutos.\n\n✅ **2. Pagamentos**\nO seu acesso ao planejamento só será liberado/atualizado após a confirmação financeira.\n\n✅ **3. Suporte e Dúvidas**\nO canal oficial é o WhatsApp. Respostas em até 24h úteis.";
 
@@ -97,7 +97,7 @@ export default function PropostaAluno({ route, navigation }) {
         );
         navigation.goBack();
       }
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert("Erro Fatal", error.message);
       navigation.goBack();
     } finally {
@@ -141,7 +141,7 @@ export default function PropostaAluno({ route, navigation }) {
     });
   };
 
-  const renderRegras = (text) => {
+  const renderRegras = (text: string) => {
     if (!text) return null;
     const lines = text.split('\n');
     return lines.map((line, index) => {
@@ -203,7 +203,7 @@ export default function PropostaAluno({ route, navigation }) {
         </View>
 
         <View style={styles.ticketCard}>
-          <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={StyleSheet.absoluteFill} borderRadius={moderateScale(24)} />
+          <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={StyleSheet.absoluteFill} />
           
           <View style={styles.ticketHeader}>
             <View style={styles.trainerInfoRow}>
@@ -270,7 +270,7 @@ export default function PropostaAluno({ route, navigation }) {
         </View>
 
         <TouchableOpacity style={styles.termsCard} onPress={toggleRegras} activeOpacity={0.85}>
-          <LinearGradient colors={["#111", "#0A0A0A"]} style={StyleSheet.absoluteFill} borderRadius={moderateScale(20)} />
+          <LinearGradient colors={["#111", "#0A0A0A"]} style={StyleSheet.absoluteFill} />
           <View style={styles.termsHeader}>
             <View style={styles.termsHeaderLeft}>
               <View style={styles.termsIconBox}>
@@ -362,9 +362,9 @@ export default function PropostaAluno({ route, navigation }) {
 const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: "#000" },
   
-  glowTopLeft: { position: "absolute", top: verticalScale(-100), left: scale(-100), width: scale(300), height: scale(300), borderRadius: moderateScale(150), backgroundColor: "#00E676", opacity: 0.1, blurRadius: 100 },
-  glowCenter: { position: "absolute", top: verticalScale(200), alignSelf: 'center', width: scale(350), height: scale(350), borderRadius: moderateScale(175), backgroundColor: theme.colors.primary, opacity: 0.08, blurRadius: 120 },
-  glowBottomRight: { position: "absolute", bottom: verticalScale(-50), right: scale(-80), width: scale(250), height: scale(250), borderRadius: moderateScale(125), backgroundColor: "#00E676", opacity: 0.08, blurRadius: 100 },
+  glowTopLeft: { position: "absolute", top: verticalScale(-100), left: scale(-100), width: scale(300), height: scale(300), borderRadius: moderateScale(150), backgroundColor: "#00E676", opacity: 0.1 },
+  glowCenter: { position: "absolute", top: verticalScale(200), alignSelf: 'center', width: scale(350), height: scale(350), borderRadius: moderateScale(175), backgroundColor: theme.colors.primary, opacity: 0.08 },
+  glowBottomRight: { position: "absolute", bottom: verticalScale(-50), right: scale(-80), width: scale(250), height: scale(250), borderRadius: moderateScale(125), backgroundColor: "#00E676", opacity: 0.08 },
   
   headerGlass: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 100, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: Platform.OS === "ios" ? verticalScale(60) : verticalScale(40), paddingBottom: verticalScale(15), paddingHorizontal: scale(20), borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
   btnVoltar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.05)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   subtitle: { fontFamily: theme.fonts.body, fontSize: moderateScale(14), color: "#AAA", textAlign: "center", lineHeight: moderateScale(22), paddingHorizontal: scale(10) },
   subtitleBold: { color: "#FFF", fontWeight: "bold" },
 
-  ticketCard: { borderRadius: moderateScale(24), borderWidth: 1, borderColor: "#222", marginBottom: verticalScale(20), shadowColor: "#00E676", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10, position: 'relative' },
+  ticketCard: { borderRadius: moderateScale(24), borderWidth: 1, borderColor: "#222", marginBottom: verticalScale(20), shadowColor: "#00E676", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10, position: 'relative', overflow: 'hidden' },
   
   ticketHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: scale(20), borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" },
   trainerInfoRow: { flexDirection: 'row', alignItems: 'center' },
@@ -419,7 +419,6 @@ const styles = StyleSheet.create({
   termsTitle: { color: "#FFF", fontSize: moderateScale(16), fontFamily: theme.fonts.title, letterSpacing: 0.3 },
   termsActionBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: "rgba(0, 230, 118, 0.1)", paddingHorizontal: scale(10), paddingVertical: verticalScale(6), borderRadius: moderateScale(10) },
   termsActionText: { color: "#00E676", fontSize: moderateScale(11), fontWeight: "bold", marginRight: scale(4) },
-  termsPreview: { color: '#666', fontSize: moderateScale(13), marginTop: verticalScale(16), fontStyle: 'italic', lineHeight: moderateScale(20) },
   
   regrasContainer: { marginTop: verticalScale(20) },
   regrasDivisor: { height: 1, backgroundColor: '#333', marginBottom: verticalScale(15) },
@@ -436,7 +435,7 @@ const styles = StyleSheet.create({
 
   modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", padding: scale(24) },
   modalSuccessCard: { width: "100%", backgroundColor: "#111", borderRadius: moderateScale(32), padding: scale(32), alignItems: "center", borderWidth: 1, borderColor: "#222", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.8, shadowRadius: 30, elevation: 20 },
-  modalGlow: { position: "absolute", top: -50, width: scale(150), height: scale(150), borderRadius: moderateScale(75), backgroundColor: "#00E676", opacity: 0.15, blurRadius: 40 },
+  modalGlow: { position: "absolute", top: -50, width: scale(150), height: scale(150), borderRadius: moderateScale(75), backgroundColor: "#00E676", opacity: 0.15 },
   modalIconBox: { width: scale(80), height: scale(80), borderRadius: moderateScale(40), justifyContent: "center", alignItems: "center", marginBottom: verticalScale(24), shadowColor: "#00E676", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.4, shadowRadius: 15, elevation: 10 },
   modalSuccessTitle: { color: "#FFF", fontSize: moderateScale(26), fontFamily: theme.fonts.title, textAlign: "center", marginBottom: verticalScale(12), letterSpacing: -0.5 },
   modalSuccessText: { color: "#AAA", fontSize: moderateScale(15), textAlign: "center", lineHeight: moderateScale(24), marginBottom: verticalScale(32) },

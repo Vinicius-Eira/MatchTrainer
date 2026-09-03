@@ -1,0 +1,183 @@
+import { Platform, StyleSheet, Dimensions } from "react-native";
+import { theme } from "../../../../../theme/theme";
+import { moderateScale, scale, verticalScale } from "../../../../../utils/responsive";
+
+const { width, height } = Dimensions.get("window");
+
+export const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 100, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: scale(20), paddingTop: Platform.OS === "ios" ? verticalScale(60) : verticalScale(50), paddingBottom: verticalScale(15), borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.05)", backgroundColor: Platform.OS === "android" ? "rgba(0,0,0,0.5)" : "transparent" },
+  iconButton: { width: scale(44), height: scale(44), borderRadius: moderateScale(22), backgroundColor: "rgba(255,255,255,0.08)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  headerTitle: { color: theme.colors.text, fontSize: moderateScale(16), fontFamily: theme.fonts.title, textTransform: "uppercase", letterSpacing: 1.5 },
+  scrollContent: { paddingTop: Platform.OS === "ios" ? verticalScale(120) : verticalScale(100), paddingBottom: verticalScale(220) },
+
+  bannerDesistencia: { flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.warning, padding: scale(20), marginHorizontal: scale(20), marginTop: verticalScale(10), borderRadius: moderateScale(16) },
+  bannerDesistenciaTitle: { color: theme.colors.backgroundPure, fontSize: moderateScale(15), fontWeight: "900", textTransform: "uppercase" },
+  bannerDesistenciaText: { color: "rgba(0,0,0,0.7)", fontSize: moderateScale(13), fontWeight: "600", marginTop: verticalScale(4) },
+
+  bannerAlertaSemContrato: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255, 215, 0, 0.1)", padding: scale(15), borderRadius: moderateScale(16), borderWidth: 1, borderColor: "rgba(255, 215, 0, 0.4)", marginBottom: verticalScale(15) },
+  bannerAlertaTitle: { color: "#FFD700", fontSize: moderateScale(13), fontWeight: "bold", textTransform: "uppercase", marginBottom: verticalScale(2) },
+  bannerAlertaText: { color: "#FFF", fontSize: moderateScale(12), lineHeight: moderateScale(18) },
+  btnCriarContratoUrgente: { backgroundColor: "#FFD700", paddingVertical: verticalScale(14), borderRadius: moderateScale(12), alignItems: "center", shadowColor: "#FFD700", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 5 },
+  btnCriarContratoUrgenteText: { color: "#000", fontSize: moderateScale(14), fontWeight: "900", textTransform: "uppercase" },
+
+  heroSection: { alignItems: "center", paddingTop: verticalScale(10), paddingBottom: verticalScale(25), position: "relative" },
+  heroGradient: { position: "absolute", top: verticalScale(-100), left: 0, right: 0, height: verticalScale(350) },
+  avatarWrapper: { position: "relative", marginBottom: verticalScale(20), justifyContent: "center", alignItems: "center" },
+  
+  avatarGlow: { position: "absolute", width: scale(120), height: scale(120), borderRadius: moderateScale(60), backgroundColor: theme.colors.primary, opacity: 0.2, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 25, elevation: 10 },
+  
+  avatar: { width: scale(130), height: scale(130), borderRadius: moderateScale(65), borderWidth: 3, borderColor: theme.colors.primary, backgroundColor: theme.colors.surface, zIndex: 2 },
+  onlineBadge: { position: "absolute", bottom: verticalScale(4), right: scale(8), width: scale(28), height: scale(28), borderRadius: moderateScale(14), backgroundColor: theme.colors.background, justifyContent: "center", alignItems: "center", zIndex: 3 },
+  onlineBadgeInner: { width: scale(18), height: scale(18), borderRadius: moderateScale(9), backgroundColor: theme.colors.success },
+  studentName: { color: theme.colors.text, fontSize: moderateScale(28), fontFamily: theme.fonts.title, marginBottom: verticalScale(4), textAlign: "center", letterSpacing: 0.5 },
+  studentGoal: { color: theme.colors.primary, fontSize: moderateScale(13), fontWeight: "900", marginBottom: verticalScale(20), textTransform: "uppercase", letterSpacing: 1.5 },
+
+  quickInfoRow: { flexDirection: "row", gap: scale(8), justifyContent: "center", paddingHorizontal: scale(20), width: "100%" },
+  quickInfoPill: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.surfaceLight, paddingHorizontal: scale(10), paddingVertical: verticalScale(8), borderRadius: moderateScale(20), borderWidth: 1, borderColor: theme.colors.border, gap: scale(6), overflow: "hidden" },
+  quickInfoText: { color: theme.colors.textBody, fontSize: moderateScale(11), fontWeight: "700", letterSpacing: 0.3, flexShrink: 1 },
+
+  tabContainer: { flexDirection: 'row', paddingHorizontal: scale(20), marginBottom: verticalScale(25), gap: scale(15) },
+  tabBtn: { flex: 1, paddingVertical: verticalScale(12), alignItems: 'center', borderBottomWidth: 3, borderBottomColor: 'transparent' },
+  tabBtnActive: { borderBottomColor: theme.colors.primary },
+  tabText: { color: theme.colors.textSecondary, fontSize: moderateScale(14), fontWeight: 'bold' },
+  tabTextActive: { color: theme.colors.primary },
+
+  btnCriarTreino: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primary, paddingVertical: verticalScale(14), borderRadius: moderateScale(16), gap: scale(8), marginBottom: verticalScale(12), shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 4 },
+  btnCriarTreinoText: { color: '#000', fontSize: moderateScale(14), fontWeight: '900', textTransform: 'uppercase' },
+
+  treinosMainCard: { backgroundColor: theme.colors.surfaceLight, borderRadius: moderateScale(16), padding: scale(20), borderWidth: 1, borderColor: theme.colors.borderLight },
+  treinosCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: verticalScale(20) },
+  treinosIconBg: { width: scale(48), height: scale(48), borderRadius: moderateScale(14), backgroundColor: "rgba(255,107,0,0.1)", justifyContent: 'center', alignItems: 'center' },
+  treinosCardTitle: { color: theme.colors.text, fontSize: moderateScale(16), fontFamily: theme.fonts.title },
+  treinosCardDesc: { color: theme.colors.textSecondary, fontSize: moderateScale(12), marginTop: verticalScale(2) },
+  treinosActionRow: { flexDirection: 'row', gap: scale(10) },
+  btnVerTreinos: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: verticalScale(14), borderRadius: moderateScale(12), borderWidth: 1, borderColor: theme.colors.primary, gap: scale(6) },
+  btnVerTreinosText: { color: theme.colors.primary, fontSize: moderateScale(13), fontWeight: 'bold', textTransform: 'uppercase' },
+
+  aiSummaryCard: { backgroundColor: theme.colors.surface, borderRadius: moderateScale(20), padding: scale(20), marginBottom: verticalScale(16), borderWidth: 1, borderColor: 'rgba(255,107,0,0.3)', overflow: 'hidden' },
+  aiHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: verticalScale(12) },
+  aiHeaderTitle: { flexDirection: 'row', alignItems: 'center', gap: scale(8), flexShrink: 1, marginRight: scale(10) },
+  aiTitle: { color: theme.colors.primary, fontSize: moderateScale(14), fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5, flexShrink: 1 },
+  aiDateLabel: { color: theme.colors.textMuted, fontSize: moderateScale(10), fontWeight: '700' },
+  aiText: { color: theme.colors.text, fontSize: moderateScale(13), lineHeight: moderateScale(20), fontWeight: '500', marginBottom: verticalScale(12) },
+  aiActionRow: { backgroundColor: 'rgba(0,0,0,0.3)', padding: scale(12), borderRadius: moderateScale(10) },
+  aiSuggestion: { color: theme.colors.primary, fontSize: moderateScale(12), fontWeight: '700', fontStyle: 'italic' },
+
+  gamificationRow: { flexDirection: 'row', gap: scale(12), marginBottom: verticalScale(16) },
+  gamificationCard: { flex: 1, backgroundColor: theme.colors.surfaceLight, borderRadius: moderateScale(16), padding: scale(16), alignItems: 'center', borderWidth: 1, borderColor: theme.colors.borderLight },
+  gamificationEmoji: { fontSize: moderateScale(28), marginBottom: verticalScale(8) },
+  gamificationValue: { color: theme.colors.text, fontSize: moderateScale(16), fontWeight: '900', marginBottom: verticalScale(2), textAlign: 'center' },
+  gamificationLabel: { color: theme.colors.textMuted, fontSize: moderateScale(11), fontWeight: '700', textTransform: 'uppercase', textAlign: 'center' },
+
+  adherenceCard: { backgroundColor: theme.colors.surface, borderRadius: moderateScale(16), padding: scale(20), marginBottom: verticalScale(16), borderWidth: 1, borderColor: theme.colors.borderLight },
+  adherenceCardTitle: { color: theme.colors.text, fontSize: moderateScale(15), fontWeight: '900' },
+  adherenceCardDesc: { color: theme.colors.textMuted, fontSize: moderateScale(12), marginBottom: verticalScale(16) },
+  adherenceItem: { marginBottom: verticalScale(12) },
+  adherenceRowLabel: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: verticalScale(6) },
+  adherenceLabelText: { color: theme.colors.textSecondary, fontSize: moderateScale(12), fontWeight: '700' },
+  adherencePercentText: { color: theme.colors.text, fontSize: moderateScale(12), fontWeight: '900' },
+  progressBarBg: { height: verticalScale(6), backgroundColor: theme.colors.surfaceLight, borderRadius: moderateScale(3), overflow: 'hidden' },
+  progressBarFill: { height: '100%', borderRadius: moderateScale(3) },
+
+  progressionCard: { backgroundColor: theme.colors.surfaceLight, borderRadius: moderateScale(16), padding: scale(20), marginBottom: verticalScale(16), borderWidth: 1, borderColor: theme.colors.borderLight },
+  progressionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: verticalScale(16), gap: scale(8) },
+  progressionTitle: { color: theme.colors.text, fontSize: moderateScale(15), fontWeight: '900' },
+  
+  exerciseSelector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surface, padding: scale(14), borderRadius: moderateScale(12), borderWidth: 1, borderColor: theme.colors.border, marginBottom: verticalScale(20) },
+  exerciseSelectorText: { color: theme.colors.text, fontSize: moderateScale(13), fontWeight: 'bold' },
+
+  comparisonContainer: { paddingLeft: scale(6) },
+  comparisonRow: { flexDirection: 'row', marginBottom: verticalScale(4) },
+  comparisonDotBox: { alignItems: 'center', width: scale(20), marginRight: scale(12) },
+  comparisonDot: { width: scale(10), height: scale(10), borderRadius: moderateScale(5), zIndex: 2 },
+  comparisonLine: { width: 2, height: verticalScale(40), backgroundColor: theme.colors.borderLight, position: 'absolute', top: scale(10), zIndex: 1 },
+  comparisonContent: { flex: 1, paddingBottom: verticalScale(24) },
+  comparisonDate: { color: theme.colors.textMuted, fontSize: moderateScale(11), fontWeight: '800', textTransform: 'uppercase', marginBottom: verticalScale(4) },
+  comparisonData: { color: theme.colors.textSecondary, fontSize: moderateScale(13), fontWeight: '600' },
+
+  progressionBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0, 230, 118, 0.1)', paddingHorizontal: scale(12), paddingVertical: verticalScale(10), borderRadius: moderateScale(10), gap: scale(8), marginTop: verticalScale(10) },
+  progressionBadgeText: { color: theme.colors.success, fontSize: moderateScale(12), fontWeight: '700', flex: 1 },
+
+  sectionContainer: { paddingHorizontal: scale(20), marginBottom: verticalScale(35) },
+  sectionHeaderRow: { flexDirection: "row", alignItems: "center", marginBottom: verticalScale(16) },
+  sectionHeading: { color: theme.colors.text, fontSize: moderateScale(18), fontFamily: theme.fonts.title, marginLeft: scale(10), letterSpacing: 0.5 },
+
+  contratoCard: { backgroundColor: "#111", borderRadius: moderateScale(20), borderWidth: 1, borderColor: "#00E676", position: "relative", overflow: "hidden" },
+  contratoRowTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "rgba(0, 230, 118, 0.15)", paddingHorizontal: scale(20), paddingVertical: verticalScale(10) },
+  contratoValueTop: { color: "#00E676", fontSize: moderateScale(14), fontWeight: "bold", textTransform: "uppercase" },
+  contratoLabelTop: { color: "#FFF", fontSize: moderateScale(12), fontWeight: "bold" },
+  contratoRow: { flexDirection: "row", padding: scale(20), justifyContent: "space-between", alignItems: "center" },
+  contratoCol: { flex: 1, alignItems: "flex-start" },
+  contratoColRight: { flex: 1, alignItems: "flex-end" },
+  contratoLabel: { color: "#888", fontSize: moderateScale(10), fontWeight: "bold", textTransform: "uppercase", marginBottom: verticalScale(4) },
+  contratoValue: { color: "#FFF", fontSize: moderateScale(16), fontWeight: "900" },
+  contratoObsText: { color: "#AAA", fontSize: moderateScale(12), fontStyle: "italic", paddingHorizontal: scale(20), paddingBottom: verticalScale(15) },
+  btnEditarContrato: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: verticalScale(12), borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.05)", backgroundColor: "rgba(255,255,255,0.02)" },
+  btnEditarContratoText: { color: "#888", fontSize: moderateScale(12), fontWeight: "bold", marginRight: scale(4), textTransform: "uppercase" },
+
+  goalPremiumCard: { flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.surface, borderRadius: moderateScale(20), padding: scale(20), marginBottom: verticalScale(16), borderWidth: 1, borderColor: "rgba(255,107,0,0.3)", overflow: "hidden" },
+  goalIconBox: { width: scale(50), height: scale(50), borderRadius: moderateScale(16), backgroundColor: "rgba(255,107,0,0.1)", justifyContent: "center", alignItems: "center", marginRight: scale(16), borderWidth: 1, borderColor: "rgba(255,107,0,0.2)" },
+  goalTextContent: { flex: 1, justifyContent: "center" },
+  goalLabel: { color: theme.colors.textSecondary, fontSize: moderateScale(11), textTransform: "uppercase", fontWeight: "900", marginBottom: verticalScale(4), letterSpacing: 1 },
+  goalValue: { color: theme.colors.text, fontSize: moderateScale(18), fontFamily: theme.fonts.title, letterSpacing: 0.5, textTransform: "capitalize" },
+
+  subTagsContainer: { flexDirection: "row", flexWrap: "wrap", gap: scale(8), marginBottom: verticalScale(16) },
+  subTagPill: { backgroundColor: theme.colors.surfaceLight, paddingHorizontal: scale(12), paddingVertical: verticalScale(8), borderRadius: moderateScale(12), borderWidth: 1, borderColor: theme.colors.borderLight },
+  subTagText: { color: theme.colors.textBody, fontSize: moderateScale(12), fontWeight: "600" },
+
+  trainingGrid: { gap: verticalScale(12) },
+  trainingGridRow: { flexDirection: "row", gap: scale(12) },
+  trainingGridItem: { flex: 1, backgroundColor: theme.colors.surface, borderRadius: moderateScale(20), padding: scale(18), borderWidth: 1, borderColor: theme.colors.border, alignItems: "flex-start" },
+  tgIcon: { marginBottom: verticalScale(12), opacity: 0.9 },
+  tgLabel: { color: theme.colors.textSecondary, fontSize: moderateScale(10), textTransform: "uppercase", fontWeight: "900", letterSpacing: 0.5, marginBottom: verticalScale(4) },
+  tgValue: { color: theme.colors.text, fontSize: moderateScale(14), fontWeight: "700" },
+
+  statsContainer: { flexDirection: "row", backgroundColor: theme.colors.surface, borderRadius: moderateScale(20), paddingVertical: verticalScale(20), borderWidth: 1, borderColor: theme.colors.border, marginBottom: verticalScale(16), shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 6 },
+  statBox: { flex: 1, alignItems: "center", justifyContent: "center" },
+  statIcon: { marginBottom: verticalScale(6), opacity: 0.8 },
+  statValue: { color: theme.colors.text, fontSize: moderateScale(22), fontFamily: theme.fonts.title, marginBottom: verticalScale(2) },
+  statLabel: { color: theme.colors.textSecondary, fontSize: moderateScale(10), textTransform: "uppercase", letterSpacing: 1, fontWeight: "800" },
+  statDivider: { width: 1, backgroundColor: theme.colors.borderLight },
+
+  imcCard: { flexDirection: "column", borderRadius: moderateScale(20), padding: scale(20), borderWidth: 1, marginBottom: verticalScale(16) },
+  imcHeaderRow: { flexDirection: "row", alignItems: "center", marginBottom: verticalScale(8) },
+  imcTitle: { color: theme.colors.textSecondary, fontSize: moderateScale(11), fontWeight: "900", textTransform: "uppercase", letterSpacing: 1 },
+  imcValueRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  imcNumber: { color: theme.colors.text, fontSize: moderateScale(36), fontFamily: theme.fonts.title },
+  imcBadge: { flexDirection: "row", alignItems: "center", paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: moderateScale(12), borderWidth: 1 },
+  imcBadgeDot: { width: scale(8), height: scale(8), borderRadius: moderateScale(4), marginRight: scale(6) },
+  imcBadgeText: { fontSize: moderateScale(12), fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.5 },
+
+  medicalAlertCard: { borderRadius: moderateScale(20), padding: scale(18), borderWidth: 1 },
+  medicalAlertSafe: { backgroundColor: "rgba(0, 230, 118, 0.05)", borderColor: "rgba(0, 230, 118, 0.2)" },
+  medicalAlertDanger: { backgroundColor: "rgba(255, 59, 48, 0.1)", borderColor: "rgba(255, 59, 48, 0.3)" },
+  medicalAlertHeader: { flexDirection: "row", alignItems: "center", gap: scale(8) },
+  medicalAlertTitle: { fontSize: moderateScale(14), fontWeight: "900", textTransform: "uppercase" },
+  medicalAlertBody: { marginTop: verticalScale(12), paddingTop: verticalScale(12), borderTopWidth: 1, borderTopColor: "rgba(255, 59, 48, 0.2)" },
+  medicalConditionDesc: { color: theme.colors.text, fontSize: moderateScale(14), fontStyle: "italic", marginTop: verticalScale(6), backgroundColor: "rgba(0,0,0,0.3)", padding: scale(10), borderRadius: moderateScale(8) },
+
+  commercialCard: { backgroundColor: theme.colors.surface, borderRadius: moderateScale(20), borderWidth: 1, borderColor: theme.colors.border, padding: scale(20) },
+  commercialRow: { flexDirection: "row", alignItems: "center" },
+  commercialIconBg: { width: scale(44), height: scale(44), borderRadius: moderateScale(14), backgroundColor: theme.colors.surfaceLight, justifyContent: "center", alignItems: "center", marginRight: scale(14) },
+  commercialContent: { flex: 1 },
+  commercialLabel: { color: theme.colors.textSecondary, fontSize: moderateScale(11), textTransform: "uppercase", fontWeight: "900", marginBottom: verticalScale(4), letterSpacing: 0.5 },
+  commercialValue: { color: theme.colors.text, fontSize: moderateScale(14), fontWeight: "700" },
+  dividerCommercial: { height: 1, backgroundColor: theme.colors.borderLight, marginVertical: verticalScale(16) },
+
+  dangerZone: { paddingHorizontal: scale(20), paddingBottom: verticalScale(20) },
+  btnDangerOutline: { paddingVertical: verticalScale(16), borderRadius: moderateScale(16), borderWidth: 1, borderColor: "rgba(255,59,48,0.4)", alignItems: "center" },
+  btnDangerText: { color: theme.colors.danger, fontSize: moderateScale(14), fontWeight: "bold", textTransform: "uppercase", letterSpacing: 0.5 },
+  dangerZoneHelp: { color: theme.colors.textMuted, fontSize: moderateScale(11), textAlign: "center", marginTop: verticalScale(10) },
+
+  floatingActionBar: { position: "absolute", bottom: Platform.OS === "ios" ? verticalScale(35) : verticalScale(25), left: scale(20), right: scale(20), backgroundColor: "#000", borderRadius: moderateScale(24), padding: scale(12), borderWidth: 1, borderColor: "#222", shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 10 },
+  actionColumn: { flexDirection: "column", gap: verticalScale(12) },
+  btnChatOutline: { flexDirection: "row", justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.surfaceLight, paddingVertical: verticalScale(14), borderRadius: moderateScale(16), borderWidth: 1, borderColor: theme.colors.primary, gap: scale(8) },
+  btnChatOutlineText: { color: theme.colors.primary, fontSize: moderateScale(15), fontWeight: "bold", textTransform: "uppercase", letterSpacing: 0.5 },
+  actionRow: { flexDirection: "row", gap: scale(12) },
+  btnDecline: { width: scale(64), height: scale(64), borderRadius: moderateScale(20), backgroundColor: "rgba(255,59,48,0.1)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,59,48,0.3)" },
+  btnAccept: { flex: 1, backgroundColor: "#00E676", height: verticalScale(64), borderRadius: moderateScale(20), flexDirection: "row", justifyContent: "center", alignItems: "center", shadowColor: "#00E676", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10 },
+  btnAcceptText: { color: "#000", fontSize: moderateScale(16), fontWeight: "900", letterSpacing: 0.5, textTransform: "uppercase" },
+  btnChat: { backgroundColor: theme.colors.primary, height: verticalScale(64), borderRadius: moderateScale(20), flexDirection: "row", justifyContent: "center", alignItems: "center", gap: scale(10) },
+  btnChatText: { color: theme.colors.backgroundPure, fontSize: moderateScale(17), fontWeight: "900", letterSpacing: 0.5 },
+});

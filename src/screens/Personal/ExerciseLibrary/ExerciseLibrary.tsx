@@ -223,7 +223,7 @@ export const ExerciseLibraryScreen = ({ navigation, route }: any) => {
                 />
               ) : (
                 <Image 
-                  source={{ uri: mediaUrl.trim() }} 
+                  source={{ uri: mediaUrl.trim(), headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)' } }} 
                   style={StyleSheet.absoluteFillObject}
                   contentFit="cover"
                   transition={200}

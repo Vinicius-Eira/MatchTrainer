@@ -8,15 +8,41 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ListRenderItemInfo,
 } from "react-native";
 import { supabase } from "../../../services/supabase";
 import { theme } from "../../../theme/theme";
 import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
 
-export default function Avaliacoes({ navigation }) {
-  const [avaliacoes, setAvaliacoes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [metricas, setMetricas] = useState({
+interface Usuario {
+  nome: string;
+  foto_url: string | null;
+}
+
+interface Avaliacao {
+  id: string;
+  nota: number;
+  comentario: string | null;
+  criado_em: string;
+  usuarios: Usuario;
+}
+
+interface Metricas {
+  media: string | number;
+  total: number;
+  distribuicao: Record<number, number>;
+}
+
+interface AvaliacoesProps {
+  navigation: {
+    goBack: () => void;
+  };
+}
+
+export default function Avaliacoes({ navigation }: AvaliacoesProps) {
+  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [metricas, setMetricas] = useState<Metricas>({
     media: 0,
     total: 0,
     distribuicao: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
@@ -56,7 +82,7 @@ export default function Avaliacoes({ navigation }) {
           `
           id, nota, comentario, criado_em,
           usuarios (nome, foto_url)
-        `,
+        `
         )
         .eq("personal_id", user.id)
         .order("criado_em", { ascending: false });
@@ -64,8 +90,9 @@ export default function Avaliacoes({ navigation }) {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        setAvaliacoes(data);
-        calcularMetricas(data);
+        const avaliacoesFormatadas = data as unknown as Avaliacao[];
+        setAvaliacoes(avaliacoesFormatadas);
+        calcularMetricas(avaliacoesFormatadas);
       }
     } catch (error) {
       console.error("Erro ao buscar avaliações:", error);
@@ -74,10 +101,10 @@ export default function Avaliacoes({ navigation }) {
     }
   };
 
-  const calcularMetricas = (dados) => {
+  const calcularMetricas = (dados: Avaliacao[]) => {
     const total = dados.length;
     let soma = 0;
-    const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const dist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
     dados.forEach((item) => {
       soma += item.nota;
@@ -91,8 +118,8 @@ export default function Avaliacoes({ navigation }) {
     });
   };
 
-  const formatRelativeDate = (dateString) => {
-    const diff = new Date() - new Date(dateString);
+  const formatRelativeDate = (dateString: string) => {
+    const diff = new Date().getTime() - new Date(dateString).getTime();
     const minutos = Math.floor(diff / 60000);
     const horas = Math.floor(minutos / 60);
     const dias = Math.floor(horas / 24);
@@ -127,7 +154,7 @@ export default function Avaliacoes({ navigation }) {
         {[1, 2, 3, 4, 5].map((star) => (
           <Ionicons
             key={star}
-            name={star <= Math.round(metricas.media) ? "star" : "star-outline"}
+            name={star <= Math.round(Number(metricas.media)) ? "star" : "star-outline"}
             size={28}
             color={theme.colors.primary}
           />
@@ -158,7 +185,7 @@ export default function Avaliacoes({ navigation }) {
     </View>
   );
 
-  const renderCard = ({ item }) => (
+  const renderCard = ({ item }: ListRenderItemInfo<Avaliacao>) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         {item.usuarios?.foto_url ? (
