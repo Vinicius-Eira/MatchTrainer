@@ -16,11 +16,11 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native'; 
 import * as ImagePicker from 'expo-image-picker';
-import { Image } from 'expo-image'; // <-- IMPORTAÇÃO CORRETA DO EXPO-IMAGE
+import { Image } from 'expo-image';
 import { exerciseRepository } from '../../../data/repositories/ExerciseRepository';
 import { ExerciseService } from '../../../services/ExerciseService';
 import { Exercise } from '../../../domain/entities/Exercise';
-import { Video, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video'; 
 import { useWorkoutCreatorStore } from '../../../store/useWorkoutCreatorStore';
 import { CreateCustomExerciseModal } from '../../../components/Exercise/CreateCustomExerciseModal';
 import { scale, verticalScale, moderateScale } from '../../../utils/responsive';
@@ -40,6 +40,22 @@ const MATCH_COLORS = {
 const MUSCLE_FILTERS = [
   'Todos', 'Peito', 'Costas', 'Pernas', 'Ombros', 'Tríceps', 'Bíceps', 'CORE',
 ];
+
+const ReprodutorVideo = ({ url }: { url: string }) => {
+  const player = useVideoPlayer(url, player => {
+    player.loop = true;
+    player.muted = true;
+    player.play();
+  });
+  return (
+    <VideoView 
+      style={StyleSheet.absoluteFill} 
+      player={player} 
+      contentFit="cover" 
+      nativeControls={false} 
+    />
+  );
+};
 
 export const ExerciseLibraryScreen = ({ navigation, route }: any) => {
   const params = route.params || {};
@@ -207,24 +223,14 @@ export const ExerciseLibraryScreen = ({ navigation, route }: any) => {
         disabled={isUploading}
       >
         <View style={styles.card}>
-         {/* BLOCO DE MÍDIA CORRIGIDO COM EXPO-IMAGE */}
-         <View style={StyleSheet.absoluteFillObject}>
+         <View style={StyleSheet.absoluteFill}>
            {hasMedia ? (
               isVideo ? (
-                <Video
-                  source={{ uri: mediaUrl.trim() }}
-                  style={StyleSheet.absoluteFillObject}
-                  resizeMode={ResizeMode.COVER}
-                  shouldPlay
-                  isLooping
-                  isMuted
-                  useNativeControls={false}
-                  onError={(error) => console.log("🚨 ERRO NO VÍDEO:", error, "URL:", mediaUrl)}
-                />
+                <ReprodutorVideo url={mediaUrl.trim()} />
               ) : (
                 <Image 
                   source={{ uri: mediaUrl.trim(), headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)' } }} 
-                  style={StyleSheet.absoluteFillObject}
+                  style={StyleSheet.absoluteFill}
                   contentFit="cover"
                   transition={200}
                   onLoad={() => console.log("✅ IMAGEM CARREGOU:", mediaUrl)}
@@ -232,14 +238,14 @@ export const ExerciseLibraryScreen = ({ navigation, route }: any) => {
                 />
               )
             ) : (
-              <View style={[StyleSheet.absoluteFillObject, { backgroundColor: MATCH_COLORS.surfaceCard }]} />
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: MATCH_COLORS.surfaceCard }]} />
             )}
           </View>
           
           <LinearGradient
             colors={['transparent', 'rgba(9, 9, 11, 0.4)', '#09090B']}
             locations={[0, 0.4, 1]}
-            style={StyleSheet.absoluteFillObject}
+            style={StyleSheet.absoluteFill}
           />
 
           {isUploading && (
@@ -287,7 +293,7 @@ export const ExerciseLibraryScreen = ({ navigation, route }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: MATCH_COLORS.surfaceDark }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: MATCH_COLORS.surfaceDark }]} />
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
@@ -474,7 +480,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   uploadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(9, 9, 11, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',

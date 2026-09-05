@@ -1,10 +1,6 @@
 import { Platform, StyleSheet } from "react-native";
 import { theme } from "../../../../../theme/theme";
-import {
-    moderateScale,
-    scale,
-    verticalScale,
-} from "../../../../../utils/responsive";
+import { moderateScale, scale, verticalScale } from "../../../../../utils/responsive";
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
@@ -18,7 +14,6 @@ export const styles = StyleSheet.create({
     borderRadius: moderateScale(150),
     backgroundColor: "#0A84FF",
     opacity: 0.15,
-    blurRadius: 100,
   },
   glowBottomRight: {
     position: "absolute",
@@ -29,7 +24,6 @@ export const styles = StyleSheet.create({
     borderRadius: moderateScale(150),
     backgroundColor: "#FF6B00",
     opacity: 0.1,
-    blurRadius: 100,
   },
 
   header: {
@@ -456,45 +450,13 @@ export const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
-  selosGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: scale(10),
-    marginBottom: verticalScale(16),
-  },
-  seloCard: {
-    width: "31%",
-    backgroundColor: "rgba(255,215,0,0.05)",
-    borderRadius: moderateScale(14),
-    padding: scale(12),
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,215,0,0.3)",
-  },
-  seloIconBox: {
-    width: scale(36),
-    height: scale(36),
-    borderRadius: moderateScale(18),
-    backgroundColor: "rgba(255,215,0,0.15)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: verticalScale(6),
-  },
-  seloTitle: {
-    color: "#FFD700",
-    fontSize: moderateScale(10),
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-
   modalContainer: { flex: 1, justifyContent: "flex-end" },
   modalCard: {
     backgroundColor: "#121212",
     borderTopLeftRadius: moderateScale(28),
     borderTopRightRadius: moderateScale(28),
     padding: scale(20),
-    paddingBottom:
-      Platform.OS === "ios" ? verticalScale(35) : verticalScale(20),
+    paddingBottom: Platform.OS === "ios" ? verticalScale(35) : verticalScale(20),
     borderWidth: 1,
     borderColor: "#222",
   },
@@ -548,7 +510,6 @@ export const styles = StyleSheet.create({
     fontSize: moderateScale(15),
     fontWeight: "600",
     height: "100%",
-    outlineStyle: "none",
   },
   btnConfirmar: {
     flexDirection: "row",

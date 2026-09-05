@@ -3,19 +3,73 @@ import { Alert } from "react-native";
 import { useOnboarding } from "../../../../../hooks/useOnboarding";
 import { supabase } from "../../../../../services/supabase";
 
+export interface ScoreMotivo {
+  tipo: "positivo" | "negativo";
+  texto: string;
+}
+
+export interface FunilData {
+  leads: number;
+  em_contato: number;
+  fechados: number;
+  tempo_resposta_horas: number;
+  tempo_fechamento_dias: number;
+}
+
+export interface HistoricoItem {
+  mes_ref: string;
+  faturamento: number | string;
+}
+
+export interface MetaNegocio {
+  tipo: string;
+  alvo: string | number;
+}
+
+export interface BusinessKPIs {
+  score: number;
+  score_motivos: ScoreMotivo[];
+  contratos_ativos: number;
+  alunos_ativos: number;
+  distribuicao: { consultoria: number; presencial: number; hibrido: number };
+  funil: FunilData;
+  historico: HistoricoItem[];
+  mrr: number;
+  mrr_anterior: number;
+  metas: MetaNegocio[];
+  receita_total: number;
+  receita_recebida: number;
+  receita_pendente: number;
+  receita_atraso: number;
+  ticket_medio: number;
+}
+
+export interface InsightIA {
+  icone: any;
+  cor: string;
+  titulo: string;
+  texto: string;
+}
+
+export interface InfoModalDados {
+  titulo: string;
+  texto: string;
+  dica: string;
+}
+
 export function usePainelCrescimento() {
   const { completarMissao } = useOnboarding();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [kpis, setKpis] = useState(null);
+  const [kpis, setKpis] = useState<BusinessKPIs | null>(null);
 
   const [modalMetaVisivel, setModalMetaVisivel] = useState(false);
   const [novaMetaValor, setNovaMetaValor] = useState("");
   const [salvandoMeta, setSalvandoMeta] = useState(false);
 
   const [modalInfoVisivel, setModalInfoVisivel] = useState(false);
-  const [infoDados, setInfoDados] = useState({
+  const [infoDados, setInfoDados] = useState<InfoModalDados>({
     titulo: "",
     texto: "",
     dica: "",
@@ -23,16 +77,14 @@ export function usePainelCrescimento() {
 
   const carregarDados = useCallback(async () => {
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
       const { data, error } = await supabase.rpc("get_business_kpis", {
         p_personal_id: session.user.id,
       });
       if (error) throw error;
-      setKpis(data);
+      setKpis(data as BusinessKPIs);
     } catch (error) {
       console.error("Erro ao puxar métricas:", error);
     } finally {
@@ -44,6 +96,7 @@ export function usePainelCrescimento() {
   useEffect(() => {
     carregarDados();
   }, [carregarDados]);
+
   const onRefresh = () => {
     setRefreshing(true);
     carregarDados();
@@ -53,9 +106,9 @@ export function usePainelCrescimento() {
     if (!novaMetaValor) return;
     setSalvandoMeta(true);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      
       const valorFloat = parseFloat(novaMetaValor.replace(",", "."));
 
       const { data: metaAtual } = await supabase
@@ -65,21 +118,16 @@ export function usePainelCrescimento() {
         .eq("tipo", "faturamento")
         .single();
 
-      if (metaAtual)
+      if (metaAtual) {
         await supabase
           .from("metas_negocio")
           .update({ alvo: valorFloat })
           .eq("id", metaAtual.id);
-      else
+      } else {
         await supabase
           .from("metas_negocio")
-          .insert([
-            {
-              personal_id: session.user.id,
-              tipo: "faturamento",
-              alvo: valorFloat,
-            },
-          ]);
+          .insert([{ personal_id: session.user.id, tipo: "faturamento", alvo: valorFloat }]);
+      }
 
       await completarMissao("meta_definida");
 
@@ -93,7 +141,7 @@ export function usePainelCrescimento() {
     }
   };
 
-  const abrirInfo = (titulo, texto, dica) => {
+  const abrirInfo = (titulo: string, texto: string, dica: string) => {
     setInfoDados({ titulo, texto, dica });
     setModalInfoVisivel(true);
   };
@@ -101,13 +149,16 @@ export function usePainelCrescimento() {
   const mrrAtual = kpis?.mrr || 0;
   const mrrAnterior = kpis?.mrr_anterior || 0;
   let crescimentoPct = 0;
-  if (mrrAnterior > 0)
+  
+  if (mrrAnterior > 0) {
     crescimentoPct = ((mrrAtual - mrrAnterior) / mrrAnterior) * 100;
-  else if (mrrAtual > 0) crescimentoPct = 100;
+  } else if (mrrAtual > 0) {
+    crescimentoPct = 100;
+  }
 
   const metaObj = kpis?.metas?.find((m) => m.tipo === "faturamento");
-  const valorMeta = metaObj ? parseFloat(metaObj.alvo) : null;
-  let diasParaMeta = null;
+  const valorMeta = metaObj ? parseFloat(metaObj.alvo.toString()) : null;
+  let diasParaMeta: number | null = null;
 
   if (valorMeta && mrrAtual < valorMeta) {
     const crescimentoMensalAbsoluto = mrrAtual - mrrAnterior;
@@ -118,64 +169,52 @@ export function usePainelCrescimento() {
     }
   }
 
-  const gerarInsightIA = () => {
+  const gerarInsightIA = (): InsightIA | null => {
     if (!kpis) return null;
-    const taxaConv =
-      kpis.funil?.leads > 0
-        ? (kpis.funil?.fechados / kpis.funil?.leads) * 100
-        : 0;
+    
+    const leads = kpis.funil?.leads || 0;
+    const fechados = kpis.funil?.fechados || 0;
+    const taxaConv = leads > 0 ? (fechados / leads) * 100 : 0;
+    
     const tempoResp = kpis.funil?.tempo_resposta_horas || 0;
-    const inadimplencia =
-      kpis.receita_total > 0
-        ? (kpis.receita_atraso / kpis.receita_total) * 100
-        : 0;
+    const receitaTotal = kpis.receita_total || 0;
+    const receitaAtraso = kpis.receita_atraso || 0;
+    const inadimplencia = receitaTotal > 0 ? (receitaAtraso / receitaTotal) * 100 : 0;
 
-    if (inadimplencia > 10)
+    if (inadimplencia > 10) {
       return {
         icone: "warning",
         cor: "#FF3B30",
         titulo: "Alerta de Fluxo de Caixa",
-        texto: `Sua inadimplência está em ${inadimplencia.toFixed(
-          1,
-        )}%. Antes de buscar novos alunos, cobre os R$ ${
-          kpis.receita_atraso
-        } que estão atrasados para garantir seu MRR.`,
+        texto: `Sua inadimplência está em ${inadimplencia.toFixed(1)}%. Antes de buscar novos alunos, cobre os R$ ${kpis.receita_atraso} que estão atrasados para garantir seu MRR.`,
       };
+    }
 
-    if (kpis.funil?.leads > 0 && taxaConv < 25) {
-      if (tempoResp > 2)
+    if (leads > 0 && taxaConv < 25) {
+      if (tempoResp > 2) {
         return {
           icone: "time",
           cor: "#FFD700",
           titulo: "Oportunidade Comercial",
           texto: `Você está perdendo vendas. Seu tempo médio de resposta é de ${tempoResp}h. Responder novos Matches em menos de 30 minutos dobra sua chance de conversão.`,
         };
+      }
       return {
         icone: "chatbubbles",
         cor: "#0A84FF",
         titulo: "Ajuste sua Oferta",
-        texto:
-          "Muitos Matches, mas poucos fechamentos. Tente enviar um áudio ou oferecer uma chamada de vídeo de 10 min para os novos leads para aumentar sua conversão.",
+        texto: "Muitos Matches, mas poucos fechamentos. Tente enviar um áudio ou oferecer uma chamada de vídeo de 10 min para os novos leads para aumentar sua conversão.",
       };
     }
 
-    if (crescimentoPct > 0)
-      return {
-        icone: "rocket",
-        cor: "#00E676",
-        titulo: "Crescimento Saudável",
-        texto: `Sua receita cresceu ${crescimentoPct.toFixed(
-          1,
-        )}% este mês e sua retenção está ótima. Continue pedindo feedback e ofereça planos trimestrais para travar essa receita.`,
-      };
-
-    return {
-      icone: "bulb",
-      cor: "#A020F0",
-      titulo: "Dica de Crescimento",
-      texto:
-        "Para aumentar seu ticket médio e bater sua meta mais rápido, experimente oferecer um serviço 'Premium' (ex: Consultoria + 1 encontro presencial por mês).",
-    };
+    const dicas = [
+      { icone: "rocket", cor: "#00E676", titulo: "Acelere a Retenção", texto: `Receita cresceu ${crescimentoPct.toFixed(1)}%! Peça depoimentos em vídeo hoje para usar no Instagram.` },
+      { icone: "bulb", cor: "#A020F0", titulo: "Dica de Ouro", texto: "Ofereça um 'Upsell': pergunte aos seus alunos atuais de consultoria se eles querem adicionar 1 treino presencial no mês." },
+      { icone: "megaphone", cor: "#FF6B00", titulo: "Marketing de Indicação", texto: "Ofereça 50% de desconto na próxima mensalidade para o aluno que trouxer um amigo." },
+      { icone: "star", cor: "#0A84FF", titulo: "Fortaleça a Base", texto: "Mande um áudio surpresa hoje para o seu aluno mais antigo elogiando a evolução dele." }
+    ];
+    
+    return dicas[new Date().getDate() % dicas.length];
   };
 
   return {
