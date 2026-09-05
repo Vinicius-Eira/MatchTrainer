@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, LayoutAnimation, Alert, ActivityIndicator } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Video, ResizeMode } from 'expo-av'; 
+import { useVideoPlayer, VideoView } from 'expo-video'; 
 import { scale, verticalScale } from '../../utils/responsive';
 import { DraftExercise, useWorkoutCreatorStore } from '../../store/useWorkoutCreatorStore';
 import { ExerciseService } from '../../services/ExerciseService'; 
@@ -18,10 +18,17 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
   const { updateExercise, removeExercise } = useWorkoutCreatorStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const videoRef = useRef<Video>(null);
+  const videoViewRef = useRef(null);
 
   const displayMedia = exercise.custom_media_url || exercise.video_url || exercise.gif_url || exercise.thumbnail_url;
   const isVideo = displayMedia ? displayMedia.toLowerCase().includes('.mp4') || displayMedia.toLowerCase().includes('.mov') : false;
+
+  const videoSource = isVideo && displayMedia ? displayMedia : null;
+  const player = useVideoPlayer(videoSource, (player) => {
+    player.loop = false;
+    player.muted = false;
+    player.currentTime = 0.5; 
+  });
 
   const toggleExpand = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -38,7 +45,7 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        mediaTypes: ['videos'], 
         allowsEditing: true,
         quality: 0.5,
         videoMaxDuration: 15,
@@ -63,10 +70,9 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
     }
   };
 
-  const handlePlayFullscreen = async () => {
-    if (videoRef.current) {
-      await videoRef.current.presentFullscreenPlayer();
-      await videoRef.current.playAsync();
+  const handlePlayFullscreen = () => {
+    if (player) {
+      player.play();
     }
   };
 
@@ -100,21 +106,17 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
           ) : displayMedia ? (
             <>
               {isVideo ? (
-                <Video
-                  ref={videoRef}
-                  source={{ uri: displayMedia }}
+                <VideoView
+                  ref={videoViewRef}
+                  player={player}
                   style={styles.image}
-                  resizeMode={ResizeMode.COVER}
-                  shouldPlay={false} 
-                  isMuted={false}
-                  useNativeControls={true} 
-                  positionMillis={500} 
+                  contentFit="cover"
+                  nativeControls={true}
                 />
               ) : (
                 <Image source={{ uri: displayMedia }} style={styles.image} resizeMode="cover" />
               )}
               
-              {/* BOTÃO DE PLAY RESTAURADO */}
               {isVideo && (
                 <TouchableOpacity style={styles.playOverlay} onPress={handlePlayFullscreen}>
                   <Feather name="play-circle" size={32} color="rgba(255,255,255,0.9)" />

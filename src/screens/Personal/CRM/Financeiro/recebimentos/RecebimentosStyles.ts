@@ -19,7 +19,6 @@ export const styles = StyleSheet.create({
     borderRadius: moderateScale(125),
     backgroundColor: "#FF6B00",
     opacity: 0.1,
-    blurRadius: 90,
   },
   glowTopRight: {
     position: "absolute",
@@ -30,7 +29,6 @@ export const styles = StyleSheet.create({
     borderRadius: moderateScale(125),
     backgroundColor: "#00E676",
     opacity: 0.05,
-    blurRadius: 100,
   },
 
   header: {
@@ -672,7 +670,6 @@ export const styles = StyleSheet.create({
     fontSize: moderateScale(15),
     fontWeight: "600",
     height: "100%",
-    outlineStyle: "none",
   },
   chipContainer: {
     flexDirection: "row",

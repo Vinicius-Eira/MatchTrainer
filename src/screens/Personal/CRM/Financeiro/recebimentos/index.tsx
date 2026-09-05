@@ -5,11 +5,11 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { theme } from "../../../../../theme/theme";
 
-import { MODALIDADES, STATUS_FILTROS, CATEGORIAS_EXTRA, FORMAS_PAGAMENTO, MOTIVOS_CONGELAMENTO, MESES_NOME, DIAS_SEMANA } from './RecebimentosConstants';
+import { MODALIDADES, STATUS_FILTROS, CATEGORIAS_EXTRA, FORMAS_PAGAMENTO, MOTIVOS_CONGELAMENTO, MESES_NOME, DIAS_SEMANA, StatusFiltro } from './RecebimentosConstants';
 import { styles } from './RecebimentosStyles';
 import { useRecebimentos } from './useRecebimentos';
 
-export default function Recebimentos({ navigation }) {
+export default function Recebimentos({ navigation }: any) {
   const {
     loading, refreshing, nomePersonal, modalDataVisivel, tempAno, tempMes, tempInicio, tempFim,
     modalidadeAtiva, statusAtivo, buscaAlunoExtra, buscaAlunoCongelar, modalBaixaVisivel, faturaSelecionada, valorInput,
@@ -97,7 +97,7 @@ export default function Recebimentos({ navigation }) {
           {STATUS_FILTROS.map((status) => {
             const isAtivo = statusAtivo === status.id;
             return (
-              <TouchableOpacity key={status.id} style={[styles.statusChip, isAtivo && { backgroundColor: status.activeBg, borderColor: status.activeColor }]} onPress={() => setStatusAtivo(status.id)}>
+              <TouchableOpacity key={status.id} style={[styles.statusChip, isAtivo && { backgroundColor: status.activeBg, borderColor: status.activeColor }]} onPress={() => setStatusAtivo(status.id as StatusFiltro)}>
                 <Text style={[styles.statusText, isAtivo && { color: status.activeColor, fontWeight: "900" }]}>{status.label}</Text>
               </TouchableOpacity>
             );
@@ -139,8 +139,8 @@ export default function Recebimentos({ navigation }) {
 
               let badgeBg = "rgba(255, 255, 255, 0.05)";
               let badgeColor = "#AAA";
-              let badgeIcon = "information-circle";
-              let borderStyle = { borderColor: "#333" };
+              let badgeIcon = "information-circle" as any;
+              let borderStyle = { borderColor: "#333" as any, backgroundColor: "#121212" as any };
 
               if (isAtrasado) { badgeBg = "rgba(255, 59, 48, 0.15)"; badgeColor = "#FF3B30"; badgeIcon = "alert-circle"; borderStyle = { borderColor: "rgba(255, 59, 48, 0.4)", backgroundColor: "rgba(255, 59, 48, 0.03)" }; }
               else if (isPendente) { badgeBg = "rgba(255, 215, 0, 0.15)"; badgeColor = "#FFD700"; badgeIcon = "time"; borderStyle = { borderColor: "rgba(255, 215, 0, 0.4)", backgroundColor: "rgba(255, 215, 0, 0.03)" }; }
@@ -245,7 +245,7 @@ export default function Recebimentos({ navigation }) {
               <View style={{alignItems: 'center', width: '100%'}}>
                 <Text style={{color: "#FFF", fontSize: 24, fontFamily: theme.fonts.title, marginBottom: 20}}>Sucesso! 🎉</Text>
                 <View ref={reciboRef} collapsable={false} style={styles.reciboPremiumContainer}>
-                  <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={StyleSheet.absoluteFill} borderRadius={24} />
+                  <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={[StyleSheet.absoluteFill, { borderRadius: 24 }]} />
                   <Ionicons name="shield-checkmark" size={150} color="rgba(255, 255, 255, 0.03)" style={styles.watermarkIcon} />
                   <View style={styles.reciboPremiumHeader}><View style={styles.iconSuccessBg}><Ionicons name="checkmark-sharp" size={28} color="#00E676" /></View><Text style={styles.reciboPremiumTitle}>RECIBO DIGITAL</Text><Text style={styles.reciboPremiumSubtitle}>{new Date().toLocaleString('pt-BR')}</Text></View>
                   <View style={styles.dashedLine} />
