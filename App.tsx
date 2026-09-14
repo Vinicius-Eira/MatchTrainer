@@ -25,7 +25,7 @@ import PersonalSetup from "./src/screens/Onboarding/PersonalSetup";
 
 import MiniOnboarding from "./src/screens/Onboarding/AlunoOnboarding/MiniOnboarding";
 
-import PainelMeuTreinador from "./src/screens/User/PainelMeuTreinador";
+import PainelMeuTreinador from "./src/screens/User/Dashboard";
 
 import PersonalDashboard from "./src/screens/Personal/CRM/Dashboard/PersonalDashboard";
 import { InsightDetailScreen } from "./src/screens/Personal/CRM/Dashboard/InsightDetailScreen";
@@ -45,7 +45,7 @@ import Avaliacoes from "./src/screens/Personal/Feedback/Avaliacoes";
 import FeedbackPersonal from "./src/screens/Personal/Feedback/FeedbackPersonal";
 
 import { ExerciseLibraryScreen } from "./src/screens/Personal/ExerciseLibrary/ExerciseLibrary";
-import { Presets } from "./src/screens/Personal/MeusPresets/Presets"; 
+import { Presets } from "./src/screens/Personal/Presets/Presets"; 
 import { WorkoutCreator } from "./src/screens/Personal/WorkoutCreator/WorkoutCreator"; 
 
 import Avaliar from "./src/screens/User/Avaliar";
@@ -59,6 +59,14 @@ import RedefinirSenha from "./src/screens/Auth/password/RedefinirSenha";
 import AtivarConvite from "./src/screens/Auth/User/AtivarConta";
 import Chat from "./src/screens/Shared/Chat";
 import ConversasAluno from "./src/screens/Shared/Conversas";
+import WorkoutList from "./src/screens/User/WorkoutList";
+import WorkoutPreview from "./src/screens/User/WorkoutPreview";
+import WorkoutCompletion from "./src/screens/User/WorkoutCompletion";
+import WorkoutSession from "./src/screens/User/WorkoutSession";
+import Progress from "./src/screens/User/Progress";
+import Finance from "./src/screens/User/Finance";
+import Anamnese from "./src/screens/User/Anamnese";
+import QuestionnaireForm from "./src/screens/User/Anamnese/QuestionnaireForm";
 
 if ((Text as any).defaultProps == null) {
   (Text as any).defaultProps = {};
@@ -363,6 +371,46 @@ export default function App() {
         <RootStack.Screen
           name="PropostaAluno"
           component={PropostaAluno}
+          options={{ headerShown: false }}
+        />
+        <RootStack.Screen
+          name="WorkoutList"
+          component={WorkoutList}
+          options={{ headerShown: false }}
+        />
+        <RootStack.Screen
+          name="WorkoutSession"
+          component={WorkoutSession}
+          options={{ headerShown: false }}
+        />
+        <RootStack.Screen
+          name="WorkoutPreview"
+          component={WorkoutPreview}
+          options={{ headerShown: false }}
+        />
+         <RootStack.Screen
+          name="WorkoutCompletion"
+          component={WorkoutCompletion}
+          options={{ headerShown: false }}
+        />
+         <RootStack.Screen
+          name="Progress"
+          component={Progress}
+          options={{ headerShown: false }}
+        />
+         <RootStack.Screen
+          name="Finance"
+          component={Finance}
+          options={{ headerShown: false }}
+        />
+         <RootStack.Screen
+          name="Anamnese"
+          component={Anamnese}
+          options={{ headerShown: false }}
+        />
+         <RootStack.Screen
+          name="QuestionnaireForm"
+          component={QuestionnaireForm}
           options={{ headerShown: false }}
         />
       </RootStack.Navigator>

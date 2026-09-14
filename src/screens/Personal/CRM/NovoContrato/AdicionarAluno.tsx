@@ -130,7 +130,6 @@ export default function AdicionarAluno({ route, navigation }: AdicionarAlunoProp
   const [isProcessandoTexto, setIsProcessandoTexto] = useState<boolean>(false);
   const [statusProcessamento, setStatusProcessamento] = useState<string>("");
 
-
   const handleMoneyChange = (text: string) => {
     let numericValue = text.replace(/[^0-9]/g, "");
     if (numericValue) {
@@ -257,13 +256,15 @@ export default function AdicionarAluno({ route, navigation }: AdicionarAlunoProp
       if (!user) throw new Error("Sessão do profissional não encontrada.");
 
       const valorFloat = mensalidade ? parseFloat(mensalidade.replace(",", ".")) : 0;
-      let servicosDB = modalidade === "Híbrido" ? ["Consultoria", "Presencial"] : [modalidade];
+      
+      let tipoPlanoDB = 'consultoria_online';
+      if (modalidade === 'Presencial') tipoPlanoDB = 'presencial';
+      if (modalidade === 'Híbrido') tipoPlanoDB = 'hibrido';
 
       if (leadInjetado && conexaoId) {
-        
         if (planoAtivo) {
-          await supabase.from("planos").update({
-            servicos_inclusos: servicosDB,
+          await supabase.from("financeiro_contratos").update({
+            tipo_plano: tipoPlanoDB,
             frequencia: frequencia,
             valor_mensal: valorFloat,
             dia_vencimento: diaInt,
@@ -273,15 +274,14 @@ export default function AdicionarAluno({ route, navigation }: AdicionarAlunoProp
           Alert.alert("Sucesso!", "O contrato do aluno foi atualizado com as novas condições.");
           navigation.goBack();
         } else {
-          const { error: erroPlano } = await supabase.from("planos").insert([{
-            personal_id: user.id,
-            aluno_id: leadInjetado.id,
-            servicos_inclusos: servicosDB,
+          const { error: erroPlano } = await supabase.from("financeiro_contratos").insert([{
+            conexao_id: conexaoId,
+            tipo_plano: tipoPlanoDB,
             frequencia: frequencia,
             valor_mensal: valorFloat,
             dia_vencimento: diaInt,
             observacoes: observacoes.trim(),
-            status: "aguardando_assinatura"
+            status: "pausado" 
           }]);
           
           if (erroPlano) throw erroPlano;
@@ -300,7 +300,7 @@ export default function AdicionarAluno({ route, navigation }: AdicionarAlunoProp
           codigo_convite: codigoGerado,
           personal_id: user.id,
           nome: nome.trim(),
-          servicos_inclusos: servicosDB,
+          servicos_inclusos: [modalidade],
           frequencia_pagamento: frequencia,
           valor_mensalidade: valorFloat,
           dia_vencimento: diaInt,

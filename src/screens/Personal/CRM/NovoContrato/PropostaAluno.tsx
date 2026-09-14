@@ -41,20 +41,11 @@ export default function PropostaAluno({ route, navigation }: any) {
 
   const regrasPadrao = "✅ **1. Atrasos**\nA tolerância para os treinos ou avaliações é de 15 minutos.\n\n✅ **2. Pagamentos**\nO seu acesso ao planejamento só será liberado/atualizado após a confirmação financeira.\n\n✅ **3. Suporte e Dúvidas**\nO canal oficial é o WhatsApp. Respostas em até 24h úteis.";
 
-  useEffect(() => {
-    if (conexaoId) {
-      carregarDadosDaProposta();
-    } else {
-      Alert.alert("Erro de Rota", "Nenhuma conexão encontrada.");
-      navigation.goBack();
-    }
-  }, [conexaoId]);
-
   const carregarDadosDaProposta = async () => {
     try {
       const { data: conexao, error: errConn } = await supabase
         .from('conexoes')
-        .select('usuario_id, personal_id') 
+        .select('aluno_id, personal_id') 
         .eq('id', conexaoId)
         .single();
       
@@ -64,7 +55,7 @@ export default function PropostaAluno({ route, navigation }: any) {
       }
 
       const { data: personal } = await supabase
-        .from('personals')
+        .from('perfis')
         .select('nome, foto_url')
         .eq('id', conexao.personal_id)
         .single();
@@ -74,22 +65,21 @@ export default function PropostaAluno({ route, navigation }: any) {
         setPersonalFoto(personal.foto_url);
       }
 
-      const { data: plano, error: errPlano } = await supabase
-        .from('planos')
+      const { data: contrato, error: errContrato } = await supabase
+        .from('financeiro_contratos')
         .select('*')
-        .eq('aluno_id', conexao.usuario_id) 
-        .eq('personal_id', conexao.personal_id)
+        .eq('conexao_id', conexaoId)
         .limit(1)
         .maybeSingle();
 
-      if (errPlano) {
-        Alert.alert("Erro do Supabase (Planos)", JSON.stringify(errPlano));
+      if (errContrato) {
+        Alert.alert("Erro do Supabase (Contratos)", JSON.stringify(errContrato));
         setLoadingData(false);
         return;
       }
 
-      if (plano) {
-        setProposta(plano);
+      if (contrato) {
+        setProposta(contrato);
       } else {
         Alert.alert(
           "Plano não encontrado", 
@@ -104,6 +94,78 @@ export default function PropostaAluno({ route, navigation }: any) {
       setLoadingData(false);
     }
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const carregarDadosDaProposta = async () => {
+      try {
+        const { data: conexao, error: errConn } = await supabase
+          .from('conexoes')
+          .select('aluno_id, personal_id') 
+          .eq('id', conexaoId)
+          .single();
+        
+        if (errConn) {
+          Alert.alert("Erro na Conexão", JSON.stringify(errConn));
+          if (isMounted) navigation.goBack();
+          return;
+        }
+
+        const { data: personal } = await supabase
+          .from('perfis')
+          .select('nome, foto_url')
+          .eq('id', conexao.personal_id)
+          .single();
+        
+        if (personal && isMounted) {
+          setPersonalNome(personal.nome);
+          setPersonalFoto(personal.foto_url);
+        }
+
+        const { data: contrato, error: errContrato } = await supabase
+          .from('financeiro_contratos')
+          .select('*')
+          .eq('conexao_id', conexaoId)
+          .limit(1)
+          .maybeSingle();
+
+        if (errContrato) {
+          Alert.alert("Erro do Supabase (Contratos)", JSON.stringify(errContrato));
+          if (isMounted) setLoadingData(false);
+          return;
+        }
+
+        if (isMounted) {
+          if (contrato) {
+            setProposta(contrato);
+          } else {
+            Alert.alert(
+              "Plano não encontrado", 
+              `Houve um problema ao buscar a proposta digital.`
+            );
+            navigation.goBack();
+          }
+        }
+      } catch (error: any) {
+        Alert.alert("Erro Fatal", error.message);
+        if (isMounted) navigation.goBack();
+      } finally {
+        if (isMounted) setLoadingData(false);
+      }
+    };
+
+    if (conexaoId) {
+      carregarDadosDaProposta();
+    } else {
+      Alert.alert("Erro de Rota", "Nenhuma conexão encontrada.");
+      navigation.goBack();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [conexaoId]);
 
   const toggleRegras = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -120,7 +182,7 @@ export default function PropostaAluno({ route, navigation }: any) {
       
       if (proposta?.id) {
         await supabase
-          .from('planos')
+          .from('financeiro_contratos')
           .update({ status: 'ativo' })
           .eq('id', proposta.id);
       }
@@ -170,9 +232,12 @@ export default function PropostaAluno({ route, navigation }: any) {
 
   const valorString = proposta?.valor_mensal ? Number(proposta.valor_mensal).toFixed(2) : "0.00";
   const valorParts = valorString.split('.');
-  const servicosExibir = proposta?.servicos_inclusos && proposta.servicos_inclusos.length > 0 
-    ? proposta.servicos_inclusos.join(' • ') 
-    : "Consultoria Premium";
+  
+  let servicosExibir = "Consultoria Premium";
+  if (proposta?.tipo_plano === 'presencial') servicosExibir = "Treinamento Presencial";
+  if (proposta?.tipo_plano === 'hibrido') servicosExibir = "Híbrido (Presencial + Online)";
+  if (proposta?.tipo_plano === 'consultoria_online') servicosExibir = "Consultoria Online";
+  
   const frequenciaExibir = proposta?.frequencia || "Mensal";
   const vencimentoExibir = proposta?.dia_vencimento || "10";
   const observacoesExibir = proposta?.observacoes || regrasPadrao;

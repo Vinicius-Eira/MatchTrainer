@@ -24,7 +24,6 @@ export default function PlayerScreen({ route, navigation }: any) {
       <ScrollView className="flex-1 px-6 pt-8" showsVerticalScrollIndicator={false}>
         
         <View className="flex-row justify-between items-center mb-8">
-          {/* 4. Adicionei a função de voltar na seta */}
           <TouchableOpacity onPress={() => navigation?.goBack()}>
             <Text className="text-primary font-body font-bold text-lg">← Treino A</Text>
           </TouchableOpacity>
