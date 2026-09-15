@@ -1,5 +1,5 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
-import { useRef } from "react";
+import { useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -11,11 +11,21 @@ import {
 } from "react-native";
 import { theme } from "../../theme/theme";
 import { moderateScale, scale, verticalScale } from "../../utils/responsive";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 
-const ChoiceCard = ({ title, description, icon, primary, onPress }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+interface ChoiceCardProps {
+  title: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap; 
+  primary: boolean;
+  onPress: () => void;
+}
+
+const ChoiceCard = ({ title, description, icon, primary, onPress }: ChoiceCardProps) => {
+  
+  const [scaleAnim] = useState(() => new Animated.Value(1));
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -42,8 +52,15 @@ const ChoiceCard = ({ title, description, icon, primary, onPress }) => {
           { transform: [{ scale: scaleAnim }] },
         ]}
       >
-        <View style={styles.iconWrapper}>
-          <Ionicons name={icon} size={28} color={theme.colors.primary} />
+        {primary && (
+          <LinearGradient
+            colors={["rgba(255,107,0,0.15)", "transparent"]}
+            style={[StyleSheet.absoluteFill, { borderRadius: moderateScale(24) }]}
+          />
+        )}
+        
+        <View style={[styles.iconWrapper, primary && { backgroundColor: theme.colors.primary, borderColor: "transparent" }]}>
+          <Ionicons name={icon} size={28} color={primary ? "#000" : theme.colors.primary} />
         </View>
 
         <View style={styles.textWrapper}>
@@ -61,7 +78,7 @@ const ChoiceCard = ({ title, description, icon, primary, onPress }) => {
   );
 };
 
-export default function ChoiceScreen({ navigation }) {
+export default function ChoiceScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.glowTopLeft} />
@@ -80,31 +97,19 @@ export default function ChoiceScreen({ navigation }) {
         <View style={styles.ruleOfThreeRow}>
           <View style={styles.ruleItem}>
             <View style={styles.ruleIconBg}>
-              <FontAwesome5
-                name="fire"
-                size={14}
-                color={theme.colors.primary}
-              />
+              <FontAwesome5 name="fire" size={14} color={theme.colors.primary} />
             </View>
             <Text style={styles.ruleText}>Match Exato</Text>
           </View>
           <View style={styles.ruleItem}>
             <View style={styles.ruleIconBg}>
-              <Ionicons
-                name="chatbubbles"
-                size={14}
-                color={theme.colors.primary}
-              />
+              <Ionicons name="chatbubbles" size={14} color={theme.colors.primary} />
             </View>
             <Text style={styles.ruleText}>Contato Direto</Text>
           </View>
           <View style={styles.ruleItem}>
             <View style={styles.ruleIconBg}>
-              <FontAwesome5
-                name="dumbbell"
-                size={12}
-                color={theme.colors.primary}
-              />
+              <FontAwesome5 name="dumbbell" size={12} color={theme.colors.primary} />
             </View>
             <Text style={styles.ruleText}>Alta Performance</Text>
           </View>
@@ -116,9 +121,7 @@ export default function ChoiceScreen({ navigation }) {
             description="Quero encontrar o personal ideal"
             icon="person"
             primary={true}
-            onPress={() =>
-              navigation.navigate("ClienteLogin", { tipo: "cliente" })
-            }
+            onPress={() => navigation.navigate("AlunoLogin", { tipo: "cliente" })}
           />
 
           <ChoiceCard
@@ -126,9 +129,7 @@ export default function ChoiceScreen({ navigation }) {
             description="Quero gerenciar e captar alunos"
             icon="barbell"
             primary={false}
-            onPress={() =>
-              navigation.navigate("PersonalLogin", { tipo: "personal" })
-            }
+            onPress={() => navigation.navigate("PersonalLogin", { tipo: "personal" })}
           />
         </View>
       </View>
@@ -151,25 +152,23 @@ const styles = StyleSheet.create({
 
   glowTopLeft: {
     position: "absolute",
-    top: verticalScale(-100),
-    left: scale(-50),
-    width: scale(250),
-    height: scale(250),
-    borderRadius: moderateScale(125),
-    backgroundColor: theme.colors.primary,
-    opacity: 0.12,
-    blurRadius: 60,
-  },
-  glowBottomRight: {
-    position: "absolute",
-    bottom: verticalScale(-100),
-    right: scale(-50),
+    top: verticalScale(-80),
+    left: scale(-80),
     width: scale(300),
     height: scale(300),
     borderRadius: moderateScale(150),
     backgroundColor: theme.colors.primary,
-    opacity: 0.08,
-    blurRadius: 80,
+    opacity: 0.15
+  },
+  glowBottomRight: {
+    position: "absolute",
+    bottom: verticalScale(-80),
+    right: scale(-80),
+    width: scale(350),
+    height: scale(350),
+    borderRadius: moderateScale(175),
+    backgroundColor: theme.colors.primary,
+    opacity: 0.12
   },
 
   centralView: {
@@ -180,34 +179,35 @@ const styles = StyleSheet.create({
 
   header: {
     alignItems: "center",
-    marginBottom: verticalScale(25),
+    marginBottom: verticalScale(35),
   },
   mainTitle: {
     fontFamily: theme.fonts.title,
-    fontSize: moderateScale(42),
+    fontSize: moderateScale(46),
     color: theme.colors.text,
     letterSpacing: -0.5,
-    lineHeight: moderateScale(48),
+    lineHeight: moderateScale(54),
     textAlign: "center",
+    fontWeight: "900",
   },
   highlightTitle: {
     color: theme.colors.primary,
   },
   subtitle: {
     fontFamily: theme.fonts.body,
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(14),
     fontWeight: "bold",
     color: theme.colors.textSecondary,
-    marginTop: verticalScale(12),
+    marginTop: verticalScale(16),
     textTransform: "uppercase",
-    letterSpacing: 2,
+    letterSpacing: 3,
     textAlign: "center",
   },
 
   ruleOfThreeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: verticalScale(40),
+    marginBottom: verticalScale(50),
     paddingHorizontal: scale(10),
   },
   ruleItem: {
@@ -215,50 +215,51 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ruleIconBg: {
-    width: scale(36),
-    height: scale(36),
-    borderRadius: moderateScale(18),
-    backgroundColor: theme.colors.primaryLight,
+    width: scale(42),
+    height: scale(42),
+    borderRadius: moderateScale(21),
+    backgroundColor: "rgba(255, 107, 0, 0.1)",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: verticalScale(8),
+    marginBottom: verticalScale(10),
     borderWidth: 1,
-    borderColor: "rgba(255, 107, 0, 0.2)",
+    borderColor: "rgba(255, 107, 0, 0.3)",
   },
   ruleText: {
     color: theme.colors.textBody,
     fontSize: moderateScale(11),
-    fontWeight: "600",
+    fontWeight: "bold",
     textAlign: "center",
     textTransform: "uppercase",
   },
 
   cardsContainer: {
     width: "100%",
-    gap: verticalScale(16),
+    gap: verticalScale(20),
   },
 
   card: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: scale(24),
+    paddingHorizontal: scale(20),
     paddingVertical: verticalScale(24),
     borderRadius: moderateScale(24),
+    overflow: "hidden",
   },
   cardPrimary: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: "#0A0A0A",
     borderWidth: 1.5,
     borderColor: theme.colors.primary,
     shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 15,
-    elevation: 8,
+    elevation: 10,
   },
   cardSecondary: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1.5,
-    borderColor: theme.colors.border,
+    backgroundColor: "#0A0A0A",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
   },
 
   iconWrapper: {
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: scale(16),
-    backgroundColor: theme.colors.primaryLight,
+    backgroundColor: "rgba(255, 107, 0, 0.05)",
     borderWidth: 1,
     borderColor: "rgba(255, 107, 0, 0.2)",
   },
@@ -281,6 +282,7 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(22),
     letterSpacing: 0.5,
     color: theme.colors.text,
+    fontWeight: "bold",
   },
   cardDesc: {
     fontFamily: theme.fonts.body,

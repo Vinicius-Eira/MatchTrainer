@@ -18,8 +18,8 @@ import PersonalCadastro from "./src/screens/Auth/Personal/PersonalCadastro";
 import PersonalLogin from "./src/screens/Auth/Personal/PersonalLogin";
 import SplashScreen from "./src/screens/Auth/SplashScreen";
 import TermosDeUso from "./src/screens/Auth/TermosDeUso";
-import ClienteCadastro from "./src/screens/Auth/User/ClienteCadastro";
-import ClienteLogin from "./src/screens/Auth/User/ClienteLogin";
+import AlunoCadastro from "./src/screens/Auth/User/AlunoCadastro";
+import AlunoLogin from "./src/screens/Auth/User/AlunoLogin";
 import ClienteSetup from "./src/screens/Onboarding/ClienteSetup";
 import PersonalSetup from "./src/screens/Onboarding/PersonalSetup";
 
@@ -197,7 +197,7 @@ export default function App() {
               forcarNavegacao("RedefinirSenha");
             } else if (type === "signup") {
               let telaDestino = "ChoiceScreen";
-              if (url.includes("ClienteLogin")) telaDestino = "ClienteLogin";
+              if (url.includes("AlunoLogin")) telaDestino = "AlunoLogin";
               if (url.includes("PersonalLogin")) telaDestino = "PersonalLogin";
 
               Alert.alert(
@@ -329,8 +329,8 @@ export default function App() {
         />
         <RootStack.Screen name="Avaliacoes" component={Avaliacoes} />
 
-        <RootStack.Screen name="ClienteLogin" component={ClienteLogin} />
-        <RootStack.Screen name="ClienteCadastro" component={ClienteCadastro} />
+        <RootStack.Screen name="AlunoLogin" component={AlunoLogin} />
+        <RootStack.Screen name="AlunoCadastro" component={AlunoCadastro} />
         <RootStack.Screen name="ClienteSetup" component={ClienteSetup} />
         <RootStack.Screen
           name="PerfilPublicoPersonal"

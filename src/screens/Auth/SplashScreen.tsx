@@ -1,49 +1,21 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Animated, StatusBar, StyleSheet, View } from "react-native";
 import { supabase } from "../../services/supabase";
 import { moderateScale } from "../../utils/responsive";
 
-export default function SplashScreen({ navigation }) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.6)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1200,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 6,
-        tension: 15,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    const iniciarApp = async () => {
-      const tempoEspera = new Promise((resolve) => setTimeout(resolve, 4500));
-
-      const rotaDestino = await checarSessao();
-
-      await tempoEspera;
-
-      navigation.replace(rotaDestino);
-    };
-
-    iniciarApp();
-  }, []);
+export default function SplashScreen({ navigation }: any) {
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [scaleAnim] = useState(() => new Animated.Value(0.6));
 
   const checarSessao = async () => {
     try {
       const termosAceitos = await AsyncStorage.getItem("termos_aceitos");
       if (!termosAceitos) return "TermosDeUso";
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) throw error;
 
       if (session?.user) {
         const { data: personalData } = await supabase
@@ -64,6 +36,37 @@ export default function SplashScreen({ navigation }) {
       return "ChoiceScreen";
     }
   };
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1200,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 6,
+        tension: 15,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    const iniciarApp = async () => {
+      const tempoEspera = new Promise((resolve) => setTimeout(resolve, 2500));
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve("ChoiceScreen"), 5000));
+      
+      const rotaSessao = checarSessao();
+
+      const rotaDestino = await Promise.race([rotaSessao, timeoutPromise]);
+      await tempoEspera;
+
+      navigation.replace(rotaDestino);
+    };
+
+    iniciarApp();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <View style={styles.container}>
