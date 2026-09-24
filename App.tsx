@@ -51,7 +51,7 @@ import { WorkoutCreator } from "./src/screens/Personal/WorkoutCreator/WorkoutCre
 import Avaliar from "./src/screens/User/Avaliar";
 import AvaliarPersonal from "./src/screens/User/AvaliarPersonal";
 import FeedPersonal from "./src/screens/User/FeedPersonal";
-import PerfilAluno from "./src/screens/User/PerfilAluno";
+import PerfilAluno from "./src/screens/User/Perfil";
 import PerfilPublicoPersonal from "./src/screens/User/PerfilPublicoPersonal";
 
 import EsqueciSenha from "./src/screens/Auth/password/EsqueciSenha";
@@ -67,6 +67,7 @@ import Progress from "./src/screens/User/Progress";
 import Finance from "./src/screens/User/Finance";
 import Anamnese from "./src/screens/User/Anamnese";
 import QuestionnaireForm from "./src/screens/User/Anamnese/QuestionnaireForm";
+import RaioXTreino from "./src/screens/User/Perfil/RaioXTreino";
 
 if ((Text as any).defaultProps == null) {
   (Text as any).defaultProps = {};
@@ -196,13 +197,11 @@ export default function App() {
             if (type === "recovery") {
               forcarNavegacao("RedefinirSenha");
             } else if (type === "signup") {
-              let telaDestino = "ChoiceScreen";
-              if (url.includes("AlunoLogin")) telaDestino = "AlunoLogin";
-              if (url.includes("PersonalLogin")) telaDestino = "PersonalLogin";
-
+              let telaDestino = "Splash";
+              
               Alert.alert(
                 "Conta Ativada! 🎉",
-                "Sua conta foi ativada com sucesso. É só você fazer login.",
+                "Sua conta foi verificada com sucesso. Vamos concluir seu perfil."
               );
               forcarNavegacao(telaDestino);
             }
@@ -343,6 +342,11 @@ export default function App() {
           options={{ headerShown: false }}
         />
         <RootStack.Screen
+          name="RaioXTreino"
+          component={RaioXTreino}
+          options={{ headerShown: false }}
+        />
+         <RootStack.Screen
           name="PerfilAluno"
           component={PerfilAluno}
           options={{ headerShown: false }}

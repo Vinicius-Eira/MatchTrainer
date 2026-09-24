@@ -79,7 +79,7 @@ export default function PerfilPublicoPersonal({ route, navigation }) {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      carregarPerfilCompleto();
+      // carregarPerfilCompleto();
     });
     return unsubscribe;
   }, [navigation, personalId]);

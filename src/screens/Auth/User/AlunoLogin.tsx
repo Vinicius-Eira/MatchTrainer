@@ -120,7 +120,7 @@ export default function AlunoLogin({ navigation }: any) {
 
             <View style={styles.form}>
               <View style={[styles.inputBox, focoEmail && styles.inputBoxFocused]}>
-                <Ionicons name="mail-outline" size={20} color={focoEmail ? theme.colors.primary : "#FF5500"} style={styles.inputIcon} />
+                <Ionicons name="mail-outline" size={20} color={focoEmail ? theme.colors.primary : "#555"} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, Platform.OS === "web" ? { outlineStyle: "none" as any } : {}]}
                   placeholder="Seu e-mail"
@@ -138,7 +138,7 @@ export default function AlunoLogin({ navigation }: any) {
               </View>
 
               <View style={[styles.inputBox, focoSenha && styles.inputBoxFocused]}>
-                <Ionicons name="lock-closed-outline" size={20} color={focoSenha ? theme.colors.primary : "#FF5500"} style={styles.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={20} color={focoSenha ? theme.colors.primary : "#555"} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, Platform.OS === "web" ? { outlineStyle: "none" as any } : {}]}
                   placeholder="Sua senha"
@@ -154,7 +154,7 @@ export default function AlunoLogin({ navigation }: any) {
                   autoComplete="off"
                 />
                 <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)} style={styles.eyeIcon} activeOpacity={0.7}>
-                  <Ionicons name={mostrarSenha ? "eye-off-outline" : "eye-outline"} size={20} color={mostrarSenha ? theme.colors.primary : "#FF5500"} />
+                  <Ionicons name={mostrarSenha ? "eye-off-outline" : "eye-outline"} size={20} color={mostrarSenha ? theme.colors.primary : "#555"} />
                 </TouchableOpacity>
               </View>
 
@@ -171,7 +171,7 @@ export default function AlunoLogin({ navigation }: any) {
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Ainda não tem conta?</Text>
-              <TouchableOpacity onPress={() => navigation.navigate("AlunoCadastro")} activeOpacity={0.7}>
+              <TouchableOpacity onPress={() => navigation.navigate("AlunoCadastro")} activeOpacity={0.7} style={styles.footerButton}>
                 <Text style={styles.registerTextHighlight}>Criar conta grátis</Text>
               </TouchableOpacity>
             </View>
@@ -185,7 +185,7 @@ export default function AlunoLogin({ navigation }: any) {
 const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: "#020202", position: "relative" },
   glowTopLeft: { position: "absolute", top: verticalScale(-80), left: scale(-80), width: scale(300), height: scale(300), borderRadius: scale(150), backgroundColor: theme.colors.primary, opacity: 0.12},
-  glowBottomRight: { position: "absolute", bottom: verticalScale(-80), right: scale(-80), width: scale(350), height: scale(350), borderRadius: scale(175), backgroundColor: theme.colors.primary, opacity: 0.08},
+  glowBottomRight: { position: "absolute", bottom: verticalScale(-80), right: scale(-80), width: scale(350), height: scale(350), borderRadius: scale(175), backgroundColor: theme.colors.primary, opacity: 0.1},
 
   headerAbsolute: { position: "absolute", top: Platform.OS === "ios" ? verticalScale(50) : verticalScale(40), left: scale(20), zIndex: 10 },
   btnVoltar: { backgroundColor: "rgba(255,255,255,0.05)", width: scale(40), height: scale(40), borderRadius: scale(12), justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
 
   header: { alignItems: "center", marginBottom: verticalScale(40), marginTop: verticalScale(10) },
   iconWrapper: { position: "relative", marginBottom: verticalScale(20), justifyContent: "center", alignItems: "center" },
-  iconGlow: { position: "absolute", width: scale(70), height: scale(70), borderRadius: scale(35), backgroundColor: theme.colors.primary, opacity: 0.4},
+  iconGlow: { position: "absolute", width: scale(70), height: scale(70), borderRadius: scale(35), backgroundColor: theme.colors.primary, opacity: 0.3 },
   iconCircle: { width: scale(74), height: scale(74), borderRadius: scale(24), justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.5)", backgroundColor: "#0A0A0A" },
 
   title: { fontFamily: theme.fonts.title, fontSize: moderateScale(36), color: "#FFF", letterSpacing: -0.5, lineHeight: moderateScale(42), textAlign: "center" },
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
 
   form: { width: "100%" },
   inputBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#0A0A0A", borderRadius: moderateScale(16), borderWidth: 1, borderColor: "#1A1A1A", paddingLeft: scale(16), marginBottom: verticalScale(16), height: verticalScale(60) },
-  inputBoxFocused: { borderColor: theme.colors.primary, backgroundColor: "rgba(255, 107, 0, 0.05)", shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 3 },
+  inputBoxFocused: { borderColor: theme.colors.primary, backgroundColor: "rgba(255, 107, 0, 0.05)" },
   inputIcon: { marginRight: scale(12) },
   input: { flex: 1, color: "#FFF", fontSize: moderateScale(16), fontFamily: theme.fonts.body, height: "100%", backgroundColor: "transparent" },
   eyeIcon: { paddingHorizontal: scale(16), height: "100%", justifyContent: "center" },
@@ -212,10 +212,11 @@ const styles = StyleSheet.create({
   forgotPassword: { alignSelf: "flex-end", marginBottom: verticalScale(35), marginTop: verticalScale(5), paddingVertical: verticalScale(5) },
   forgotPasswordText: { color: "#666", fontFamily: theme.fonts.body, fontSize: moderateScale(13), fontWeight: "700" },
 
-  btnOutline: { flexDirection: "row", marginTop: verticalScale(10), height: verticalScale(60), borderRadius: moderateScale(18), borderWidth: 1, borderColor: theme.colors.primary, justifyContent: "center", alignItems: "center", position: "relative" },
+  btnOutline: { flexDirection: "row", marginTop: verticalScale(10), height: verticalScale(60), borderRadius: moderateScale(18), borderWidth: 1, borderColor: theme.colors.primary, justifyContent: "center", alignItems: "center", position: "relative", overflow: "hidden" },
   btnOutlineText: { color: theme.colors.primary, fontSize: moderateScale(16), fontWeight: "bold", letterSpacing: 0.5, textTransform: "uppercase" },
 
   footer: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: verticalScale(45) },
   footerText: { color: "#666", fontFamily: theme.fonts.body, fontSize: moderateScale(14) },
+  footerButton: { flexDirection: "row", alignItems: "center", paddingLeft: scale(8) },
   registerTextHighlight: { color: theme.colors.primary, fontFamily: theme.fonts.title, fontSize: moderateScale(14), fontWeight: "bold", marginLeft: scale(6), letterSpacing: 0.5 },
 });

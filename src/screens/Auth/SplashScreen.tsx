@@ -1,85 +1,101 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
-import { Animated, StatusBar, StyleSheet, View } from "react-native";
+import React, { useEffect } from "react";
+import { Image, StatusBar, StyleSheet, View } from "react-native";
 import { supabase } from "../../services/supabase";
-import { moderateScale } from "../../utils/responsive";
+import { scale, verticalScale } from "../../utils/responsive";
 
 export default function SplashScreen({ navigation }: any) {
-  const [fadeAnim] = useState(() => new Animated.Value(0));
-  const [scaleAnim] = useState(() => new Animated.Value(0.6));
-
-  const checarSessao = async () => {
-    try {
-      const termosAceitos = await AsyncStorage.getItem("termos_aceitos");
-      if (!termosAceitos) return "TermosDeUso";
-
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) throw error;
-
-      if (session?.user) {
-        const { data: personalData } = await supabase
-          .from("personals")
-          .select("ativo")
-          .eq("id", session.user.id)
-          .maybeSingle();
-
-        if (personalData) {
-          return personalData.ativo ? "PersonalDashboard" : "PersonalSetup";
-        } else {
-          return "UsuarioTabs";
-        }
-      }
-      return "ChoiceScreen";
-    } catch (error) {
-      console.log("Erro no Splash:", error);
-      return "ChoiceScreen";
-    }
-  };
-
+  
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1200,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 6,
-        tension: 15,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    const verificarSessao = async () => {
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    const iniciarApp = async () => {
-      const tempoEspera = new Promise((resolve) => setTimeout(resolve, 2500));
-      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve("ChoiceScreen"), 5000));
-      
-      const rotaSessao = checarSessao();
+        if (userError || !user) {
+          await supabase.auth.signOut(); 
+          navigation.replace("ChoiceScreen");
+          return;
+        }
 
-      const rotaDestino = await Promise.race([rotaSessao, timeoutPromise]);
-      await tempoEspera;
+        const tipoUsuario = user.user_metadata?.tipo; 
 
-      navigation.replace(rotaDestino);
+        if (tipoUsuario === "personal") {
+          const { data: personalData } = await supabase
+            .from("personals")
+            .select("ativo")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (personalData?.ativo) {
+            navigation.replace("PersonalDashboard");
+          } else {
+            navigation.replace("PersonalSetup"); 
+          }
+          return;
+        } 
+        
+        else {
+          const { data: alunoData } = await supabase
+            .from("usuarios")
+            .select("setup_completo, preferencias, telefone, peso")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (!alunoData) {
+            await supabase.auth.signOut();
+            navigation.replace("ChoiceScreen");
+            return;
+          }
+
+          const { data: conexoesAtivas } = await supabase
+            .from("conexoes")
+            .select("id, status")
+            .eq("usuario_id", user.id)
+            .order("atualizado_em", { ascending: false })
+            .limit(1);
+
+          if (conexoesAtivas && conexoesAtivas.length > 0) {
+            const conexao = conexoesAtivas[0];
+            if (conexao.status === "aguardando_assinatura") {
+              if (!alunoData.telefone || !alunoData.peso) {
+                navigation.replace("MiniOnboarding", { conexaoId: conexao.id });
+              } else {
+                navigation.replace("PropostaAluno", { conexaoId: conexao.id });
+              }
+              return;
+            }
+          }
+
+          const isSetupFinalizado = alunoData.setup_completo === true || alunoData.preferencias?.setup_completo === true;
+
+          if (isSetupFinalizado) {
+            navigation.replace("UsuarioTabs"); 
+          } else {
+            navigation.replace("ClienteSetup"); 
+          }
+          return;
+        }
+
+      } catch (error) {
+        console.log("Erro na SplashScreen: ", error);
+        await supabase.auth.signOut();
+        navigation.replace("ChoiceScreen");
+      }
     };
 
-    iniciarApp();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const timer = setTimeout(() => {
+      verificarSessao();
+    }, 4500);
 
+    return () => clearTimeout(timer);
+  }, []);
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
-      <Animated.Image
-        source={require("../../assets/images/MatchTrainer_logo.png")}
-        style={[
-          styles.logo,
-          {
-            opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }],
-          },
-        ]}
+      <StatusBar barStyle="light-content" backgroundColor="#000000" translucent />
+      
+      <Image
+        source={require("../../assets/images/MatchTrainer_logo.png")} 
+        style={styles.logoImage}
         resizeMode="contain"
       />
     </View>
@@ -87,14 +103,14 @@ export default function SplashScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000000",
-    justifyContent: "center",
-    alignItems: "center",
+  container: { 
+    flex: 1, 
+    backgroundColor: "#000000", 
+    justifyContent: "center", 
+    alignItems: "center" 
   },
-  logo: {
-    width: moderateScale(360),
-    height: moderateScale(360),
-  },
+  logoImage: {
+    width: scale(400),
+    height: verticalScale(250),
+  }
 });

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -85,30 +86,56 @@ export default function PersonalCadastro({ navigation }: any) {
 
           <View style={styles.form}>
             <View style={[styles.inputContainer, inputFocado === "nome" && styles.inputContainerFocused]}>
-              <Ionicons name="person-outline" size={20} color={inputFocado === "nome" ? theme.colors.primary : "#FF5500"} style={styles.icon} />
+              <Ionicons name="person-outline" size={20} color={inputFocado === "nome" ? theme.colors.primary : "#555"} style={styles.icon} />
               <TextInput style={[styles.input, Platform.OS === "web" ? { outlineStyle: "none" as any } : {}]} placeholder="Nome completo" placeholderTextColor="#555" value={nome} onChangeText={setNome} onFocus={() => setInputFocado("nome")} onBlur={() => setInputFocado(null)} autoCapitalize="words" autoCorrect={false} cursorColor={theme.colors.primary} keyboardAppearance="dark" />
             </View>
 
             <View style={[styles.inputContainer, inputFocado === "email" && styles.inputContainerFocused]}>
-              <Ionicons name="mail-outline" size={20} color={inputFocado === "email" ? theme.colors.primary : "#FF5500"} style={styles.icon} />
+              <Ionicons name="mail-outline" size={20} color={inputFocado === "email" ? theme.colors.primary : "#555"} style={styles.icon} />
               <TextInput style={[styles.input, Platform.OS === "web" ? { outlineStyle: "none" as any } : {}]} placeholder="E-mail profissional" placeholderTextColor="#555" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} value={email} onChangeText={setEmail} onFocus={() => setInputFocado("email")} onBlur={() => setInputFocado(null)} cursorColor={theme.colors.primary} keyboardAppearance="dark" />
             </View>
 
             <View style={[styles.inputContainer, inputFocado === "cref" && styles.inputContainerFocused]}>
-              <Ionicons name="card-outline" size={20} color={inputFocado === "cref" ? theme.colors.primary : "#FF5500"} style={styles.icon} />
+              <Ionicons name="card-outline" size={20} color={inputFocado === "cref" ? theme.colors.primary : "#555"} style={styles.icon} />
               <TextInput style={[styles.input, Platform.OS === "web" ? { outlineStyle: "none" as any } : {}]} placeholder="Número do Registro (CREF)" placeholderTextColor="#555" autoCapitalize="characters" value={cref} onChangeText={setCref} onFocus={() => setInputFocado("cref")} onBlur={() => setInputFocado(null)} cursorColor={theme.colors.primary} keyboardAppearance="dark" />
             </View>
 
             <View style={[styles.inputContainer, inputFocado === "senha" && styles.inputContainerFocused]}>
-              <Ionicons name="lock-closed-outline" size={20} color={inputFocado === "senha" ? theme.colors.primary : "#FF5500"} style={styles.icon} />
-              <TextInput style={[styles.input, Platform.OS === "web" ? { outlineStyle: "none" as any } : {}]} placeholder="Crie uma senha forte" placeholderTextColor="#555" secureTextEntry={!mostrarSenha} value={senha} onChangeText={setSenha} onFocus={() => setInputFocado("senha")} onBlur={() => setInputFocado(null)} cursorColor={theme.colors.primary} keyboardAppearance="dark" />
-              <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)} style={styles.eyeIcon}><Ionicons name={mostrarSenha ? "eye-off-outline" : "eye-outline"} size={20} color={mostrarSenha ? theme.colors.primary : "#FF5500"} /></TouchableOpacity>
+              <Ionicons name="lock-closed-outline" size={20} color={inputFocado === "senha" ? theme.colors.primary : "#555"} style={styles.icon} />
+              <TextInput 
+                style={[styles.input, Platform.OS === "web" ? { outlineStyle: "none" as any } : {}]} 
+                placeholder="Crie uma senha forte" 
+                placeholderTextColor="#555" 
+                secureTextEntry={!mostrarSenha} 
+                value={senha} 
+                onChangeText={setSenha} 
+                onFocus={() => setInputFocado("senha")} 
+                onBlur={() => setInputFocado(null)} 
+                cursorColor={theme.colors.primary} 
+                keyboardAppearance="dark" 
+                textContentType="oneTimeCode" 
+                autoComplete="off" 
+              />
+              <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)} style={styles.eyeIcon}><Ionicons name={mostrarSenha ? "eye-off-outline" : "eye-outline"} size={20} color={mostrarSenha ? theme.colors.primary : "#555"} /></TouchableOpacity>
             </View>
 
             <View style={[styles.inputContainer, inputFocado === "confirmar" && styles.inputContainerFocused]}>
-              <Ionicons name="shield-checkmark-outline" size={20} color={inputFocado === "confirmar" ? theme.colors.primary : "#FF5500"} style={styles.icon} />
-              <TextInput style={[styles.input, Platform.OS === "web" ? { outlineStyle: "none" as any } : {}]} placeholder="Repita a senha" placeholderTextColor="#555" secureTextEntry={!mostrarConfirmarSenha} value={confirmarSenha} onChangeText={setConfirmarSenha} onFocus={() => setInputFocado("confirmar")} onBlur={() => setInputFocado(null)} cursorColor={theme.colors.primary} keyboardAppearance="dark" />
-              <TouchableOpacity onPress={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)} style={styles.eyeIcon}><Ionicons name={mostrarConfirmarSenha ? "eye-off-outline" : "eye-outline"} size={20} color={mostrarConfirmarSenha ? theme.colors.primary : "#FF5500"} /></TouchableOpacity>
+              <Ionicons name="shield-checkmark-outline" size={20} color={inputFocado === "confirmar" ? theme.colors.primary : "#555"} style={styles.icon} />
+              <TextInput 
+                style={[styles.input, Platform.OS === "web" ? { outlineStyle: "none" as any } : {}]} 
+                placeholder="Repita a senha" 
+                placeholderTextColor="#555" 
+                secureTextEntry={!mostrarConfirmarSenha} 
+                value={confirmarSenha} 
+                onChangeText={setConfirmarSenha} 
+                onFocus={() => setInputFocado("confirmar")} 
+                onBlur={() => setInputFocado(null)} 
+                cursorColor={theme.colors.primary} 
+                keyboardAppearance="dark" 
+                textContentType="oneTimeCode" 
+                autoComplete="off" 
+              />
+              <TouchableOpacity onPress={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)} style={styles.eyeIcon}><Ionicons name={mostrarConfirmarSenha ? "eye-off-outline" : "eye-outline"} size={20} color={mostrarConfirmarSenha ? theme.colors.primary : "#555"} /></TouchableOpacity>
             </View>
 
             <View style={styles.buttonContainer}>
@@ -184,7 +211,7 @@ const styles = StyleSheet.create({
   keyboardView: { flex: 1 },
 
   glowTopLeft: { position: "absolute", top: verticalScale(-50), left: scale(-50), width: scale(200), height: scale(200), borderRadius: scale(100), backgroundColor: theme.colors.primary, opacity: 0.15},
-  glowBottomRight: { position: "absolute", bottom: verticalScale(-50), right: scale(-50), width: scale(250), height: scale(250), borderRadius: scale(125), backgroundColor: theme.colors.primary, opacity: 0.08},
+  glowBottomRight: { position: "absolute", bottom: verticalScale(-50), right: scale(-50), width: scale(250), height: scale(250), borderRadius: scale(125), backgroundColor: theme.colors.primary, opacity: 0.1},
 
   headerGlass: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 100, flexDirection: "row", alignItems: "center", paddingTop: Platform.OS === "ios" ? verticalScale(50) : verticalScale(40), paddingBottom: verticalScale(15), paddingHorizontal: scale(20), borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.05)", backgroundColor: Platform.OS === "android" ? "rgba(0,0,0,0.8)" : "transparent" },
   btnVoltar: { width: scale(40), height: scale(40), borderRadius: scale(12), backgroundColor: "rgba(255,255,255,0.05)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
@@ -198,13 +225,13 @@ const styles = StyleSheet.create({
 
   form: { width: "100%", gap: verticalScale(16) },
   inputContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#0A0A0A", borderRadius: moderateScale(16), borderWidth: 1, borderColor: "#1A1A1A", paddingLeft: scale(16), height: verticalScale(60) },
-  inputContainerFocused: { borderColor: theme.colors.primary, backgroundColor: "rgba(255, 107, 0, 0.05)", shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 3 },
+  inputContainerFocused: { borderColor: theme.colors.primary, backgroundColor: "rgba(255, 107, 0, 0.05)" },
   icon: { marginRight: scale(12) },
   eyeIcon: { paddingHorizontal: scale(16), height: "100%", justifyContent: "center" },
   input: { flex: 1, color: "#FFF", fontFamily: theme.fonts.body, fontSize: moderateScale(15), height: "100%", backgroundColor: "transparent" },
 
   buttonContainer: { marginTop: verticalScale(10) },
-  btnOutline: { flexDirection: "row", height: verticalScale(60), borderRadius: moderateScale(18), borderWidth: 1, borderColor: theme.colors.primary, justifyContent: "center", alignItems: "center", position: "relative" },
+  btnOutline: { flexDirection: "row", height: verticalScale(60), borderRadius: moderateScale(18), borderWidth: 1, borderColor: theme.colors.primary, justifyContent: "center", alignItems: "center", position: "relative", overflow: "hidden" },
   btnOutlineText: { color: theme.colors.primary, fontSize: moderateScale(16), fontWeight: "bold", letterSpacing: 0.5, textTransform: "uppercase" },
 
   benefitsWrapper: { marginTop: verticalScale(45) },
