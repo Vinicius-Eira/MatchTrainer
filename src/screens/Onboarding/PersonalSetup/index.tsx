@@ -36,9 +36,9 @@ const OPCOES_AGENDA = [
 ];
 
 const OPCOES_GENERO_ATENDIDO = [
-  { id: "ambos", titulo: "Homens e Mulheres", icon: "people" as any, desc: "Atendimento geral para ambos os gêneros" },
-  { id: "mulheres", titulo: "Apenas Mulheres", icon: "woman" as any, desc: "Atendimento e metodologia 100% feminina" },
-  { id: "homens", titulo: "Apenas Homens", icon: "man" as any, desc: "Atendimento e metodologia 100% masculina" },
+  { id: "indiferente", titulo: "Homens e Mulheres", icon: "people" as any, desc: "Atendimento geral para ambos os gêneros" },
+  { id: "mulher", titulo: "Apenas Mulheres", icon: "woman" as any, desc: "Atendimento e metodologia 100% feminina" },
+  { id: "homem", titulo: "Apenas Homens", icon: "man" as any, desc: "Atendimento e metodologia 100% masculina" },
 ];
 
 const OPCOES_PUBLICO = [

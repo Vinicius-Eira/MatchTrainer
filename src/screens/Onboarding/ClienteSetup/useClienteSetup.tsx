@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from "react";
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -171,7 +170,7 @@ export function useClientSetup(navigation: any) {
         turnos: turnos,
         horario_especifico: turnos.includes("variado") ? horarioEspecifico.trim() : null,
         frequencia: frequencia, 
-        genero_treinador: generoTreinador,
+        genero_treinador: generoTreinador || "indiferente",
         investimento: investimento,
         historico: historico,
         objetivos: objetivos,

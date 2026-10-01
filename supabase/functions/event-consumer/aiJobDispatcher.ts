@@ -1,4 +1,4 @@
-import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.33.1";
+import { createClient } from '@supabase/supabase-js';
 import { ContextPurpose } from "../_shared/types.ts";
 
 export async function dispatchAiJob(

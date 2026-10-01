@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";

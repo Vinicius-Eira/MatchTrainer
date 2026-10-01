@@ -109,7 +109,6 @@ export const CreateCustomExerciseModal = ({ visible, onClose, onSuccess }: Props
 
               <View style={styles.form}>
                 
-                {/* Upload Box Premium */}
                 <TouchableOpacity 
                   style={[styles.uploadBox, mediaUri ? styles.uploadBoxActive : null]} 
                   activeOpacity={0.8}
@@ -128,7 +127,6 @@ export const CreateCustomExerciseModal = ({ visible, onClose, onSuccess }: Props
                   </View>
                 </TouchableOpacity>
 
-                {/* Inputs */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>NOME DO EXERCÍCIO *</Text>
                   <View style={styles.inputWrapper}>
@@ -205,7 +203,7 @@ export const CreateCustomExerciseModal = ({ visible, onClose, onSuccess }: Props
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject },
+  backdrop: { ...StyleSheet.absoluteFill },
   
   container: { 
     backgroundColor: 'rgba(14, 14, 17, 0.95)', 

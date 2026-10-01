@@ -1,6 +1,5 @@
-import { StyleSheet, Platform, StatusBar } from "react-native";
-import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
-import { theme } from "../../../theme/theme";
+import { Platform, StatusBar, StyleSheet } from "react-native";
+import { moderateScale, scale, verticalScale } from "../../../../utils/responsive";
 
 const STATUSBAR_HEIGHT = Platform.OS === 'android' ? StatusBar.currentHeight : 0;
 

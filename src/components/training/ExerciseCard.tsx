@@ -72,7 +72,6 @@ export function ExerciseCard({ exercise, prescription, onSubstituteRequest }: Ex
           </TouchableOpacity>
         </View>
 
-        {/* 3. Prescription */}
         <View className="flex-row justify-between bg-base-background rounded-xl p-4 mb-4 border border-base-borderLight">
           <View className="items-center">
             <Text className="text-text font-title text-2xl">{prescription.targetSets}</Text>

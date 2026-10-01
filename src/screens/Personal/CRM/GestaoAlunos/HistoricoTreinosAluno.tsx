@@ -66,7 +66,6 @@ export default function HistoricoTreinosAluno({ route, navigation }: any) {
   };
 
   useEffect(() => {
-    setLoading(true);
     const unsubscribe = navigation.addListener("focus", () => {
       carregarHistorico();
     });
@@ -191,7 +190,7 @@ export default function HistoricoTreinosAluno({ route, navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: MATCH_COLORS.surfaceDark }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: MATCH_COLORS.surfaceDark }]} />
 
       <BlurView intensity={Platform.OS === "ios" ? 40 : 100} tint="dark" style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>

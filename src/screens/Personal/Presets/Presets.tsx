@@ -77,7 +77,6 @@ export const Presets = ({ navigation }: any) => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         
-        {/* CABEÇALHO */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Feather name="chevron-left" size={28} color="#FFF" />
@@ -86,7 +85,6 @@ export const Presets = ({ navigation }: any) => {
           <View style={{ width: 28 }} />
         </View>
 
-        {/* LISTA DE PRESETS */}
         {isLoading ? (
           <View style={styles.centerBox}>
             <ActivityIndicator size="large" color="#FF5100" />
@@ -110,11 +108,9 @@ export const Presets = ({ navigation }: any) => {
           />
         )}
 
-        {/* BOTÃO FLUTUANTE: CRIAR NOVO MODELO */}
         <TouchableOpacity 
           style={styles.fab} 
           activeOpacity={0.8}
-          // Envia o isPresetMode para avisar o WorkoutCreator que não é pra salvar num aluno!
           onPress={() => navigation.navigate('WorkoutCreator', { isPresetMode: true })}
         >
           <Feather name="plus" size={24} color="#000" />

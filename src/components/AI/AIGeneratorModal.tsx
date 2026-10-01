@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -31,13 +31,13 @@ const MATCH_COLORS = {
 };
 
 export interface AITrainingParams {
-  isImport: boolean; // Diz para a IA qual modo estamos usando
+  isImport: boolean; 
   nivel?: string;
   objetivo?: string;
   frequencia?: number;
   restricoes?: string;
-  base64Image?: string; // Imagem em formato texto para o Gemini ler
-  rawText?: string;     // Texto colado da planilha
+  base64Image?: string; 
+  rawText?: string;     
 }
 
 interface AIGeneratorModalProps {
@@ -59,26 +59,28 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
 }) => {
   const [mode, setMode] = useState<'import' | 'manual'>('import');
 
-  // Estados do Modo Manual
   const [nivel, setNivel] = useState('Iniciante');
   const [objetivo, setObjetivo] = useState('Hipertrofia');
   const [frequencia, setFrequencia] = useState(3);
   const [restricoes, setRestricoes] = useState('');
 
-  // Estados do Modo Importação
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [base64Image, setBase64Image] = useState<string | null>(null);
   const [rawText, setRawText] = useState('');
 
-  // Limpar os dados sempre que abrir o modal
-  useEffect(() => {
-    if (visible) {
-      setImageUri(null);
-      setBase64Image(null);
-      setRawText('');
-      setRestricoes('');
-    }
-  }, [visible]);
+  const handleCloseModal = () => {
+    setImageUri(null);
+    setBase64Image(null);
+    setRawText('');
+    setRestricoes('');
+    
+    setMode('import');
+    setNivel('Iniciante');
+    setObjetivo('Hipertrofia');
+    setFrequencia(3);
+
+    onClose();
+  };
 
   const handlePickImage = async (useCamera: boolean = false) => {
     try {
@@ -86,8 +88,8 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
       const options: ImagePicker.ImagePickerOptions = {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 0.6, // Reduz um pouco a qualidade para a API do Gemini processar mais rápido
-        base64: true, // Já converte a imagem em base64 nativamente!
+        quality: 0.6, 
+        base64: true, 
       };
 
       if (useCamera) {
@@ -138,10 +140,10 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={handleCloseModal}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <View style={styles.overlay}>
-          <BlurView intensity={Platform.OS === 'ios' ? 20 : 90} tint="dark" style={StyleSheet.absoluteFillObject} />
+          <BlurView intensity={Platform.OS === 'ios' ? 20 : 90} tint="dark" style={StyleSheet.absoluteFill} />
           
           <View style={styles.container}>
             <View style={styles.header}>
@@ -154,12 +156,12 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
                   <Text style={styles.subtitle}>Geração inteligente de treino</Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={onClose} style={styles.closeBtn} disabled={isLoading}>
+              
+              <TouchableOpacity onPress={handleCloseModal} style={styles.closeBtn} disabled={isLoading}>
                 <Feather name="x" size={24} color={MATCH_COLORS.textMuted} />
               </TouchableOpacity>
             </View>
 
-            {/* ABAS (TABS) DE SELEÇÃO */}
             <View style={styles.tabContainer}>
               <TouchableOpacity 
                 style={[styles.tabButton, mode === 'import' && styles.tabButtonActive]} 
@@ -181,7 +183,6 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
               
               {mode === 'import' ? (
-                // MODO: IMPORTAR FICHA (FOTO OU TEXTO)
                 <View style={styles.importSection}>
                   <Text style={styles.description}>
                     Tire uma foto do papel, suba um print da planilha ou cole um texto. A IA vai ler e transformar tudo numa ficha estruturada do Match Trainer.
@@ -224,12 +225,11 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
                     value={rawText}
                     onChangeText={setRawText}
                     textAlignVertical="top"
-                    editable={!imageUri} // Se tiver foto, bloqueia o texto para não confundir a IA
+                    editable={!imageUri} 
                   />
                   {imageUri && <Text style={{ color: MATCH_COLORS.textDim, fontSize: 10, marginTop: 4 }}>*Remova a foto para usar o modo texto.</Text>}
                 </View>
               ) : (
-                // MODO: CRIAR DO ZERO (MANUAL)
                 <View>
                   <Text style={styles.description}>
                     Defina os parâmetros do aluno e deixe a inteligência artificial do MatchTrainer estruturar a base perfeita.
@@ -321,269 +321,219 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  overlay: { 
-    flex: 1, 
-    justifyContent: 'flex-end', 
-    backgroundColor: 'rgba(0,0,0,0.7)' 
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
-  container: { 
-    backgroundColor: MATCH_COLORS.surface, 
-    borderTopLeftRadius: moderateScale(28), 
-    borderTopRightRadius: moderateScale(28), 
-    maxHeight: '94%', 
-    borderWidth: 1, 
-    borderColor: MATCH_COLORS.border,
-    borderBottomWidth: 0,
+  container: {
+    backgroundColor: MATCH_COLORS.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '90%',
+    paddingTop: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 15,
-    elevation: 20
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
   },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: scale(24), 
-    paddingTop: verticalScale(20),
-    paddingBottom: verticalScale(16)
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
-  headerTitleRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: scale(12) 
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   iconGlowBox: {
     backgroundColor: MATCH_COLORS.primaryGlow,
-    padding: scale(8),
-    borderRadius: moderateScale(12),
-    borderWidth: 1,
-    borderColor: 'rgba(255, 81, 0, 0.3)'
+    padding: 10,
+    borderRadius: 12,
+    marginRight: 12,
   },
-  title: { 
-    color: MATCH_COLORS.text, 
-    fontSize: moderateScale(18), 
-    fontWeight: '900',
-    letterSpacing: 0.5
+  title: {
+    color: MATCH_COLORS.text,
+    fontSize: moderateScale(18),
+    fontWeight: 'bold',
   },
   subtitle: {
-    color: MATCH_COLORS.primary,
-    fontSize: moderateScale(11),
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    marginTop: verticalScale(2)
+    color: MATCH_COLORS.textMuted,
+    fontSize: moderateScale(12),
+    marginTop: 2,
   },
-  closeBtn: { 
-    padding: scale(6),
-    backgroundColor: MATCH_COLORS.surfaceDark,
-    borderRadius: scale(12)
+  closeBtn: {
+    padding: 8,
   },
-
-  // ESTILOS DAS ABAS (TABS)
   tabContainer: {
     flexDirection: 'row',
-    marginHorizontal: scale(24),
+    marginHorizontal: 20,
     backgroundColor: MATCH_COLORS.surfaceDark,
-    borderRadius: moderateScale(12),
-    padding: scale(4),
-    marginBottom: verticalScale(10),
-    borderWidth: 1,
-    borderColor: MATCH_COLORS.border
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
   },
   tabButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: verticalScale(10),
-    borderRadius: moderateScale(10),
-    gap: scale(8)
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 8,
   },
   tabButtonActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: MATCH_COLORS.borderLight
+    backgroundColor: MATCH_COLORS.border,
   },
   tabText: {
     color: MATCH_COLORS.textMuted,
-    fontSize: moderateScale(13),
-    fontWeight: '700'
+    fontSize: moderateScale(14),
+    fontWeight: '600',
   },
   tabTextActive: {
     color: MATCH_COLORS.primary,
-    fontWeight: '900'
   },
-
-  scrollContent: { 
-    padding: scale(24), 
-    paddingBottom: verticalScale(40) 
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
-  description: { 
-    color: MATCH_COLORS.textMuted, 
-    fontSize: moderateScale(13), 
-    lineHeight: moderateScale(20), 
-    marginBottom: verticalScale(24) 
-  },
-  
-  // ESTILOS DE IMPORTAÇÃO (FOTO/TEXTO)
   importSection: {
-    paddingBottom: verticalScale(10)
+    gap: 16,
   },
-  uploadRow: {
-    flexDirection: 'row',
-    gap: scale(12),
-    marginBottom: verticalScale(20)
-  },
-  uploadBtn: {
-    flex: 1,
-    backgroundColor: MATCH_COLORS.surfaceDark,
-    borderWidth: 1,
-    borderColor: MATCH_COLORS.primary,
-    borderStyle: 'dashed',
-    borderRadius: moderateScale(16),
-    paddingVertical: verticalScale(24),
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: verticalScale(8)
-  },
-  uploadBtnText: {
-    color: MATCH_COLORS.text,
-    fontSize: moderateScale(13),
-    fontWeight: '700'
+  description: {
+    color: MATCH_COLORS.textMuted,
+    fontSize: moderateScale(14),
+    lineHeight: 20,
+    marginBottom: 16,
   },
   imagePreviewContainer: {
-    width: '100%',
-    height: verticalScale(160),
-    borderRadius: moderateScale(16),
-    overflow: 'hidden',
-    marginBottom: verticalScale(20),
-    borderWidth: 1,
-    borderColor: MATCH_COLORS.border
+    alignItems: 'center',
+    gap: 12,
   },
   imagePreview: {
     width: '100%',
-    height: '100%',
+    height: verticalScale(200),
+    borderRadius: 12,
+    resizeMode: 'cover',
   },
   removeImageBtn: {
-    position: 'absolute',
-    bottom: scale(10),
-    right: scale(10),
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(8),
-    borderRadius: moderateScale(8),
-    gap: scale(6)
+    backgroundColor: '#FF3B30',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 8,
   },
   removeImageText: {
     color: '#FFF',
-    fontSize: moderateScale(11),
-    fontWeight: '700'
+    fontWeight: 'bold',
+    fontSize: moderateScale(14),
   },
-
+  uploadRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  uploadBtn: {
+    flex: 1,
+    backgroundColor: MATCH_COLORS.border,
+    borderWidth: 1,
+    borderColor: MATCH_COLORS.borderLight,
+    borderRadius: 12,
+    paddingVertical: 24,
+    alignItems: 'center',
+    gap: 8,
+  },
+  uploadBtnText: {
+    color: MATCH_COLORS.text,
+    fontSize: moderateScale(14),
+    fontWeight: '600',
+  },
   dividerBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(20)
+    marginVertical: 10,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: MATCH_COLORS.borderLight
+    backgroundColor: MATCH_COLORS.borderLight,
   },
   dividerText: {
     color: MATCH_COLORS.textDim,
-    paddingHorizontal: scale(12),
+    marginHorizontal: 10,
     fontSize: moderateScale(12),
-    fontWeight: '800'
+    fontWeight: 'bold',
   },
-
-  // ESTILOS DO MODO MANUAL
   section: {
-    marginBottom: verticalScale(28)
+    marginBottom: 24,
   },
-  sectionTitle: { 
-    color: MATCH_COLORS.textMuted, 
-    fontSize: moderateScale(11), 
-    fontWeight: '800', 
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: verticalScale(12) 
+  sectionTitle: {
+    color: MATCH_COLORS.text,
+    fontSize: moderateScale(16),
+    fontWeight: '600',
+    marginBottom: 12,
   },
-  pillContainer: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    gap: scale(10) 
+  input: {
+    backgroundColor: MATCH_COLORS.surfaceDark,
+    borderWidth: 1,
+    borderColor: MATCH_COLORS.borderLight,
+    borderRadius: 12,
+    padding: 16,
+    color: MATCH_COLORS.text,
+    fontSize: moderateScale(14),
   },
-  pill: { 
-    paddingHorizontal: scale(18), 
-    paddingVertical: verticalScale(12), 
-    borderRadius: moderateScale(24), 
-    backgroundColor: MATCH_COLORS.surfaceDark, 
-    borderWidth: 1, 
-    borderColor: MATCH_COLORS.border 
+  pillContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  pillActive: { 
-    backgroundColor: MATCH_COLORS.primaryGlow, 
+  pill: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: MATCH_COLORS.surfaceDark,
+    borderWidth: 1,
+    borderColor: MATCH_COLORS.borderLight,
+  },
+  pillActive: {
+    backgroundColor: MATCH_COLORS.primaryGlow,
     borderColor: MATCH_COLORS.primary,
-    shadowColor: MATCH_COLORS.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4
   },
-  pillText: { 
-    color: MATCH_COLORS.textMuted, 
-    fontSize: moderateScale(13), 
-    fontWeight: '600' 
+  pillText: {
+    color: MATCH_COLORS.textMuted,
+    fontSize: moderateScale(14),
+    fontWeight: '500',
   },
-  pillTextActive: { 
-    color: MATCH_COLORS.primary, 
-    fontWeight: '900' 
+  pillTextActive: {
+    color: MATCH_COLORS.primary,
+    fontWeight: 'bold',
   },
-  input: { 
-    backgroundColor: MATCH_COLORS.surfaceDark, 
-    borderWidth: 1, 
-    borderColor: MATCH_COLORS.border, 
-    borderRadius: moderateScale(16), 
-    color: MATCH_COLORS.text, 
-    fontSize: moderateScale(14), 
-    padding: scale(16), 
-    minHeight: verticalScale(110) 
+  footer: {
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    backgroundColor: MATCH_COLORS.surface,
+    borderTopWidth: 1,
+    borderTopColor: MATCH_COLORS.border,
   },
-
-  footer: { 
-    paddingHorizontal: scale(24), 
-    paddingVertical: verticalScale(20),
-    paddingBottom: Platform.OS === 'ios' ? verticalScale(34) : verticalScale(20),
-    borderTopWidth: 1, 
-    borderTopColor: MATCH_COLORS.border, 
-    backgroundColor: MATCH_COLORS.surface 
+  generateBtn: {
+    backgroundColor: MATCH_COLORS.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
   },
-  generateBtn: { 
-    flexDirection: 'row', 
-    backgroundColor: MATCH_COLORS.primary, 
-    height: verticalScale(56), 
-    borderRadius: moderateScale(16), 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    gap: scale(8), 
-    shadowColor: MATCH_COLORS.primary, 
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.4, 
-    shadowRadius: 12, 
-    elevation: 8 
+  generateBtnDisabled: {
+    opacity: 0.6,
   },
-  generateBtnDisabled: { 
-    opacity: 0.7,
-    backgroundColor: 'rgba(255, 81, 0, 0.7)'
-  },
-  generateBtnText: { 
-    color: '#000', 
-    fontSize: moderateScale(14), 
-    fontWeight: '900', 
-    textTransform: 'uppercase',
-    letterSpacing: 0.5
+  generateBtnText: {
+    color: '#000',
+    fontSize: moderateScale(16),
+    fontWeight: 'bold',
   }
 });

@@ -24,7 +24,6 @@ export const useCommandQueue = create<CommandQueueState>()(
       lastAck: null,
 
       addCommand: (command) => set((state) => {
-        // Prevenção de duplicidade: se já existe um comando com esse ID, ignora
         if (state.queue.some(c => c.command_id === command.command_id)) {
           return state;
         }

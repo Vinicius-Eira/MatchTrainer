@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Alert } from "react-native";
-import { supabase } from "../../../services/supabase";
+import { supabase } from "../../../../services/supabase";
 
 export function useWorkoutSession(navigation: any, route: any) {
   const { treinoId, conexaoId } = route.params || {};

@@ -21,7 +21,7 @@ const MAP_PERFIL: Record<string, string> = {
 
 export default function TabVisaoGeral({
   status, planoAtivo, isFetchingData, irParaNovoContrato, objetivoFinal, prefs, displayHistorico, displayFrequencia,
-  aluno, calcularIdade, metaDePeso, dadosIMC, isRestrito, descRestricao, handlePersonalEncerraParceria, navigation // Adicionado navigation aqui!
+  aluno, calcularIdade, metaDePeso, dadosIMC, isRestrito, descRestricao, handlePersonalEncerraParceria, navigation 
 }: any) {
   return (
     <>
@@ -105,7 +105,7 @@ export default function TabVisaoGeral({
           <Text style={styles.sectionHeading}>Raio-X do Treinamento</Text>
         </View>
         <View style={styles.goalPremiumCard}>
-          <LinearGradient colors={["rgba(255,107,0,0.12)", "rgba(255,107,0,0.02)"]} style={StyleSheet.absoluteFillObject} />
+          <LinearGradient colors={["rgba(255,107,0,0.12)", "rgba(255,107,0,0.02)"]} style={StyleSheet.absoluteFill} />
           <View style={styles.goalIconBox}>
             <Feather name="target" size={24} color={theme.colors.primary} />
           </View>

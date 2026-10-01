@@ -28,7 +28,6 @@ export default function Progress({ route, navigation }: any) {
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           
-          {/* RECADO DO PERSONAL SEMPRE VISÍVEL */}
           <View style={styles.coachCardWrapper}>
             <LinearGradient colors={["rgba(255, 107, 0, 0.15)", "transparent"]} style={styles.absoluteFill} />
             <View style={styles.coachHeader}>
@@ -43,7 +42,6 @@ export default function Progress({ route, navigation }: any) {
             </Text>
           </View>
 
-          {/* COMPOSIÇÃO CORPORAL */}
           <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionTitle}>Composição Corporal</Text>
@@ -70,7 +68,6 @@ export default function Progress({ route, navigation }: any) {
               </View>
           </View>
 
-          {/* RESUMO DE TREINOS */}
           <View style={styles.section}>
               <Text style={styles.sectionTitle}>Resumo de Treinos</Text>
               <View style={styles.resumoGrid}>
@@ -91,7 +88,6 @@ export default function Progress({ route, navigation }: any) {
               </View>
           </View>
 
-          {/* RECORDES (PR) COM EMPTY STATE */}
           <View style={styles.section}>
               <Text style={styles.sectionTitle}>Recordes (PR)</Text>
               <View style={styles.listContainer}>
@@ -118,7 +114,6 @@ export default function Progress({ route, navigation }: any) {
               </View>
           </View>
 
-          {/* ÚLTIMOS TREINOS COM EMPTY STATE */}
           <View style={styles.section}>
               <Text style={styles.sectionTitle}>Últimos Treinos</Text>
               <View style={styles.listContainer}>
