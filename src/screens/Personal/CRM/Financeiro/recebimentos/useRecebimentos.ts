@@ -1,6 +1,6 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { Alert, Linking } from "react-native";
 import { captureRef } from "react-native-view-shot";
 import { useOnboarding } from "../../../../../hooks/useOnboarding";
@@ -42,7 +42,9 @@ export function useRecebimentos(navigation: any) {
   const { completarMissao } = useOnboarding();
 
   const hoje = new Date();
+  
   const [loading, setLoading] = useState(true);
+  
   const [refreshing, setRefreshing] = useState(false);
   const [nomePersonal, setNomePersonal] = useState("Treinador");
 
@@ -80,7 +82,6 @@ export function useRecebimentos(navigation: any) {
   const [motivoPausa, setMotivoPausa] = useState("Férias");
   const [textoOutroMotivo, setTextoOutroMotivo] = useState("");
   const [diasPausa, setDiasPausa] = useState("15");
-  const [dataRetornoCalculada, setDataRetornoCalculada] = useState("");
 
   const [fabAberto, setFabAberto] = useState(false);
   const reciboRef = useRef(null);
@@ -144,7 +145,8 @@ export function useRecebimentos(navigation: any) {
         }
 
         const dateObj = new Date(`${fat.data_vencimento}T12:00:00Z`);
-        const dataFormatada = `${String(dateObj.getUTCDate()).padStart(2, '0')}/${String(dateObj.getUTCMonth() + 1).padStart(2, '0')}`;
+        const dataFormatada = `${String(dateObj.getUTCDate()).padStart(2, '0')}
+        ${String(dateObj.getUTCMonth() + 1).padStart(2, '0')}`;
 
         const servicos = plano.servicos_inclusos || [];
         let categoriaUi = "Sem Contrato";
@@ -212,21 +214,27 @@ export function useRecebimentos(navigation: any) {
     } finally {
       setLoading(false);
     }
-  }, [viewInicio, viewFim]);
+  }, [
+    viewInicio, 
+    viewFim, 
+    setNomePersonal
+  ]);
 
   useEffect(() => {
-    setLoading(true);
-    carregarFinanceiro();
+    const timer = setTimeout(() => {
+      carregarFinanceiro();
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [carregarFinanceiro]);
 
-  useEffect(() => {
+  const dataRetornoCalculada = useMemo(() => {
     if (diasPausa && !isNaN(Number(diasPausa))) {
       const data = new Date();
       data.setDate(data.getDate() + parseInt(diasPausa));
-      setDataRetornoCalculada(`${String(data.getDate()).padStart(2, "0")}/${String(data.getMonth() + 1).padStart(2, "0")}/${data.getFullYear()}`);
-    } else {
-      setDataRetornoCalculada("--/--/----");
+      return `${String(data.getDate()).padStart(2, "0")}/${String(data.getMonth() + 1).padStart(2, "0")}/${data.getFullYear()}`;
     }
+    return "--/--/----";
   }, [diasPausa]);
 
   const onRefresh = async () => {

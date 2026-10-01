@@ -1,11 +1,10 @@
-import { StyleSheet, Platform } from "react-native";
-import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
+import { Platform, StyleSheet } from "react-native";
+import { moderateScale, scale, verticalScale } from "../../../../utils/responsive";
 
 export const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#050505" },
   container: { flex: 1 },
   
-  // HEADER GLOBAL
   header: { backgroundColor: "#0A0A0A", paddingTop: verticalScale(15), borderBottomWidth: 1, borderBottomColor: "#151515" },
   headerTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: scale(15), marginBottom: verticalScale(10) },
   btnClose: { width: scale(30), height: scale(30), justifyContent: "center" },
@@ -24,14 +23,12 @@ export const styles = StyleSheet.create({
   exerciseBlock: { marginBottom: verticalScale(16) },
   divider: { height: 1, backgroundColor: "#151515", marginVertical: verticalScale(20), width: "100%" },
   
-  // ESTADO COMPACTO
   cardCompacto: { backgroundColor: "#0C0C0C", padding: scale(16), borderRadius: moderateScale(16), borderWidth: 1, borderColor: "#1A1A1A" },
   cardCompactoConcluido: { backgroundColor: "rgba(0, 230, 118, 0.05)", borderColor: "rgba(0, 230, 118, 0.15)" },
   dotPronto: { width: scale(12), height: scale(12), borderRadius: scale(6), backgroundColor: "#222", marginRight: scale(12), borderWidth: 2, borderColor: "#333" },
   cardCompactoNome: { color: "#FFF", fontSize: moderateScale(15), fontWeight: "bold" },
   cardCompactoMets: { color: "#666", fontSize: moderateScale(12), marginTop: verticalScale(4) },
   
-  // ESTADO ATUAL
   cardPlayer: { backgroundColor: "#050505", borderRadius: moderateScale(20), padding: scale(16), borderWidth: 1, borderColor: "#1A1A1A" },
   playerHeader: { flexDirection: "row", alignItems: "stretch", marginBottom: verticalScale(20) },
   videoContainer: { width: scale(90), height: verticalScale(120), backgroundColor: "#151515", borderRadius: moderateScale(12), overflow: "hidden", position: "relative", borderWidth: 1, borderColor: "#222" },
@@ -48,7 +45,6 @@ export const styles = StyleSheet.create({
   obsPersonalLabel: { color: "#AAA", fontSize: moderateScale(10), fontWeight: "bold", textTransform: "uppercase", marginBottom: verticalScale(4) },
   obsPersonalText: { color: "#FFF", fontSize: moderateScale(14), fontStyle: "italic", lineHeight: moderateScale(20) },
   
-  // AS SÉRIES (ESPAÇOSAS E LARGAS)
   seriesContainer: { gap: verticalScale(20) },
   serieCard: { backgroundColor: "#0C0C0C", padding: scale(16), borderRadius: moderateScale(16), borderWidth: 1, borderColor: "#1A1A1A" },
   serieCardAtivo: { backgroundColor: "#111", borderColor: "#333", elevation: 6 },
@@ -61,7 +57,6 @@ export const styles = StyleSheet.create({
   
   serieCardBody: { marginBottom: verticalScale(16) },
   
-  // Prescrição Horizontal no topo do card
   seriePrescricaoRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#151515", padding: scale(12), borderRadius: moderateScale(10), marginBottom: verticalScale(16) },
   dataLabel: { color: "#888", fontSize: moderateScale(11), fontWeight: "bold", textTransform: "uppercase", marginRight: scale(10) },
   dataPrescrito: { color: "#FFF", fontSize: moderateScale(15), fontWeight: "bold" },
@@ -70,7 +65,6 @@ export const styles = StyleSheet.create({
   serieRealizadoContainer: { width: "100%" },
   dataLabelHighlight: { color: "#FF6B00", fontSize: moderateScale(11), fontWeight: "bold", textTransform: "uppercase", marginBottom: verticalScale(10) },
   
-  // INPUTS GIGANTES
   inputsBigRow: { flexDirection: "row", gap: scale(12), width: "100%" },
   inputBigWrapper: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#000", paddingVertical: verticalScale(14), borderRadius: moderateScale(12), borderWidth: 1, borderColor: "#222" },
   inputBigWrapperAtivo: { borderColor: "#444", backgroundColor: "#050505" },
@@ -78,7 +72,6 @@ export const styles = StyleSheet.create({
   inputBigRealizadoConcluido: { color: "#00E676" },
   inputBigSuffix: { color: "#888", fontSize: moderateScale(12), marginLeft: scale(6), marginBottom: -verticalScale(4) },
   
-  // BOTÃO DE AÇÃO NA BASE
   btnAction: { width: "100%", flexDirection: "row", justifyContent: "center", alignItems: "center", paddingVertical: verticalScale(16), borderRadius: moderateScale(12), borderWidth: 1 },
   btnActionAtivo: { backgroundColor: "#FF6B00", borderColor: "#FF6B00" },
   btnActionInativo: { backgroundColor: "#000", borderColor: "#222" },
@@ -86,7 +79,6 @@ export const styles = StyleSheet.create({
   btnActionText: { color: "#000", fontSize: moderateScale(15), fontWeight: "900", letterSpacing: 1, marginLeft: scale(8) },
   btnActionTextConcluido: { color: "#00E676", fontSize: moderateScale(15), fontWeight: "900", letterSpacing: 1, marginLeft: scale(8) },
   
-  // OBSERVAÇÕES
   alunoObsContainer: { marginTop: verticalScale(10) },
   alunoObsHeader: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginBottom: verticalScale(12) },
   alunoObsTitle: { color: "#FFF", fontSize: moderateScale(15), fontWeight: "bold" },
@@ -97,7 +89,6 @@ export const styles = StyleSheet.create({
   feedbackGeralTitle: { color: "#FF6B00", fontSize: moderateScale(16), fontWeight: "900" },
   feedbackGeralSub: { color: "#AAA", fontSize: moderateScale(13), marginBottom: verticalScale(12), lineHeight: moderateScale(18) },
   
-  // FLOATING REST BAR (Fixa e Imune a Erros)
   floatingRestBar: { position: "absolute", bottom: 0, left: 0, right: 0, height: verticalScale(100), flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: scale(20), paddingBottom: Platform.OS === 'ios' ? verticalScale(20) : 0, borderTopWidth: 1, borderTopColor: "#00E676", elevation: 20 },
   restInfo: { flexDirection: "row", alignItems: "center" },
   restTitle: { color: "#00E676", fontSize: moderateScale(10), fontWeight: "900", letterSpacing: 1, marginBottom: verticalScale(2) },

@@ -1,5 +1,3 @@
-// src/services/CommandDispatcher.ts
-
 import NetInfo from '@react-native-community/netinfo';
 import { supabase } from '../services/supabase'; 
 import { useCommandQueue } from '../store/useCommandQueue';

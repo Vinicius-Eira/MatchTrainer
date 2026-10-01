@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../../../services/supabase"; 
+import { useEffect, useState } from "react";
+import { supabase } from "../../../../services/supabase";
 
 export function useProgress(navigation: any, routeConexaoId?: string) {
   const [loading, setLoading] = useState(true);

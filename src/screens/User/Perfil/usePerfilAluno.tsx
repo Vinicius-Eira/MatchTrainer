@@ -1,33 +1,31 @@
-// @ts-nocheck
+import { useState, useEffect } from "react";
+import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
-import { useEffect, useState } from "react";
-import { Alert } from "react-native";
 import { supabase } from "../../../services/supabase";
 
 export function usePerfilAluno(navigation: any) {
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
-  const [buscandoLocal, setBuscandoLocal] = useState(false);
   const [inputFocado, setInputFocado] = useState<string | null>(null);
-  const [temPersonal, setTemPersonal] = useState(false);
+  const [buscandoLocal, setBuscandoLocal] = useState(false);
 
   const [nome, setNome] = useState("");
-  const [telefone, setTelefone] = useState("");
+  const [fotoUri, setFotoUri] = useState<string | null>(null);
   const [dataNascimento, setDataNascimento] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [cidade, setCidade] = useState("");
   const [bairro, setBairro] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
-  const [fotoUri, setFotoUri] = useState<string | null>(null);
   
   const [peso, setPeso] = useState("");
   const [altura, setAltura] = useState("");
   const [metaPeso, setMetaPeso] = useState("");
+  
+  const [temPersonal, setTemPersonal] = useState(false);
 
-  const [preferenciasSalvas, setPreferenciasSalvas] = useState<any>({});
-
-  const formatarNome = (texto: string) => texto.toLowerCase().split(" ").map((w) => w.charAt(0) ? w.charAt(0).toUpperCase() + w.slice(1) : "").join(" ");
+  const formatarNome = (texto: string) => texto;
   
   const formatarWhatsApp = (t: string) => {
     let v = t.replace(/\D/g, "");
@@ -44,8 +42,8 @@ export function usePerfilAluno(navigation: any) {
   };
   
   const formatarPeso = (t: string) => setPeso(t.replace(/[^0-9.,]/g, "").replace(",", "."));
-  const formatarAltura = (t: string) => setAltura(t.replace(/[^0-9]/g, ""));
   const formatarMetaPeso = (t: string) => setMetaPeso(t.replace(/[^0-9.,]/g, "").replace(",", "."));
+  const formatarAltura = (t: string) => setAltura(t.replace(/[^0-9]/g, ""));
 
   useEffect(() => {
     const carregarPerfil = async () => {
@@ -58,109 +56,66 @@ export function usePerfilAluno(navigation: any) {
           .select("id")
           .eq("usuario_id", user.id)
           .eq("status", "aluno_ativo")
-          .single();
-        
+          .maybeSingle();
+          
         if (conexaoAtiva) setTemPersonal(true);
 
         const { data, error } = await supabase.from("usuarios").select("*").eq("id", user.id).single();
-        if (error && error.code !== "PGRST116") throw error;
+        if (error) throw error;
 
         if (data) {
-          setNome(data.nome || "");
+          if (data.nome) setNome(data.nome);
+          if (data.foto_url) setFotoUri(data.foto_url);
           if (data.telefone) formatarWhatsApp(data.telefone);
-          setCidade(data.cidade || "");
-          setBairro(data.bairro || "");
-          setLatitude(data.latitude || null);
-          setLongitude(data.longitude || null);
-          setFotoUri(data.foto_url);
-
-          if (data.peso) setPeso(data.peso.toString().replace(".", ","));
-          if (data.altura) setAltura(data.altura.toString().replace(".", ","));
-          if (data.meta_peso) setMetaPeso(data.meta_peso.toString().replace(".", ","));
+          if (data.cidade) setCidade(data.cidade);
+          if (data.bairro) setBairro(data.bairro);
+          if (data.peso) setPeso(String(data.peso));
+          if (data.altura) setAltura(String(data.altura));
+          if (data.latitude) setLatitude(data.latitude);
+          if (data.longitude) setLongitude(data.longitude);
           
           if (data.data_nascimento) {
-            const parts = data.data_nascimento.split("-");
-            if (parts.length === 3) setDataNascimento(`${parts[2]}/${parts[1]}/${parts[0]}`);
-            else setDataNascimento(data.data_nascimento);
+            const [ano, mes, dia] = data.data_nascimento.split("-");
+            setDataNascimento(`${dia}/${mes}/${ano}`);
           }
 
-          if (data.preferencias) setPreferenciasSalvas(data.preferencias);
+          if (data.preferencias && data.preferencias.meta_peso) {
+            setMetaPeso(String(data.preferencias.meta_peso));
+          }
         }
       } catch (error) {
-        console.log("Erro ao carregar perfil:", error);
+        console.log("Erro ao carregar perfil do aluno:", error);
       } finally {
         setLoading(false);
       }
     };
-
     carregarPerfil();
   }, []);
 
   const escolherFoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") return Alert.alert("Atenção", "Precisamos de acesso à galeria.");
-    let result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.5 });
-    if (!result.canceled && result.assets) setFotoUri(result.assets[0].uri);
+    if (status !== "granted") return Alert.alert("Acesso Negado", "Precisamos de permissão para acessar suas fotos.");
+    let result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.5, base64: true });
+    if (!result.canceled && result.assets) setFotoUri(`data:image/jpeg;base64,${result.assets[0].base64}`);
   };
 
   const buscarLocalizacao = async () => {
     setBuscandoLocal(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") return Alert.alert("Atenção", "Permita o acesso à localização.");
+      if (status !== "granted") return Alert.alert("Permissão negada");
       const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
       setLatitude(location.coords.latitude);
       setLongitude(location.coords.longitude);
       const geocode = await Location.reverseGeocodeAsync({ latitude: location.coords.latitude, longitude: location.coords.longitude });
       if (geocode.length > 0) {
-        setCidade(geocode[0].city || geocode[0].subregion || "");
-        setBairro(geocode[0].district || geocode[0].name || "");
+        if (geocode[0].city || geocode[0].subregion) setCidade(geocode[0].city || geocode[0].subregion || "");
+        if (geocode[0].district) setBairro(geocode[0].district);
       }
     } catch (error) {
-      Alert.alert("Aviso", "Falha ao sincronizar o GPS.");
+      Alert.alert("Aviso", "Falha no GPS. Digite manualmente.");
     } finally {
       setBuscandoLocal(false);
-    }
-  };
-
-  const handleSalvar = async () => {
-    setSalvando(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não encontrado.");
-
-      let dataBanco = null;
-      if (dataNascimento && dataNascimento.length === 10) {
-        const parts = dataNascimento.split("/");
-        dataBanco = `${parts[2]}-${parts[1]}-${parts[0]}`;
-      }
-
-      let pesoNumerico = peso ? parseFloat(peso.replace(",", ".")) : null;
-      let alturaNumerica = altura ? parseFloat(altura.replace(",", ".")) : null;
-      let metaPesoNumerico = metaPeso ? parseFloat(metaPeso.replace(",", ".")) : null;
-
-      const { error } = await supabase.from("usuarios").upsert({
-        id: user.id,
-        email: user.email || "",
-        nome: nome ? nome.trim() : "Aluno",
-        telefone: telefone ? telefone.trim() : "",
-        cidade: cidade ? cidade.trim() : "",
-        bairro: bairro ? bairro.trim() : "",
-        latitude: latitude,
-        longitude: longitude,
-        data_nascimento: dataBanco,
-        peso: isNaN(Number(pesoNumerico)) ? null : pesoNumerico,
-        altura: isNaN(Number(alturaNumerica)) ? null : alturaNumerica,
-        meta_peso: isNaN(Number(metaPesoNumerico)) ? null : metaPesoNumerico,
-        foto_url: fotoUri,
-      }, { onConflict: "id" });
-
-      if (error) throw error;
-      Alert.alert("Sucesso", "Seu perfil foi atualizado com maestria!");
-    } catch (error: any) {
-      Alert.alert("Erro ao Salvar", error.message || "Verifique os dados informados.");
-    } finally {
-      setSalvando(false);
     }
   };
 
@@ -168,19 +123,66 @@ export function usePerfilAluno(navigation: any) {
     navigation.navigate("RaioXTreino");
   };
 
-  const logout = async () => {
-    Alert.alert("Sair", "Deseja realmente sair da sua conta?", [
+  const handleSalvar = async () => {
+    setSalvando(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não encontrado");
+
+      let dataBanco = null;
+      if (dataNascimento.length === 10) {
+        const parts = dataNascimento.split("/");
+        dataBanco = `${parts[2]}-${parts[1]}-${parts[0]}`; 
+      }
+
+      const { data: currentUser } = await supabase.from("usuarios").select("preferencias").eq("id", user.id).single();
+      
+      const novasPreferencias = {
+        ...(currentUser?.preferencias || {}),
+        meta_peso: metaPeso ? parseFloat(metaPeso.replace(",", ".")) : null
+      };
+
+      const payload: any = {
+        nome: nome.trim(),
+        telefone: telefone.trim(),
+        cidade: cidade.trim(),
+        bairro: bairro.trim(),
+        data_nascimento: dataBanco,
+        peso: peso ? parseFloat(peso.replace(",", ".")) : null,
+        altura: altura ? parseFloat(altura) : null,
+        latitude,
+        longitude,
+        preferencias: novasPreferencias 
+      };
+
+      if (fotoUri && fotoUri.startsWith("data:image")) {
+        payload.foto_url = fotoUri;
+      }
+
+      const { error } = await supabase.from("usuarios").update(payload).eq("id", user.id);
+      if (error) throw error;
+
+      Alert.alert("Sucesso", "Seu perfil foi atualizado!");
+    } catch (error: any) {
+      Alert.alert("Erro ao Salvar", error.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const logout = () => {
+    Alert.alert("Sair da Conta", "Deseja realmente sair?", [
       { text: "Cancelar", style: "cancel" },
       { text: "Sair", style: "destructive", onPress: async () => {
           await supabase.auth.signOut();
           navigation.reset({ index: 0, routes: [{ name: "ChoiceScreen" }] });
         }
-      }
+      },
     ]);
   };
 
   return {
-    state: { loading, salvando, buscandoLocal, inputFocado, nome, telefone, dataNascimento, cidade, bairro, fotoUri, peso, altura, metaPeso, preferenciasSalvas, temPersonal },
-    actions: { setNome, setCidade, setBairro, setInputFocado, formatarNome, formatarWhatsApp, formatarData, formatarPeso, formatarAltura, formatarMetaPeso, escolherFoto, buscarLocalizacao, handleSalvar, abrirRaioX, logout }
+    state: { loading, salvando, inputFocado, buscandoLocal, nome, fotoUri, dataNascimento, telefone, cidade, bairro, peso, altura, metaPeso, temPersonal },
+    actions: { setNome, setCidade, setBairro, setInputFocado, formatarNome, formatarData, formatarWhatsApp, formatarPeso, formatarMetaPeso, formatarAltura, escolherFoto, buscarLocalizacao, abrirRaioX, handleSalvar, logout }
   };
 }

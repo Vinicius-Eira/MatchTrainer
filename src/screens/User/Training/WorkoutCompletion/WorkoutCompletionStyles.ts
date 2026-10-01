@@ -1,5 +1,5 @@
-import { StyleSheet, Platform } from "react-native";
-import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
+import { Platform, StyleSheet } from "react-native";
+import { moderateScale, scale, verticalScale } from "../../../../utils/responsive";
 
 export const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#050505" },

@@ -9,7 +9,7 @@ import {
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useFonts } from "expo-font";
 import * as Linking from "expo-linking";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Alert, Text, TextInput, View } from "react-native";
 import { supabase } from "./src/services/supabase";
 
@@ -27,47 +27,47 @@ import MiniOnboarding from "./src/screens/Onboarding/AlunoOnboarding/MiniOnboard
 
 import PainelMeuTreinador from "./src/screens/User/Dashboard";
 
-import PersonalDashboard from "./src/screens/Personal/CRM/Dashboard/PersonalDashboard";
 import { InsightDetailScreen } from "./src/screens/Personal/CRM/Dashboard/InsightDetailScreen";
-import VisaoAluno from "./src/screens/Personal/CRM/GestaoAlunos/VisaoAluno";
-import MeusAlunos from "./src/screens/Personal/CRM/GestaoAlunos/MeusAlunos";
-import ListaTreinosAluno from "./src/screens/Personal/CRM/GestaoAlunos/ListaTreinosAluno";
+import PersonalDashboard from "./src/screens/Personal/CRM/Dashboard/PersonalDashboard";
 import HistoricoTreinosAluno from "./src/screens/Personal/CRM/GestaoAlunos/HistoricoTreinosAluno";
+import ListaTreinosAluno from "./src/screens/Personal/CRM/GestaoAlunos/ListaTreinosAluno";
+import MeusAlunos from "./src/screens/Personal/CRM/GestaoAlunos/MeusAlunos";
+import VisaoAluno from "./src/screens/Personal/CRM/GestaoAlunos/VisaoAluno";
 
 import AnamneseBuilder from "./src/screens/Personal/CRM/GestaoAlunos/Anamnese";
 
-import AdicionarAluno from "./src/screens/Personal/CRM/NovoContrato/AdicionarAluno";
-import PropostaAluno from "./src/screens/Personal/CRM/NovoContrato/PropostaAluno";
 import PainelCrescimento from "./src/screens/Personal/CRM/Financeiro/painelcrescimento";
 import Recebimentos from "./src/screens/Personal/CRM/Financeiro/recebimentos";
+import AdicionarAluno from "./src/screens/Personal/CRM/NovoContrato/AdicionarAluno";
+import PropostaAluno from "./src/screens/Personal/CRM/NovoContrato/PropostaAluno";
 
 import Avaliacoes from "./src/screens/Personal/Feedback/Avaliacoes";
 import FeedbackPersonal from "./src/screens/Personal/Feedback/FeedbackPersonal";
 
 import { ExerciseLibraryScreen } from "./src/screens/Personal/ExerciseLibrary/ExerciseLibrary";
-import { Presets } from "./src/screens/Personal/Presets/Presets"; 
-import { WorkoutCreator } from "./src/screens/Personal/WorkoutCreator/WorkoutCreator"; 
+import { Presets } from "./src/screens/Personal/Presets/Presets";
+import { WorkoutCreator } from "./src/screens/Personal/WorkoutCreator/WorkoutCreator";
 
 import Avaliar from "./src/screens/User/Avaliar";
 import AvaliarPersonal from "./src/screens/User/AvaliarPersonal";
-import FeedPersonal from "./src/screens/User/FeedPersonal";
+import FeedPersonal from "./src/screens/User/Feed";
 import PerfilAluno from "./src/screens/User/Perfil";
-import PerfilPublicoPersonal from "./src/screens/User/PerfilPublicoPersonal";
+import PerfilPublicoPersonal from "./src/screens/User/Feed/PersonalPublicProfile";
 
 import EsqueciSenha from "./src/screens/Auth/password/EsqueciSenha";
 import RedefinirSenha from "./src/screens/Auth/password/RedefinirSenha";
 import AtivarConvite from "./src/screens/Auth/User/AtivarConta";
 import Chat from "./src/screens/Shared/Chat";
 import ConversasAluno from "./src/screens/Shared/Conversas";
-import WorkoutList from "./src/screens/User/WorkoutList";
-import WorkoutPreview from "./src/screens/User/WorkoutPreview";
-import WorkoutCompletion from "./src/screens/User/WorkoutCompletion";
-import WorkoutSession from "./src/screens/User/WorkoutSession";
-import Progress from "./src/screens/User/Progress";
-import Finance from "./src/screens/User/Finance";
 import Anamnese from "./src/screens/User/Anamnese";
 import QuestionnaireForm from "./src/screens/User/Anamnese/QuestionnaireForm";
+import Finance from "./src/screens/User/Finance";
 import RaioXTreino from "./src/screens/User/Perfil/RaioXTreino";
+import Progress from "./src/screens/User/Training/Progress";
+import WorkoutCompletion from "./src/screens/User/Training/WorkoutCompletion";
+import WorkoutList from "./src/screens/User/Training/WorkoutList";
+import WorkoutPreview from "./src/screens/User/Training/WorkoutPreview";
+import WorkoutSession from "./src/screens/User/Training/WorkoutSession";
 
 if ((Text as any).defaultProps == null) {
   (Text as any).defaultProps = {};
@@ -331,10 +331,6 @@ export default function App() {
         <RootStack.Screen name="AlunoLogin" component={AlunoLogin} />
         <RootStack.Screen name="AlunoCadastro" component={AlunoCadastro} />
         <RootStack.Screen name="ClienteSetup" component={ClienteSetup} />
-        <RootStack.Screen
-          name="PerfilPublicoPersonal"
-          component={PerfilPublicoPersonal}
-        />
 
         <RootStack.Screen
           name="PainelMeuTreinador"

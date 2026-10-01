@@ -1,5 +1,5 @@
-import { StyleSheet, Platform, StatusBar } from "react-native";
-import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
+import { Platform, StatusBar, StyleSheet } from "react-native";
+import { moderateScale, scale, verticalScale } from "../../../../utils/responsive";
 
 const STATUSBAR_HEIGHT = Platform.OS === 'android' ? StatusBar.currentHeight : 0;
 
@@ -33,7 +33,6 @@ export const styles = StyleSheet.create({
   sectionTitle: { color: "#FFF", fontSize: moderateScale(18), fontWeight: "900", marginBottom: verticalScale(15), letterSpacing: 0.5 },
   listaContainer: { gap: verticalScale(16) },
   
-  // CARD E VÍDEO
   exercicioCard: { backgroundColor: "#0A0A0A", borderRadius: moderateScale(20), padding: scale(14), borderWidth: 1, borderColor: "#1A1A1A", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
   exercicioRow: { flexDirection: "row", alignItems: "stretch" },
   
@@ -42,7 +41,6 @@ export const styles = StyleSheet.create({
   videoPlaceholder: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#111" },
   playOverlay: { position: "absolute", top: "50%", left: "50%", marginTop: -18, marginLeft: -18, width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.3)" },
   
-  // LADO DIREITO (INFORMAÇÕES E DASHBOARD DE MÉTRICAS)
   exercicioMainInfo: { flex: 1, justifyContent: "space-between" },
   exercicioNome: { color: "#FFF", fontSize: moderateScale(16), fontWeight: "900", marginBottom: verticalScale(2), lineHeight: moderateScale(20) },
   grupoMuscularText: { color: "#666", fontSize: moderateScale(11), fontWeight: "bold", textTransform: "uppercase", marginBottom: verticalScale(10) },
@@ -57,13 +55,11 @@ export const styles = StyleSheet.create({
   premiumMetricValueDestaque: { color: "#FF6B00", fontSize: moderateScale(15), fontWeight: "900" },
   metricSubText: { color: "#666", fontSize: moderateScale(11), fontWeight: "normal" },
   
-  // OBSERVAÇÃO
   trainerNoteBox: { flexDirection: "row", backgroundColor: "#120E0A", padding: scale(12), borderRadius: moderateScale(12), borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.15)", marginTop: verticalScale(14) },
   trainerNoteIcon: { marginRight: scale(10), marginTop: verticalScale(2) },
   trainerNoteTitle: { color: "#FF6B00", fontSize: moderateScale(11), fontWeight: "bold", textTransform: "uppercase", marginBottom: verticalScale(4) },
   trainerNoteText: { color: "#CCC", fontSize: moderateScale(13), lineHeight: moderateScale(18) },
   
-  // FOOTER
   footerFixo: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: scale(20), paddingBottom: Platform.OS === 'ios' ? verticalScale(35) : verticalScale(25), paddingTop: verticalScale(40) },
   footerGradient: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
   btnIniciar: { backgroundColor: "#FF6B00", borderRadius: moderateScale(18), paddingVertical: verticalScale(18), flexDirection: "row", justifyContent: "center", alignItems: "center", shadowColor: "#FF6B00", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 8 },

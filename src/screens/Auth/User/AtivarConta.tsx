@@ -246,7 +246,6 @@ export default function AtivarConvite({ navigation }: any) {
                 </TouchableOpacity>
               </View>
 
-              {/* BOTÃO OUTLINE NEON */}
               <TouchableOpacity style={[styles.btnOutline, loading && { opacity: 0.7 }]} onPress={handleAtivarConta} disabled={loading} activeOpacity={0.8}>
                 <LinearGradient colors={["rgba(255, 107, 0, 0.1)", "rgba(255, 107, 0, 0.02)"]} style={StyleSheet.absoluteFill} />
                 {loading ? (
@@ -345,7 +344,6 @@ const styles = StyleSheet.create({
   input: { flex: 1, color: "#FFF", fontSize: moderateScale(15), fontFamily: theme.fonts.body, height: "100%", backgroundColor: "transparent" },
   eyeIcon: { paddingHorizontal: scale(16), height: "100%", justifyContent: "center" },
 
-  // BOTÃO OUTLINE NEON
   btnOutline: { flexDirection: "row", marginTop: verticalScale(10), height: verticalScale(60), borderRadius: moderateScale(18), borderWidth: 1, borderColor: theme.colors.primary, justifyContent: "center", alignItems: "center", position: "relative" },
   btnOutlineText: { color: theme.colors.primary, fontSize: moderateScale(16), fontWeight: "bold", letterSpacing: 0.5, textTransform: "uppercase" },
 
@@ -366,7 +364,6 @@ const styles = StyleSheet.create({
   modalHighlightBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 107, 0, 0.05)', padding: scale(16), borderRadius: moderateScale(16), borderWidth: 1, borderColor: 'rgba(255, 107, 0, 0.2)', marginBottom: verticalScale(25), width: '100%' },
   modalHighlightText: { flex: 1, color: "#AAA", fontSize: moderateScale(13), lineHeight: moderateScale(18) },
   
-  // MODAL OUTLINE BUTTON
   modalBtnActionOutline: { flexDirection: "row", width: "100%", height: verticalScale(56), borderRadius: moderateScale(16), borderWidth: 1, borderColor: theme.colors.primary, justifyContent: "center", alignItems: "center", position: "relative" },
   modalBtnTextOutline: { color: theme.colors.primary, fontSize: moderateScale(15), fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.5 },
 });

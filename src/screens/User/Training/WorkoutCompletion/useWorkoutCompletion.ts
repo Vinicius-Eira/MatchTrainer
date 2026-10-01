@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Alert } from "react-native";
-import { supabase } from "../../../services/supabase"; // Ajuste o caminho se necessário
+import { supabase } from "../../../../services/supabase"; 
 
 export function useFinalizacaoTreino(navigation: any, route: any) {
   const { tempoTotal = 0, conexaoId, treinoId } = route.params || {};

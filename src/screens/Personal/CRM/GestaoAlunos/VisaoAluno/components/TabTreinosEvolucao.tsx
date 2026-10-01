@@ -68,7 +68,7 @@ export default function TabTreinosEvolucao({
       </View>
 
       <View style={styles.aiSummaryCard}>
-        <LinearGradient colors={["rgba(255,107,0,0.15)", "rgba(255,107,0,0.02)"]} style={[StyleSheet.absoluteFillObject, { borderRadius: 16 }]} />
+        <LinearGradient colors={["rgba(255,107,0,0.15)", "rgba(255,107,0,0.02)"]} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
         <View style={styles.aiHeader}>
           <View style={styles.aiHeaderTitle}>
             <MaterialCommunityIcons name="radar" size={20} color={theme.colors.primary} />

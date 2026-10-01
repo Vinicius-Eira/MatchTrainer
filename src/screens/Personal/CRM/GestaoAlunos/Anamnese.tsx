@@ -28,10 +28,6 @@ export default function AnamneseBuilder({ navigation }: any) {
   const [newQuestionOptions, setNewQuestionOptions] = useState(""); 
   const [isRequired, setIsRequired] = useState(true);
 
-  useEffect(() => {
-    carregarTemplate();
-  }, []);
-
   const carregarTemplate = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -52,6 +48,31 @@ export default function AnamneseBuilder({ navigation }: any) {
       console.log("Nenhum template encontrado, criará um novo.");
     }
   };
+
+  useEffect(() => {
+    const carregarTemplate = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const { data, error } = await supabase
+          .from("anamnesis_templates")
+          .select("*")
+          .eq("personal_id", session.user.id)
+          .single();
+
+        if (data) {
+          setTemplateId(data.id);
+          setTitle(data.title);
+          setQuestions(data.questions || []);
+        }
+      } catch (err) {
+        console.log("Nenhum template encontrado, criará um novo.");
+      }
+    };
+
+    carregarTemplate();
+  }, []);
 
   const handleAddQuestion = () => {
     if (newQuestionText.trim() === "") {
@@ -111,7 +132,6 @@ export default function AnamneseBuilder({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Feather name="chevron-left" size={24} color={theme.colors.text} />
@@ -173,7 +193,6 @@ export default function AnamneseBuilder({ navigation }: any) {
         )}
       </ScrollView>
 
-      {/* Área de Botões Fixos Embaixo */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.btnAddQuestion} onPress={() => setModalVisible(true)}>
           <Feather name="plus" size={20} color={theme.colors.primary} />
@@ -181,12 +200,11 @@ export default function AnamneseBuilder({ navigation }: any) {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.btnSave} onPress={salvarTemplate} disabled={loading}>
-          <LinearGradient colors={["#00E676", "#00B259"]} style={[StyleSheet.absoluteFillObject, { borderRadius: 16 }]} />
+          <LinearGradient colors={["#00E676", "#00B259"]} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
           <Text style={styles.btnSaveText}>{loading ? "Salvando..." : "Salvar Molde"}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* MODAL CRIAR PERGUNTA COM CORREÇÃO DE TECLADO */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <KeyboardAvoidingView 
           style={styles.modalOverlay} 
@@ -200,7 +218,6 @@ export default function AnamneseBuilder({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            {/* ScrollView interno para rolar as opções se o teclado estiver aberto */}
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <Text style={styles.inputLabel}>Escreva a pergunta</Text>
               <TextInput
@@ -248,7 +265,6 @@ export default function AnamneseBuilder({ navigation }: any) {
                 <Text style={styles.btnConfirmAddText}>Adicionar ao Formulário</Text>
               </TouchableOpacity>
               
-              {/* Espaço extra pro teclado não colar no botão no Android */}
               <View style={{ height: 20 }} />
             </ScrollView>
           </View>

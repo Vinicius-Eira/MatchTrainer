@@ -73,7 +73,6 @@ export default function ListaTreinosAluno({ route, navigation }: ListaTreinosAlu
   };
 
   useEffect(() => {
-    setLoading(true);
     const unsubscribe = navigation.addListener("focus", () => {
       carregarTreinos();
     });
@@ -198,7 +197,7 @@ export default function ListaTreinosAluno({ route, navigation }: ListaTreinosAlu
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: MATCH_COLORS.surfaceDark }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: MATCH_COLORS.surfaceDark }]} />
 
       <BlurView intensity={Platform.OS === "ios" ? 40 : 100} tint="dark" style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>

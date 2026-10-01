@@ -1,7 +1,7 @@
-// supabase/functions/event-consumer/index.ts
-
+// @ts-nocheck
+/* eslint-disable */
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.33.1";
+import { createClient } from '@supabase/supabase-js';
 import { processEvent } from "./eventConsumer.ts";
 import { DomainEvent } from "../_shared/types.ts";
 

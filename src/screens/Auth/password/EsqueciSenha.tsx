@@ -172,7 +172,6 @@ const styles = StyleSheet.create({
   inputIcon: { marginRight: scale(12) },
   input: { flex: 1, color: "#FFF", fontSize: moderateScale(16), fontFamily: theme.fonts.body, height: "100%", backgroundColor: "transparent" },
 
-  // BOTÃO OUTLINE NEON
   btnOutline: { flexDirection: "row", height: verticalScale(60), borderRadius: moderateScale(18), borderWidth: 1, borderColor: theme.colors.primary, justifyContent: "center", alignItems: "center", position: "relative", marginTop: verticalScale(5) },
   btnOutlineText: { color: theme.colors.primary, fontSize: moderateScale(15), fontWeight: "900", letterSpacing: 0.5, textTransform: "uppercase" },
 

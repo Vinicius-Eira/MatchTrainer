@@ -42,7 +42,6 @@ export class JobService {
 
     if (insertError) throw new Error(`Falha ao salvar sugestão: ${insertError.message}`);
 
-    // 4. Marca Job como Concluído
     await this.supabase.from('ai_jobs').update({
       status: 'COMPLETED',
       completed_at: new Date().toISOString()
