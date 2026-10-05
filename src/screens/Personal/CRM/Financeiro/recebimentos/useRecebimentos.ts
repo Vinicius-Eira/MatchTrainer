@@ -1,11 +1,11 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Linking } from "react-native";
 import { captureRef } from "react-native-view-shot";
 import { useOnboarding } from "../../../../../hooks/useOnboarding";
 import { supabase } from "../../../../../services/supabase";
-import { MESES_NOME, StatusFiltro } from "./RecebimentosConstants";
+import { MESES_NOME, StatusFiltro } from "./constants";
 
 export interface AlunoData {
   id: string;

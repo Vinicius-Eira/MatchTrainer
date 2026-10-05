@@ -1,26 +1,39 @@
-// src/components/BotaoPrincipal.js
-import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, TouchableOpacityProps } from "react-native";
 import { theme } from "../theme/theme";
 import { moderateScale, scale, verticalScale } from "../utils/responsive";
+
+interface BotaoPrincipalProps extends TouchableOpacityProps {
+  titulo: string;
+  onPress: () => void;
+  secundario?: boolean;
+  disabled?: boolean;
+}
 
 export default function BotaoPrincipal({
   titulo,
   onPress,
   secundario = false,
-}) {
+  disabled = false,
+  ...rest 
+}: BotaoPrincipalProps) {
   return (
     <TouchableOpacity
       style={[
         styles.botao,
         secundario ? styles.botaoSecundario : styles.botaoPrimario,
+        disabled && styles.botaoDesabilitado,
       ]}
       onPress={onPress}
       activeOpacity={0.8}
+      disabled={disabled}
+      {...rest}
     >
       <Text
         style={[
           styles.texto,
           secundario ? styles.textoSecundario : styles.textoPrimario,
+          disabled && styles.textoDesabilitado,
         ]}
       >
         {titulo}
@@ -47,6 +60,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.primary,
   },
+  botaoDesabilitado: {
+    opacity: 0.6, 
+  },
   texto: {
     fontFamily: theme.fonts.title,
     fontSize: moderateScale(22),
@@ -57,5 +73,7 @@ const styles = StyleSheet.create({
   },
   textoSecundario: {
     color: theme.colors.primary,
+  },
+  textoDesabilitado: {
   },
 });

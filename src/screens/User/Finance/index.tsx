@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StatusBar, SafeAreaView, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
-import { styles } from "./FinanceStyles";
+import { styles } from "./styles";
 import { useFinance, FinanceStatus } from "./useFinance";
 
 export default function Finance({ navigation }: any) {

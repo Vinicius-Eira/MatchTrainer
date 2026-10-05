@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Linking } from "react-native";
 import { supabase } from "../../../services/supabase";
-import { DiaSemana, Modality } from "./dashboardConstants";
+import { DiaSemana, Modality } from "./constants";
 
 export function usePainelMeuTreinador(navigation: any, conexaoId: string) {
   const [loading, setLoading] = useState(true);

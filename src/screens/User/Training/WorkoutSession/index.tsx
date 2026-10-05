@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from "react";
 import { View, Text, TouchableOpacity, StatusBar, SafeAreaView, Image, TextInput, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { styles } from "./workoutSessionStyles";
+import { styles } from "./styles";
 import { useWorkoutSession } from "./useWorkoutSession";
 
 export default function WorkoutSession({ route, navigation }: any) {

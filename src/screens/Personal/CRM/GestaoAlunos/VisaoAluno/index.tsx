@@ -80,7 +80,9 @@ export default function VisaoAluno({ route, navigation }: any) {
           <View style={styles.quickInfoRow}>
             <View style={styles.quickInfoPill}>
               <Ionicons name="location" size={14} color={theme.colors.primary} />
-              <Text style={styles.quickInfoText} numberOfLines={1} ellipsizeMode="tail">{v.aluno.cidade || "Sem Local"}</Text>
+              <Text style={styles.quickInfoText} numberOfLines={1} ellipsizeMode="tail">
+                {v.localizacaoFormatada}
+              </Text>
             </View>
             
             <TouchableOpacity onPress={() => Linking.openURL(`whatsapp://send?phone=55${v.aluno.telefone?.replace(/\D/g, "")}`)} style={[styles.quickInfoPill, { borderColor: theme.colors.whatsapp }]}>
@@ -125,6 +127,7 @@ export default function VisaoAluno({ route, navigation }: any) {
 
       {v.status !== "inativo" && v.activeTab === "visao_geral" && (
         <View style={styles.floatingActionBar}>
+          
           {v.status === "aguardando_assinatura" ? (
             <View style={styles.actionColumn}>
               <View style={styles.actionRow}>
@@ -135,42 +138,39 @@ export default function VisaoAluno({ route, navigation }: any) {
 
                 <TouchableOpacity 
                   style={[styles.btnAccept, { backgroundColor: '#222', borderColor: '#333', borderWidth: 1 }]} 
-                  onPress={() => Alert.alert("Proposta Bloqueada 🔒", "A proposta já foi enviada e está aguardando a assinatura do aluno.")} 
-                  activeOpacity={0.85}
+                  onPress={() => Alert.alert("Aguardando Assinatura", "A proposta já foi enviada. Converse com o aluno pelo chat para tirar dúvidas e ajudar no fechamento.")} 
+                  activeOpacity={1}
                 >
                   <Text style={[styles.btnAcceptText, { color: '#888', fontSize: moderateScale(14) }]}>Aguardando</Text>
-                  <Ionicons name="lock-closed" size={18} color="#888" style={{ marginLeft: 6 }} />
+                  <Ionicons name="time-outline" size={18} color="#888" style={{ marginLeft: 6 }} />
                 </TouchableOpacity>
               </View>
             </View>
-          ) : v.status === "lead" || v.status === "em_contato" ? (
-            <TouchableOpacity style={styles.btnChat} onPress={v.abrirChat} activeOpacity={0.85}>
-              <Ionicons name="chatbubbles" size={22} color={theme.colors.backgroundPure} />
-              <Text style={styles.btnChatText}>Responder Aluno</Text>
-            </TouchableOpacity>
-          ) : v.status === "pendente" || v.status === "aguardando_personal" ? (
-            <View style={styles.actionColumn}>
-              <TouchableOpacity style={styles.btnChatOutline} onPress={v.abrirChat} activeOpacity={0.8}>
-                <Ionicons name="chatbubbles-outline" size={20} color={theme.colors.primary} />
-                <Text style={styles.btnChatOutlineText}>Conversar Antes</Text>
-              </TouchableOpacity>
-
-              <View style={styles.actionRow}>
-                <TouchableOpacity style={styles.btnDecline} onPress={() => v.atualizarStatusBasico("recusado")} disabled={v.loading}>
+            
+          ) : v.status === "pendente" || v.status === "aguardando_personal" || v.status === "lead" || v.status === "em_contato" ? (
+            
+            <View style={styles.actionRow}>
+              {(v.status === "pendente" || v.status === "aguardando_personal") && (
+                <TouchableOpacity style={[styles.btnDecline, { flex: 0.2, marginRight: 12 }]} onPress={() => v.atualizarStatusBasico("recusado")} disabled={v.loading}>
                   <Feather name="x" size={24} color={theme.colors.danger} />
                 </TouchableOpacity>
-
-                <TouchableOpacity style={styles.btnAccept} onPress={v.irParaNovoContrato} disabled={v.loading} activeOpacity={0.85}>
-                  <Text style={styles.btnAcceptText}>Criar Proposta VIP</Text>
-                  <Ionicons name="document-text" size={20} color={theme.colors.backgroundPure} style={{ marginLeft: 8 }} />
-                </TouchableOpacity>
-              </View>
+              )}
+              
+              <TouchableOpacity style={[styles.btnChat, { flex: 1 }]} onPress={v.abrirChat} activeOpacity={0.85}>
+                <Ionicons name="chatbubbles" size={22} color={theme.colors.backgroundPure} />
+                <Text style={styles.btnChatText}>
+                  {v.status === "pendente" || v.status === "aguardando_personal" ? "Entrar em Conversa" : "Responder Aluno"}
+                </Text>
+              </TouchableOpacity>
             </View>
+
           ) : (
+            
             <TouchableOpacity style={styles.btnChat} onPress={v.abrirChat} activeOpacity={0.85}>
               <Ionicons name="chatbubbles" size={22} color={theme.colors.backgroundPure} />
               <Text style={styles.btnChatText}>Abrir Conversa</Text>
             </TouchableOpacity>
+            
           )}
         </View>
       )}

@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StatusBar, SafeAreaView, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { styles } from "./AnamneseStyles";
+import { styles } from "./styles";
 import { useAnamnese } from "./useAnamnese";
 
 export default function Anamnese({ navigation }: any) {

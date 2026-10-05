@@ -25,7 +25,7 @@ export default function TabVisaoGeral({
 }: any) {
   return (
     <>
-      {status === "aluno_ativo" && planoAtivo && (
+      {status === "aluno_ativo" && planoAtivo ? (
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeaderRow}>
             <Ionicons name="document-text" size={20} color="#00E676" />
@@ -54,9 +54,9 @@ export default function TabVisaoGeral({
             </TouchableOpacity>
           </View>
         </View>
-      )}
+      ) : null}
 
-      {status === "aluno_ativo" && !planoAtivo && !isFetchingData && (
+      {status === "aluno_ativo" && !planoAtivo && !isFetchingData ? (
         <View style={styles.sectionContainer}>
           <View style={styles.bannerAlertaSemContrato}>
             <Ionicons name="warning" size={22} color="#FFD700" style={{ marginRight: 10 }} />
@@ -69,35 +69,37 @@ export default function TabVisaoGeral({
             <Text style={styles.btnCriarContratoUrgenteText}>Configurar Contrato Agora</Text>
           </TouchableOpacity>
         </View>
-      )}
+      ) : null}
 
-      <View style={styles.sectionContainer}>
-        <View style={styles.sectionHeaderRow}>
-          <Ionicons name="clipboard" size={20} color={theme.colors.primary} />
-          <Text style={styles.sectionHeading}>Avaliação Inicial (Anamnese)</Text>
-        </View>
-
-        <View style={styles.treinosMainCard}>
-          <View style={styles.treinosCardHeader}>
-            <View style={styles.treinosIconBg}>
-              <MaterialCommunityIcons name="clipboard-text-search-outline" size={28} color={theme.colors.primary} />
-            </View>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.treinosCardTitle}>Questionário VIP</Text>
-              <Text style={styles.treinosCardDesc}>Crie perguntas personalizadas para a IA ler antes de montar o treino.</Text>
-            </View>
+      {status === "aluno_ativo" ? (
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeaderRow}>
+            <Ionicons name="clipboard" size={20} color={theme.colors.primary} />
+            <Text style={styles.sectionHeading}>Avaliação Inicial (Anamnese)</Text>
           </View>
 
-          <TouchableOpacity 
-            style={[styles.btnCriarTreino, { marginBottom: 0, backgroundColor: theme.colors.surfaceLight, borderWidth: 1, borderColor: theme.colors.primary }]} 
-            onPress={() => navigation.navigate("AnamneseBuilder")}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="settings-outline" size={20} color={theme.colors.primary} />
-            <Text style={[styles.btnCriarTreinoText, { color: theme.colors.primary }]}>Configurar Anamnese</Text>
-          </TouchableOpacity>
+          <View style={styles.treinosMainCard}>
+            <View style={styles.treinosCardHeader}>
+              <View style={styles.treinosIconBg}>
+                <MaterialCommunityIcons name="clipboard-text-search-outline" size={28} color={theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.treinosCardTitle}>Questionário VIP</Text>
+                <Text style={styles.treinosCardDesc}>Crie perguntas personalizadas para a IA ler antes de montar o treino.</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.btnCriarTreino, { marginBottom: 0, backgroundColor: theme.colors.surfaceLight, borderWidth: 1, borderColor: theme.colors.primary }]} 
+              onPress={() => navigation.navigate("AnamneseBuilder")}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="settings-outline" size={20} color={theme.colors.primary} />
+              <Text style={[styles.btnCriarTreinoText, { color: theme.colors.primary }]}>Configurar Anamnese</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      ) : null}
 
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeaderRow}>
@@ -115,7 +117,8 @@ export default function TabVisaoGeral({
           </View>
         </View>
 
-        {prefs.sub_objetivo && prefs.sub_objetivo.length > 0 && (
+        {/* CORREÇÃO AQUI: Usando ternário para evitar erro de número na tela */}
+        {prefs?.sub_objetivo && prefs.sub_objetivo.length > 0 ? (
           <View style={styles.subTagsContainer}>
             {prefs.sub_objetivo.map((sub: string, index: number) => (
               <View key={index} style={styles.subTagPill}>
@@ -123,7 +126,7 @@ export default function TabVisaoGeral({
               </View>
             ))}
           </View>
-        )}
+        ) : null}
 
         <View style={styles.trainingGrid}>
           <View style={styles.trainingGridRow}>
@@ -173,7 +176,8 @@ export default function TabVisaoGeral({
           </View>
         </View>
 
-        {dadosIMC && (
+        {/* CORREÇÃO AQUI também */}
+        {dadosIMC ? (
           <View style={[styles.imcCard, { borderColor: `${dadosIMC.cor}40`, backgroundColor: `${dadosIMC.cor}08` }]}>
             <View style={styles.imcHeaderRow}>
               <Text style={styles.imcTitle}>Índice de Massa Corporal (IMC)</Text>
@@ -186,7 +190,7 @@ export default function TabVisaoGeral({
               </View>
             </View>
           </View>
-        )}
+        ) : null}
 
         <View style={[styles.medicalAlertCard, isRestrito ? styles.medicalAlertDanger : styles.medicalAlertSafe]}>
           <View style={styles.medicalAlertHeader}>
@@ -195,11 +199,12 @@ export default function TabVisaoGeral({
               {isRestrito ? "Atenção: Restrições Físicas" : "Nenhuma Restrição Relatada"}
             </Text>
           </View>
-          {isRestrito && descRestricao && (
+          {/* CORREÇÃO AQUI: Usando ternário para não renderizar string vazia */}
+          {isRestrito && descRestricao ? (
             <View style={styles.medicalAlertBody}>
               <Text style={styles.medicalConditionDesc}>{descRestricao}</Text>
             </View>
-          )}
+          ) : null}
         </View>
       </View>
 
@@ -213,7 +218,7 @@ export default function TabVisaoGeral({
             <View style={styles.commercialIconBg}><FontAwesome5 name="user-tie" size={16} color={theme.colors.primary} /></View>
             <View style={styles.commercialContent}>
               <Text style={styles.commercialLabel}>Professor Desejado</Text>
-              <Text style={styles.commercialValue}>{MAP_PERFIL[prefs.perfil_treinador] || "Sem preferência exata"}</Text>
+              <Text style={styles.commercialValue}>{MAP_PERFIL[prefs?.perfil_treinador] || "Sem preferência exata"}</Text>
             </View>
           </View>
           <View style={styles.dividerCommercial} />
@@ -221,20 +226,20 @@ export default function TabVisaoGeral({
             <View style={styles.commercialIconBg}><FontAwesome5 name="money-bill-wave" size={16} color={theme.colors.success} /></View>
             <View style={styles.commercialContent}>
               <Text style={styles.commercialLabel}>Orçamento / Investimento</Text>
-              <Text style={[styles.commercialValue, { color: theme.colors.success }]}>{MAP_INVESTIMENTO[prefs.investimento] || "Aberto a propostas"}</Text>
+              <Text style={[styles.commercialValue, { color: theme.colors.success }]}>{MAP_INVESTIMENTO[prefs?.investimento] || "Aberto a propostas"}</Text>
             </View>
           </View>
         </View>
       </View>
 
-      {status === "aluno_ativo" && (
+      {status === "aluno_ativo" ? (
         <View style={styles.dangerZone}>
           <TouchableOpacity style={styles.btnDangerOutline} onPress={handlePersonalEncerraParceria}>
             <Text style={styles.btnDangerText}>Encerrar Contrato</Text>
           </TouchableOpacity>
           <Text style={styles.dangerZoneHelp}>O aluno perderá acesso aos treinos e será movido para o histórico.</Text>
         </View>
-      )}
+      ) : null}
     </>
   );
 }

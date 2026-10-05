@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StatusBar, ScrollView, RefreshControl, ActivityIndicator, Image } from "react-native";
-import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { CONSTANTS } from "./dashboardConstants";
-import { styles } from "./dashboardStyles";
+import { useState } from "react";
+import { ActivityIndicator, Image, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { CONSTANTS } from "./constants";
+import { styles } from "./styles";
 import { usePainelMeuTreinador } from "./useDashboard";
 
 export default function Dashboard({ route, navigation }: any) {

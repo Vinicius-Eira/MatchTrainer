@@ -51,8 +51,11 @@ export function useVisaoAluno(route: any, navigation: any) {
         : aluno.preferencias || {};
   } catch (e) {}
 
-  const carregarDadosAluno = async () => {
-    setIsFetchingData(true);
+  const carregarDadosAluno = async (pularLoading = false) => {
+    if (!pularLoading) {
+      setIsFetchingData(true);
+    }
+    
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
@@ -170,7 +173,11 @@ export function useVisaoAluno(route: any, navigation: any) {
   };
 
   useEffect(() => {
-    carregarDadosAluno();
+    let isMounted = true;
+    Promise.resolve().then(() => {
+      if (isMounted) carregarDadosAluno(true);
+    });
+    return () => { isMounted = false; };
   }, [conexaoId]);
 
   useEffect(() => {
@@ -179,7 +186,7 @@ export function useVisaoAluno(route: any, navigation: any) {
         const { data } = await supabase.from('conexoes').select('status').eq('id', conexaoId).single();
         if (data && data.status !== status) {
           setStatus(data.status); 
-          carregarDadosAluno(); 
+          carregarDadosAluno(true); 
         }
       } catch (e) {}
     });
@@ -285,20 +292,41 @@ export function useVisaoAluno(route: any, navigation: any) {
     );
   };
 
+  
   const fotoUrlRaw = aluno?.foto_url;
   let fotoValida = null;
   if (typeof fotoUrlRaw === 'string' && fotoUrlRaw.trim().length > 5) {
       fotoValida = fotoUrlRaw;
   }
 
-  const objetivoFinal = anamnese?.objetivo || aluno?.objetivo_principal || prefs.objetivo_principal || prefs.objetivo || "Não informado";
-  const metaDePeso = prefs.meta_peso; 
-  const freqReal = prefs.frequencia_semanal || prefs.frequencia;
+  const cidadeStr = aluno?.cidade?.trim();
+  const bairroStr = aluno?.bairro?.trim();
+  const localizacaoFormatada = [cidadeStr, bairroStr].filter(Boolean).join(" • ") || "Local não informado";
+
+  const arrObjetivos = prefs?.objetivos || [];
+  let objetivoFinalText = null;
+  if (arrObjetivos.length > 0) {
+    objetivoFinalText = arrObjetivos.map((o: string) => o.charAt(0).toUpperCase() + o.slice(1)).join(" e ");
+  }
+  const objetivoFinal = anamnese?.objetivo || objetivoFinalText || "Não informado";
+
+  const orcamentoAluno = prefs?.orcamento ? `R$ ${prefs.orcamento}` : "Aberto";
+  const metaDePeso = prefs?.meta_peso; 
+  const freqReal = prefs?.frequencia_semanal || prefs?.frequencia;
   const displayFrequencia = MAP_FREQUENCIA[freqReal] || "Não informado";
+  
   const historicoReal = anamnese?.nivel_experiencia;
-  const displayHistorico = NIVEIS_MAP[historicoReal] || MAP_HISTORICO[prefs.historico] || "Não informado";
-  const isRestrito = anamnese ? anamnese.tem_restricao : (prefs.limitacao && prefs.limitacao !== "nenhuma");
-  const descRestricao = anamnese?.detalhes_restricao || (prefs.sub_limitacao?.length > 0 ? prefs.sub_limitacao.join(", ") : prefs.detalhe_outra_limitacao);
+  const displayHistorico = NIVEIS_MAP[historicoReal] || MAP_HISTORICO[prefs?.historico] || "Não informado";
+  
+  const arrLimitacoes = prefs?.limitacoes || [];
+  const isRestrito = anamnese ? anamnese.tem_restricao : (arrLimitacoes.length > 0 && !arrLimitacoes.includes("nenhuma"));
+  
+  let descRestricao = anamnese?.detalhes_restricao;
+  if (!descRestricao) {
+    const subsLim = prefs?.subs_limitacoes || [];
+    descRestricao = subsLim.length > 0 ? subsLim.join(", ") : prefs?.outra_limitacao;
+  }
+  
   const dadosIMC = calcularIMC(aluno.peso, aluno.altura);
 
   return {
@@ -322,6 +350,8 @@ export function useVisaoAluno(route: any, navigation: any) {
     calcularIdade,
     fotoValida,
     objetivoFinal,
+    localizacaoFormatada,
+    orcamentoAluno,
     metaDePeso,
     displayFrequencia,
     displayHistorico,
