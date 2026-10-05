@@ -18,7 +18,7 @@ import {
   View,
 } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
-import { styles } from "./PainelStyles";
+import { styles } from "./styles";
 import { usePainelCrescimento } from "./usePainelCrescimento";
 
 const { width } = Dimensions.get("window");

@@ -1,12 +1,11 @@
-import React from "react";
-import { View, Text, ScrollView, TouchableOpacity, StatusBar, Image, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, RefreshControl, StyleSheet, Platform } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { theme } from "../../../../../theme/theme";
 
-import { MODALIDADES, STATUS_FILTROS, CATEGORIAS_EXTRA, FORMAS_PAGAMENTO, MOTIVOS_CONGELAMENTO, MESES_NOME, DIAS_SEMANA, StatusFiltro } from './RecebimentosConstants';
-import { styles } from './RecebimentosStyles';
+import { CATEGORIAS_EXTRA, DIAS_SEMANA, FORMAS_PAGAMENTO, MESES_NOME, MODALIDADES, MOTIVOS_CONGELAMENTO, STATUS_FILTROS, StatusFiltro } from './constants';
+import { styles } from './styles';
 import { useRecebimentos } from './useRecebimentos';
 
 export default function Recebimentos({ navigation }: any) {

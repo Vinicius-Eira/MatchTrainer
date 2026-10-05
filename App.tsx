@@ -48,8 +48,8 @@ import { ExerciseLibraryScreen } from "./src/screens/Personal/ExerciseLibrary/Ex
 import { Presets } from "./src/screens/Personal/Presets/Presets";
 import { WorkoutCreator } from "./src/screens/Personal/WorkoutCreator/WorkoutCreator";
 
-import Avaliar from "./src/screens/User/Avaliar";
-import AvaliarPersonal from "./src/screens/User/AvaliarPersonal";
+import Avaliar from "./src/screens/User/Rating/Avaliar";
+import AvaliarPersonal from "./src/screens/User/Rating/AvaliarPersonal";
 import FeedPersonal from "./src/screens/User/Feed";
 import PerfilAluno from "./src/screens/User/Perfil";
 import PerfilPublicoPersonal from "./src/screens/User/Feed/PersonalPublicProfile";
@@ -57,8 +57,10 @@ import PerfilPublicoPersonal from "./src/screens/User/Feed/PersonalPublicProfile
 import EsqueciSenha from "./src/screens/Auth/password/EsqueciSenha";
 import RedefinirSenha from "./src/screens/Auth/password/RedefinirSenha";
 import AtivarConvite from "./src/screens/Auth/User/AtivarConta";
-import Chat from "./src/screens/Shared/Chat";
-import ConversasAluno from "./src/screens/Shared/Conversas";
+
+import Chat from "./src/screens/App/Chat";
+import Messages from "./src/screens/App/Messages";
+
 import Anamnese from "./src/screens/User/Anamnese";
 import QuestionnaireForm from "./src/screens/User/Anamnese/QuestionnaireForm";
 import Finance from "./src/screens/User/Finance";
@@ -289,7 +291,9 @@ export default function App() {
 
         <RootStack.Screen name="VisaoAluno" component={VisaoAluno} />
         <RootStack.Screen name="Chat" component={Chat} />
-        <RootStack.Screen name="ConversasAluno" component={ConversasAluno} />
+        
+        {/* HIGHLIGHT: Tela renomeada para Messages */}
+        <RootStack.Screen name="Messages" component={Messages} />
 
         <RootStack.Screen name="PersonalLogin" component={PersonalLogin} />
         <RootStack.Screen

@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StatusBar, SafeAreaView, ScrollView, TextInput, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { styles } from "./QuestionnaireFormStyles";
+import { styles } from "./styles";
 import { useQuestionnaireForm } from "./useQuestionnaireForm";
 
 export default function QuestionnaireForm({ route, navigation }: any) {

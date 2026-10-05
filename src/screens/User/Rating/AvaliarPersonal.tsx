@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,23 +12,37 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { supabase } from "../../services/supabase";
-import { theme } from "../../theme/theme";
-import { moderateScale, scale, verticalScale } from "../../utils/responsive";
+import { supabase } from "../../../services/supabase";
+import { theme } from "../../../theme/theme";
+import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
 
-export default function AvaliarPersonal({ route, navigation }) {
+interface AvaliarPersonalRouteParams {
+  personalId: string;
+  nomePersonal: string;
+  fotoPersonal?: string | null;
+}
+
+interface AvaliarPersonalProps {
+  route: {
+    params: AvaliarPersonalRouteParams;
+  };
+  navigation: any;
+}
+
+export default function AvaliarPersonal({ route, navigation }: AvaliarPersonalProps) {
   const { personalId, nomePersonal, fotoPersonal } = route.params;
 
-  const [nota, setNota] = useState(0);
-  const [comentario, setComentario] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [nota, setNota] = useState<number>(0);
+  const [comentario, setComentario] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const enviarAvaliacao = async () => {
+  const enviarAvaliacao = async (): Promise<void> => {
     if (nota === 0) {
-      return Alert.alert(
+      Alert.alert(
         "Atenção",
-        "Por favor, selecione uma nota de 1 a 5 estrelas.",
+        "Por favor, selecione uma nota de 1 a 5 estrelas."
       );
+      return;
     }
 
     setLoading(true);
@@ -40,7 +54,8 @@ export default function AvaliarPersonal({ route, navigation }) {
 
       if (!user) {
         setLoading(false);
-        return Alert.alert("Erro", "Você precisa estar logado para avaliar.");
+        Alert.alert("Erro", "Você precisa estar logado para avaliar.");
+        return;
       }
 
       const { error } = await supabase.from("avaliacoes").upsert(
@@ -50,7 +65,7 @@ export default function AvaliarPersonal({ route, navigation }) {
           nota: nota,
           comentario: comentario.trim(),
         },
-        { onConflict: "personal_id, usuario_id" },
+        { onConflict: "personal_id, usuario_id" }
       );
 
       if (error) throw error;
@@ -58,21 +73,21 @@ export default function AvaliarPersonal({ route, navigation }) {
       Alert.alert(
         "Sucesso!",
         "Sua avaliação foi enviada. Isso ajuda muito o profissional e a comunidade!",
-        [{ text: "Voltar", onPress: () => navigation.goBack() }],
+        [{ text: "Voltar", onPress: () => navigation.goBack() }]
       );
     } catch (error) {
       console.error("Erro ao avaliar:", error);
       Alert.alert(
         "Erro",
-        "Não foi possível enviar a avaliação. Tente novamente.",
+        "Não foi possível enviar a avaliação. Tente novamente."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const renderStars = () => {
-    let stars = [];
+  const renderStars = (): React.JSX.Element[] => {
+    let stars: React.JSX.Element[] = [];
     for (let i = 1; i <= 5; i++) {
       stars.push(
         <TouchableOpacity
@@ -86,7 +101,7 @@ export default function AvaliarPersonal({ route, navigation }) {
             size={45}
             color={i <= nota ? theme.colors.primary : "#444"}
           />
-        </TouchableOpacity>,
+        </TouchableOpacity>
       );
     }
     return stars;

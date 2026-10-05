@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StatusBar, SafeAreaView, TextInput, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { styles } from "./WorkoutCompletionStyles";
+import { styles } from "./styles";
 import { useFinalizacaoTreino } from "./useWorkoutCompletion";
 
 export default function WorkoutCompletion({ route, navigation }: any) {

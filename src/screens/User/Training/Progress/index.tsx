@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StatusBar, SafeAreaView, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { styles } from "./ProgressStyles";
+import { styles } from "./styles";
 import { useProgress } from "./useProgress";
 
 export default function Progress({ route, navigation }: any) {

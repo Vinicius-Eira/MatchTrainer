@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, SafeAreaView, RefreshControl, Image } from "react-native";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { styles } from "./workoutPreviewStyles";
+import { styles } from "./styles";
 import { useWorkoutPreview } from "./useWorkoutPreview";
 
 export default function WorkoutPreview({ route, navigation }: any) {

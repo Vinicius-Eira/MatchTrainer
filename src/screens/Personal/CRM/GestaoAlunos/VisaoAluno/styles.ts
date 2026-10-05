@@ -25,7 +25,7 @@ export const styles = StyleSheet.create({
   heroGradient: { position: "absolute", top: verticalScale(-100), left: 0, right: 0, height: verticalScale(350) },
   avatarWrapper: { position: "relative", marginBottom: verticalScale(20), justifyContent: "center", alignItems: "center" },
   
-  avatarGlow: { position: "absolute", width: scale(120), height: scale(120), borderRadius: moderateScale(60), backgroundColor: theme.colors.primary, opacity: 0.2, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 25, elevation: 10 },
+  avatarGlow: { position: "absolute", width : scale(120), height: scale(120), borderRadius: moderateScale(60), backgroundColor: theme.colors.primary, opacity: 0.2, shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 25, elevation: 10 },
   
   avatar: { width: scale(130), height: scale(130), borderRadius: moderateScale(65), borderWidth: 3, borderColor: theme.colors.primary, backgroundColor: theme.colors.surface, zIndex: 2 },
   onlineBadge: { position: "absolute", bottom: verticalScale(4), right: scale(8), width: scale(28), height: scale(28), borderRadius: moderateScale(14), backgroundColor: theme.colors.background, justifyContent: "center", alignItems: "center", zIndex: 3 },
