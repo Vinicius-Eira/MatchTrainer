@@ -19,7 +19,7 @@ import { supabase } from "../../../services/supabase";
 import { theme } from "../../../theme/theme";
 import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
 
-export default function AlunoCadastro({ navigation }: any) {
+export function AlunoCadastro({ navigation }: any) {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");

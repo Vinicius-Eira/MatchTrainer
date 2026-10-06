@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
 import { useWorkoutList } from "./useWorkouts";
 
-export default function WorkoutList({ route, navigation }: any) {
+export function WorkoutList({ route, navigation }: any) {
   const { conexaoId } = route.params || { conexaoId: "1" };
   const { loading, refreshing, onRefresh, treinos, openWorkoutList, voltar } = useWorkoutList(navigation, conexaoId);
 

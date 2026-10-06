@@ -9,7 +9,7 @@ import { scale } from "../../../../../utils/responsive";
 import { usePropostaAluno } from "./usePropostaAluno";
 import { styles } from "./styles";
 
-export default function PropostaAluno({ route, navigation }: any) {
+export function PropostaAluno({ route, navigation }: any) {
   const { state, actions } = usePropostaAluno(route, navigation);
 
   const renderRegras = (text: string) => {

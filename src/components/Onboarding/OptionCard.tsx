@@ -1,11 +1,29 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, GestureResponderEvent } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { theme } from "../../theme/theme"; 
 import { moderateScale, scale, verticalScale } from "../../utils/responsive";
 
-export default function OptionCard({ item, isSelected, onPress, isMultiSelect = false }) {
+export interface OptionItem {
+  icon: React.ComponentProps<typeof Ionicons>['name']; 
+  titulo: string;
+  desc: string;
+}
+
+export interface OptionCardProps {
+  item: OptionItem;
+  isSelected: boolean;
+  onPress: (event: GestureResponderEvent) => void;
+  isMultiSelect?: boolean;
+}
+
+export default function OptionCard({ 
+  item, 
+  isSelected, 
+  onPress, 
+  isMultiSelect = false 
+}: OptionCardProps) {
   return (
     <TouchableOpacity
       style={[styles.card, isSelected && styles.cardAtivo]}
@@ -16,7 +34,6 @@ export default function OptionCard({ item, isSelected, onPress, isMultiSelect = 
         <LinearGradient
           colors={["rgba(255, 107, 0, 0.1)", "transparent"]}
           style={StyleSheet.absoluteFill}
-          borderRadius={moderateScale(24)}
         />
       )}
       <View

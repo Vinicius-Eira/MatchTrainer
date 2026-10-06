@@ -4,7 +4,7 @@ import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { styles } from "./styles";
 import { useFinance, FinanceStatus } from "./useFinance";
 
-export default function Finance({ navigation }: any) {
+export function Finance({ navigation }: any) {
   const { loading, statusAtual, detalhes, historico, copiarPix, voltar } = useFinance(navigation);
 
   const getStatusConfig = (status: FinanceStatus) => {

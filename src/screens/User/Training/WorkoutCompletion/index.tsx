@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
 import { useFinalizacaoTreino } from "./useWorkoutCompletion";
 
-export default function WorkoutCompletion({ route, navigation }: any) {
+export function WorkoutCompletion({ route, navigation }: any) {
   const {
     treinoNome, tempoTotal, volumeTotal, prsBatidos,
     esforco, setEsforco, niveisEsforco,

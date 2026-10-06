@@ -39,7 +39,7 @@ interface Treino {
   status: string;
 }
 
-export default function HistoricoTreinosAluno({ route, navigation }: any) {
+export function HistoricoTreinosAluno({ route, navigation }: any) {
   const { alunoId, alunoNome } = route.params;
   const [treinos, setTreinos] = useState<Treino[]>([]);
   const [loading, setLoading] = useState(true);

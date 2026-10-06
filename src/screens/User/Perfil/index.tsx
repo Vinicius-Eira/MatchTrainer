@@ -7,7 +7,7 @@ import { theme } from "../../../theme/theme";
 import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
 import { usePerfilAluno } from "./usePerfilAluno";
 
-export default function PerfilAluno({ navigation }: any) {
+export function PerfilAluno({ navigation }: any) {
   const { state, actions } = usePerfilAluno(navigation);
 
   if (state.loading) {

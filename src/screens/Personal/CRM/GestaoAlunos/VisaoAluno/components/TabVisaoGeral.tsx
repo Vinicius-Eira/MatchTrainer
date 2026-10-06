@@ -19,7 +19,7 @@ const MAP_PERFIL: Record<string, string> = {
   estrategista: "O Estrategista (Foco em metas)",
 };
 
-export default function TabVisaoGeral({
+export function TabVisaoGeral({
   status, planoAtivo, isFetchingData, irParaNovoContrato, objetivoFinal, prefs, displayHistorico, displayFrequencia,
   aluno, calcularIdade, metaDePeso, dadosIMC, isRestrito, descRestricao, handlePersonalEncerraParceria, navigation 
 }: any) {

@@ -11,7 +11,7 @@ const { width } = Dimensions.get("window");
 
 const ORANGE_NEON = "#FF6B00";
 
-export default function PersonalPublicProfile({ route, navigation }: any) {
+export function PersonalPublicProfile({ route, navigation }: any) {
   const { state, actions } = usePerfilPublicoPersonal(route, navigation);
 
   const { 

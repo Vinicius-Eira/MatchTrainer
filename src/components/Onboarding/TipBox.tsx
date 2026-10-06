@@ -4,7 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { theme } from "../../theme/theme"; 
 import { moderateScale, scale, verticalScale } from "../../utils/responsive"; 
 
-export default function TipBox({ title, text, icon }) {
+export interface TipBoxProps {
+  title: string;
+  text: string;
+  icon?: React.ComponentProps<typeof Ionicons>['name'];
+}
+
+export default function TipBox({ title, text, icon }: TipBoxProps) {
   return (
     <View style={styles.tipBox}>
       <View style={styles.tipIconBox}>

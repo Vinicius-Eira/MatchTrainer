@@ -20,10 +20,10 @@ import { styles } from "./styles";
 import { theme } from "../../../../../theme/theme";
 import { moderateScale } from "../../../../../utils/responsive";
 
-import TabVisaoGeral from "./components/TabVisaoGeral";
-import TabTreinosEvolucao from "./components/TabTreinosEvolucao";
+import { TabVisaoGeral } from "./components/TabVisaoGeral";
+import { TabTreinosEvolucao } from "./components/TabTreinosEvolucao";
 
-export default function VisaoAluno({ route, navigation }: any) {
+export function VisaoAluno({ route, navigation }: any) {
   const v = useVisaoAluno(route, navigation); 
 
   return (

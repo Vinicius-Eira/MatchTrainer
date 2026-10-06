@@ -24,7 +24,7 @@ import { usePainelCrescimento } from "./usePainelCrescimento";
 const { width } = Dimensions.get("window");
 const MESES_NOME_CURTO = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-export default function PainelCrescimento({ navigation }: any) {
+export function PainelCrescimento({ navigation }: any) {
   const {
     loading, refreshing, kpis, onRefresh, modalMetaVisivel, setModalMetaVisivel, novaMetaValor, setNovaMetaValor,
     salvandoMeta, salvarNovaMeta, metricas, modalInfoVisivel, setModalInfoVisivel, infoDados, abrirInfo, insightIA,

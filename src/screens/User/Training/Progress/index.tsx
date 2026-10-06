@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
 import { useProgress } from "./useProgress";
 
-export default function Progress({ route, navigation }: any) {
+export function Progress({ route, navigation }: any) {
   const { conexaoId } = route?.params || {};
   const { loading, mensagemPersonal, composicaoCorporal, resumoTreinos, recordes, historico, abrirEvolucaoExercicio, voltar } = useProgress(navigation, conexaoId);
 

@@ -45,7 +45,7 @@ interface ListaTreinosAlunoProps {
   navigation: any;
 }
 
-export default function ListaTreinosAluno({ route, navigation }: ListaTreinosAlunoProps) {
+export function ListaTreinosAluno({ route, navigation }: ListaTreinosAlunoProps) {
   const { alunoId, alunoNome } = route.params;
   const [treinos, setTreinos] = useState<Treino[]>([]);
   const [loading, setLoading] = useState(true);

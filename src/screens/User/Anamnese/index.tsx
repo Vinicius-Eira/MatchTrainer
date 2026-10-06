@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
 import { useAnamnese } from "./useAnamnese";
 
-export default function Anamnese({ navigation }: any) {
+export function Anamnese({ navigation }: any) {
   const { loading, temPendente, pendente, historico, abrirQuestionario, voltar } = useAnamnese(navigation);
 
   return (

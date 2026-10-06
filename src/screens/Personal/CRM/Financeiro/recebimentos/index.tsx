@@ -8,7 +8,7 @@ import { CATEGORIAS_EXTRA, DIAS_SEMANA, FORMAS_PAGAMENTO, MESES_NOME, MODALIDADE
 import { styles } from './styles';
 import { useRecebimentos } from './useRecebimentos';
 
-export default function Recebimentos({ navigation }: any) {
+export function Recebimentos({ navigation }: any) {
   const {
     loading, refreshing, nomePersonal, modalDataVisivel, tempAno, tempMes, tempInicio, tempFim,
     modalidadeAtiva, statusAtivo, buscaAlunoExtra, buscaAlunoCongelar, modalBaixaVisivel, faturaSelecionada, valorInput,
