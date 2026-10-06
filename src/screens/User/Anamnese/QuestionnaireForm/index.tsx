@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { styles } from "./styles";
 import { useQuestionnaireForm } from "./useQuestionnaireForm";
 
-export default function QuestionnaireForm({ route, navigation }: any) {
+export function QuestionnaireForm({ route, navigation }: any) {
   const { titulo, perguntas, respostas, atualizarResposta, validarEEnviar, voltar } = useQuestionnaireForm(navigation, route);
 
   const renderizarPergunta = (pergunta: any, index: number) => {

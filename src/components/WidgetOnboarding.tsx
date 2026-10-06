@@ -1,13 +1,41 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Alert, Modal } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import ConfettiCannon from 'react-native-confetti-cannon';
 
-export default function WidgetOnboarding({ jornada, progressoPct, navigation, completarMissao }) {
-  const barWidth = useRef(new Animated.Value(0)).current;
-  const [modalSucessoVisivel, setModalSucessoVisivel] = useState(false);
+export interface JornadaData {
+  tour_finalizado?: boolean;
+  perfil_completo?: boolean;
+  meta_definida?: boolean;
+  primeiro_aluno?: boolean;
+  primeiro_contrato?: boolean;
+  primeiro_recebimento?: boolean;
+  [key: string]: any; 
+}
+
+export interface WidgetOnboardingProps {
+  jornada: JornadaData | null | undefined;
+  progressoPct: number;
+  navigation: any;
+  completarMissao: any; 
+}
+
+interface Missao {
+  id: string; 
+  titulo: string;
+  action: (() => void) | null;
+}
+
+export function WidgetOnboarding({ 
+  jornada, 
+  progressoPct, 
+  navigation, 
+  completarMissao 
+}: WidgetOnboardingProps) {
+  const [barWidth] = useState(() => new Animated.Value(0));
+  const [modalSucessoVisivel, setModalSucessoVisivel] = useState<boolean>(false);
 
   useEffect(() => {
     Animated.timing(barWidth, {
@@ -21,11 +49,11 @@ export default function WidgetOnboarding({ jornada, progressoPct, navigation, co
         setModalSucessoVisivel(true);
       }, 800);
     }
-  }, [progressoPct, jornada]);
+  }, [progressoPct, jornada, barWidth]);
 
   if (!jornada || jornada.tour_finalizado) return null;
 
-  const fecharWidget = () => {
+  const fecharWidget = (): void => {
     Alert.alert(
       "Ocultar Checklist",
       "Tem certeza que deseja esconder este painel de configuração?",
@@ -40,12 +68,12 @@ export default function WidgetOnboarding({ jornada, progressoPct, navigation, co
     );
   };
 
-  const finalizarComSucesso = () => {
+  const finalizarComSucesso = (): void => {
     setModalSucessoVisivel(false);
     completarMissao('tour_finalizado'); 
   };
 
-  const missoes = [
+  const missoes: Missao[] = [
     { id: 'perfil_completo', titulo: 'Complete seu perfil público', action: null },
     { id: 'meta_definida', titulo: 'Defina sua meta de faturamento', action: () => navigation.navigate('PainelCrescimento') },
     { id: 'primeiro_aluno', titulo: 'Adicione seu primeiro aluno', action: () => navigation.navigate('AdicionarAluno') },
@@ -91,7 +119,7 @@ export default function WidgetOnboarding({ jornada, progressoPct, navigation, co
                   key={missao.id} 
                   style={[styles.missionRow, isLast && { borderBottomWidth: 0 }]} 
                   activeOpacity={isDone || !missao.action ? 1 : 0.6} 
-                  onPress={isDone || !missao.action ? null : missao.action}
+                  onPress={isDone || !missao.action ? undefined : missao.action}
                 >
                   <View style={styles.iconBox}>
                     {isDone ? (
@@ -129,7 +157,7 @@ export default function WidgetOnboarding({ jornada, progressoPct, navigation, co
           />
 
           <View style={styles.modalCard}>
-            <LinearGradient colors={['rgba(255, 107, 0, 0.1)', 'transparent']} style={StyleSheet.absoluteFill} borderRadius={30} />
+            <LinearGradient colors={['rgba(255, 107, 0, 0.1)', 'transparent']} style={StyleSheet.absoluteFill} />
             
             <View style={styles.modalIconBox}>
               <FontAwesome5 name="trophy" size={40} color="#FFD700" />
@@ -161,7 +189,7 @@ const styles = StyleSheet.create({
     borderRadius: 24, padding: 24, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.06)', position: 'relative', overflow: 'hidden',
   },
   glowBg: {
-    position: 'absolute', top: -40, left: -40, width: 140, height: 140, backgroundColor: 'rgba(255, 107, 0, 0.08)', borderRadius: 70, blurRadius: 50,
+    position: 'absolute', top: -40, left: -40, width: 140, height: 140, backgroundColor: 'rgba(255, 107, 0, 0.08)', borderRadius: 70, 
   },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20,

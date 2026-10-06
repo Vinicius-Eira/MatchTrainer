@@ -21,7 +21,7 @@ const formatarData = (dataString: string) => {
   return data.toLocaleDateString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 };
 
-export default function Chat({ route, navigation }: any) {
+export function Chat({ route, navigation }: any) {
   const { state, actions } = useChat(route, navigation);
   const { mensagens, texto, loading, myUserId, statusConexao, flatListRef, nomeOutro, fotoOutro, tipoUsuarioLogado } = state;
 

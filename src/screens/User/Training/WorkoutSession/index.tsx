@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
 import { useWorkoutSession } from "./useWorkoutSession";
 
-export default function WorkoutSession({ route, navigation }: any) {
+export function WorkoutSession({ route, navigation }: any) {
   const {
     treinoInfo, exercicios, indiceAtual, progressoBarra,
     emDescanso, tempoDescansoRestante, tempoTotalTreino, observacaoTreinoGeral,

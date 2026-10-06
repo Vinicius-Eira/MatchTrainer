@@ -78,7 +78,7 @@ const ChoiceCard = ({ title, description, icon, primary, onPress }: ChoiceCardPr
   );
 };
 
-export default function ChoiceScreen({ navigation }: any) {
+export function ChoiceScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.glowTopLeft} />

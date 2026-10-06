@@ -18,7 +18,7 @@ import { supabase } from "../../../services/supabase";
 import { theme } from "../../../theme/theme";
 import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
 
-export default function PersonalLogin({ navigation }: any) {
+export function PersonalLogin({ navigation }: any) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);

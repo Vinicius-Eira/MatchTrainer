@@ -6,7 +6,7 @@ import { styles } from '../styles';
 import { theme } from '../../../../../../theme/theme';
 import { scale, verticalScale, moderateScale } from '../../../../../../utils/responsive';
 
-export default function TabTreinosEvolucao({ 
+export function TabTreinosEvolucao({ 
   aluno, 
   navigation, 
   mostrarAjudaAdesao,

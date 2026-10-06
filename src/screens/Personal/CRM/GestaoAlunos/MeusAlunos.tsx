@@ -38,7 +38,7 @@ interface MeusAlunosProps {
   navigation: NavigationProp<any>; 
 }
 
-export default function MeusAlunos({ navigation }: MeusAlunosProps) {
+export function MeusAlunos({ navigation }: MeusAlunosProps) {
   const [alunosAtivos, setAlunosAtivos] = useState<Aluno[]>([]);
   const [convitesPendentes, setConvitesPendentes] = useState<ConvitePendente[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

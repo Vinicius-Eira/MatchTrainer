@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
 import { useWorkoutPreview } from "./useWorkoutPreview";
 
-export default function WorkoutPreview({ route, navigation }: any) {
+export function WorkoutPreview({ route, navigation }: any) {
   const { loading, refreshing, onRefresh, treino, exercicios, iniciarTreino, voltar } = useWorkoutPreview(navigation, route);
 
   if (loading && !refreshing) {

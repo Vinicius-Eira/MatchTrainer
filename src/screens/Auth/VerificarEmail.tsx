@@ -12,7 +12,7 @@ import {
 import { theme } from "../../theme/theme";
 import { moderateScale, scale, verticalScale } from "../../utils/responsive";
 
-export default function VerificarEmail({ navigation, route }: any) {
+export function VerificarEmail({ navigation, route }: any) {
   const email = route.params?.email || "seu e-mail";
 
   return (

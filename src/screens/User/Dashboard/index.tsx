@@ -6,7 +6,7 @@ import { CONSTANTS } from "./constants";
 import { styles } from "./styles";
 import { usePainelMeuTreinador } from "./useDashboard";
 
-export default function Dashboard({ route, navigation }: any) {
+export function AlunoDashboard({ route, navigation }: any) {
   const { conexaoId } = route.params || { conexaoId: "1" };
   const {
     loading, refreshing, aluno, personal, diasTreino, progressoBarra, estaNoPeriodoTeste,

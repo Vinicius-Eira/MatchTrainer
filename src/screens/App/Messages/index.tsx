@@ -5,7 +5,7 @@ import { BlurView } from "expo-blur";
 import { supabase } from '../../../services/supabase';
 import { theme } from '../../../theme/theme';
 
-export default function Messages({ navigation }: any) {
+export function Messages({ navigation }: any) {
   const [conversas, setConversas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

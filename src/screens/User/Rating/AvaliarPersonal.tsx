@@ -16,20 +16,8 @@ import { supabase } from "../../../services/supabase";
 import { theme } from "../../../theme/theme";
 import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
 
-interface AvaliarPersonalRouteParams {
-  personalId: string;
-  nomePersonal: string;
-  fotoPersonal?: string | null;
-}
 
-interface AvaliarPersonalProps {
-  route: {
-    params: AvaliarPersonalRouteParams;
-  };
-  navigation: any;
-}
-
-export default function AvaliarPersonal({ route, navigation }: AvaliarPersonalProps) {
+export function AvaliarPersonal({ route, navigation }: any) {
   const { personalId, nomePersonal, fotoPersonal } = route.params;
 
   const [nota, setNota] = useState<number>(0);

@@ -25,7 +25,7 @@ const calcularIdade = (dataNascimento?: string) => {
   return idade;
 };
 
-export default function FeedPersonal({ navigation }: any) {
+export function FeedPersonal({ navigation }: any) {
   const { state, actions } = useFeedPersonal(navigation);
 
   if (state.loading) {

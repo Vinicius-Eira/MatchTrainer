@@ -8,7 +8,7 @@ import { moderateScale } from "../../../../../utils/responsive";
 import { useAdicionarAluno } from "./useAdicionarAluno";
 import { styles, OPCOES_MODALIDADE, frequenciaList } from "./styles";
 
-export default function AdicionarAluno({ route, navigation }: any) {
+export function AdicionarAluno({ route, navigation }: any) {
   const { state, actions } = useAdicionarAluno(route, navigation);
   
   return (

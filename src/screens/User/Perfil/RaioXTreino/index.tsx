@@ -85,7 +85,7 @@ const OPCOES_VALORES = [
   { id: "outro", titulo: "Outro Valor", icon: "add-circle" as any, desc: "Especificar..." },
 ];
 
-export default function RaioXTreino({ navigation }: any) {
+export function RaioXTreino({ navigation }: any) {
   const { state, actions } = useRaioXTreino(navigation);
 
   const renderPremiumList = (opcoes: any[], stateData: any, setStateData: any, isSingle = true) => (

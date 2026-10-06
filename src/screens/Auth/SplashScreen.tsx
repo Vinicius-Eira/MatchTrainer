@@ -4,7 +4,7 @@ import { Image, StatusBar, StyleSheet, View } from "react-native";
 import { supabase } from "../../services/supabase";
 import { scale, verticalScale } from "../../utils/responsive";
 
-export default function SplashScreen({ navigation }: any) {
+export function SplashScreen({ navigation }: any) {
   
   useEffect(() => {
     const verificarSessao = async () => {

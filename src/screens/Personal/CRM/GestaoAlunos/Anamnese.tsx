@@ -16,7 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../../../../services/supabase";
 import { theme } from "../../../../theme/theme"; 
 
-export default function AnamneseBuilder({ navigation }: any) {
+export function AnamneseBuilder ({ navigation }: any) {
   const [title, setTitle] = useState("Questionário Inicial VIP");
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);

@@ -19,7 +19,7 @@ import { supabase } from "../../services/supabase";
 import { theme } from "../../theme/theme";
 import { moderateScale, scale, verticalScale } from "../../utils/responsive";
 
-export default function TermosDeUso({ navigation }: any) {
+export function TermosDeUso({ navigation }: any) {
   const [aceito, setAceito] = useState(false);
   const [progresso, setProgresso] = useState(0);
   const [loading, setLoading] = useState(false);

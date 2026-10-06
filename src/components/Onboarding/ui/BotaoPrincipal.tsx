@@ -1,13 +1,20 @@
-// src/components/BotaoPrincipal.js
-import { StyleSheet, Text, TouchableOpacity } from "react-native";
+// src/components/BotaoPrincipal.tsx
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, GestureResponderEvent } from "react-native";
 import { theme } from "../../../theme/theme";
 import { moderateScale, scale, verticalScale } from "../../../utils/responsive";
+
+export interface BotaoPrincipalProps {
+  titulo: string;
+  onPress: (event: GestureResponderEvent) => void;
+  secundario?: boolean;
+}
 
 export default function BotaoPrincipal({
   titulo,
   onPress,
   secundario = false,
-}) {
+}: BotaoPrincipalProps) {
   return (
     <TouchableOpacity
       style={[
