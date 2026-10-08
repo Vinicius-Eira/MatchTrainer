@@ -403,7 +403,7 @@ export function MiniOnboarding({ route, navigation }: any) {
             ) : (
               <>
                 <Text style={styles.btnPrimaryText}>
-                  {state.step === state.totalPassos ? "Enviar Perfil ao Professor" : "Avançar Etapa"}
+=                  {state.step === state.totalPassos ? "Liberar Minha Proposta VIP" : "Avançar Etapa"}
                 </Text>
                 {state.step < state.totalPassos && <Ionicons name="arrow-forward" size={18} color="#000" style={{ marginLeft: 8 }} />}
               </>
@@ -413,4 +413,4 @@ export function MiniOnboarding({ route, navigation }: any) {
       </View>
     </KeyboardAvoidingView>
   );
-}
+};

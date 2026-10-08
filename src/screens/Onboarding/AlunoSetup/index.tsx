@@ -64,10 +64,17 @@ const SUB_ESPORTE = ["Corrida", "Lutas", "Ciclismo", "Crossfit", "Futebol", "Out
 const SUB_LESAO = ["Joelho", "Coluna", "Ombro", "Quadril", "Tornozelo", "Outros"];
 const SUB_CLINICA = ["Cardiopatia", "Asma", "SOP", "Fibromialgia", "Outros"];
 
+const OPCOES_ESTILO_COMUNICACAO = [
+  { id: "motivador", titulo: "Motivador", icon: "flame" as any, desc: "Alguém cheio de energia para me incentivar" },
+  { id: "tecnico", titulo: "Técnico / Focado", icon: "analytics" as any, desc: "Alguém que foque na biomecânica e dados" },
+  { id: "militar", titulo: "Estilo Militar", icon: "flash" as any, desc: "Alguém direto que não aceite desculpas" },
+  { id: "empatico", titulo: "Acolhedor", icon: "heart" as any, desc: "Alguém parceiro que entenda meus limites" },
+];
+
 const OPCOES_COBRANCA = [
-  { id: "leve", titulo: "Compreensivo(a)", icon: "leaf-outline" as any, desc: "Alguém focado em construir o hábito sem pressão" },
-  { id: "moderada", titulo: "Equilibrado(a)", icon: "scale-outline" as any, desc: "Que exija resultados, mas entenda meus deslizes" },
-  { id: "rigorosa", titulo: "Sargento", icon: "flash-outline" as any, desc: "Que pegue no pé e não aceite desculpas" },
+  { id: "leve", titulo: "Compreensivo(a)", icon: "leaf-outline" as any, desc: "Focado em construir o hábito sem pressão" },
+  { id: "moderada", titulo: "Equilibrado(a)", icon: "scale-outline" as any, desc: "Que exija resultados, mas entenda deslizes" },
+  { id: "rigorosa", titulo: "Sargento", icon: "flash-outline" as any, desc: "Que pegue no pé e puxe meus limites" },
 ];
 const OPCOES_ACOMPANHAMENTO = [
   { id: "pontual", titulo: "Independente", icon: "chatbubble-outline" as any, desc: "Só preciso do treino e tiro dúvidas se precisar" },
@@ -83,7 +90,7 @@ const OPCOES_VALORES = [
   { id: "didatica", titulo: "Boa Didática", icon: "book" as any, desc: "Saber explicar o porquê dos exercícios" },
   { id: "motivacao", titulo: "Motivação", icon: "flame" as any, desc: "Alguém que tenha uma energia lá em cima" },
   { id: "flexibilidade", titulo: "Flexibilidade", icon: "swap-horizontal" as any, desc: "Saber adaptar treinos se eu tiver imprevistos" },
-  { id: "pontualidade", titulo: "Pontualidade", icon: "time" as any, desc: "Respostas rápidas no app (ou não atrasar presencial)" },
+  { id: "pontualidade", titulo: "Pontualidade", icon: "time" as any, desc: "Respostas rápidas no app ou presencial" },
   { id: "outro", titulo: "Outro Valor", icon: "add-circle" as any, desc: "Especificar..." },
 ];
 
@@ -299,7 +306,11 @@ export function AlunoSetup({ navigation }: any) {
               <Text style={styles.subTitle}>A nossa tecnologia cruza as suas respostas comportamentais para achar a parceria perfeita.</Text>
             </View>
 
-            <Text style={styles.sectionTitle}>Qual perfil mais te motiva? *</Text>
+            <Text style={styles.sectionTitle}>Que vibe você procura em um treinador? *</Text>
+            <Text style={styles.helpText}>Como você prefere que seja a comunicação com você?</Text>
+            {renderGrid(OPCOES_ESTILO_COMUNICACAO, state.estiloComunicacao, actions.setEstiloComunicacao, true)}
+
+            <Text style={[styles.sectionTitle, { marginTop: verticalScale(30) }]}>Qual perfil mais te motiva? *</Text>
             <Text style={styles.helpText}>Na hora de ser cobrado, o que funciona para você?</Text>
             {renderGrid(OPCOES_COBRANCA, state.cobranca, actions.setCobranca, true)}
 

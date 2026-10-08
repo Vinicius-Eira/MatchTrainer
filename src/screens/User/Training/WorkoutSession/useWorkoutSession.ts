@@ -10,15 +10,37 @@ export function useWorkoutSession(navigation: any, route: any) {
   const [indiceAtual, setIndiceAtual] = useState(0);
   const [progressoBarra, setProgressoBarra] = useState(0);
   const [observacaoTreinoGeral, setObservacaoTreinoGeral] = useState("");
+  
+  const [nivelEsforco, setNivelEsforco] = useState<number | null>(null); 
+  const [sentiuDor, setSentiuDor] = useState<boolean | null>(null); 
+  const [mostrarFinalizacao, setMostrarFinalizacao] = useState(false);
 
   const [tempoTotalTreino, setTempoTotalTreino] = useState(0);
   const [emDescanso, setEmDescanso] = useState(false);
   const [tempoDescansoRestante, setTempoDescansoRestante] = useState(0);
-  
   const [dataInicio, setDataInicio] = useState(new Date().toISOString());
 
+  const [modalDorVisivel, setModalDorVisivel] = useState(false);
+  const [exercicioDorId, setExercicioDorId] = useState<string>("");
+
+  const abrirModalDor = (exId: string) => {
+    setExercicioDorId(exId);
+    setModalDorVisivel(true);
+  };
+
+  const fecharModalDor = () => {
+    setModalDorVisivel(false);
+    setExercicioDorId("");
+  };
+
+  const handleDorRegistradaSucesso = () => {
+    setSentiuDor(true);
+    fecharModalDor();
+    Alert.alert("Registrado", "O personal será notificado sobre esse desconforto para avaliar seu movimento.");
+  };
+
   const buscarTreinoParaExecucao = async () => {
-    const { data, error } = await supabase
+    const { data: prescricao, error: errPrescricao } = await supabase
       .from("treinos_prescritos")
       .select(`
         id, nome,
@@ -31,18 +53,29 @@ export function useWorkoutSession(navigation: any, route: any) {
       .eq("id", treinoId)
       .single();
 
-    if (error) throw error;
-    return data;
+    if (errPrescricao) throw errPrescricao;
+
+    const { data: ultimaExecucao } = await supabase
+      .from("treinos_execucoes")
+      .select("dados_execucao")
+      .eq("treino_id", treinoId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return { prescricao, ultimaExecucao: ultimaExecucao?.dados_execucao || null };
   };
 
-  const prepararTreino = (ficha: any) => {
-    setTreinoInfo({ id: ficha.id, nome: ficha.nome });
+  const prepararTreino = ({ prescricao, ultimaExecucao }: any) => {
+    setTreinoInfo({ id: prescricao.id, nome: prescricao.nome });
 
-    const exerciciosOrdenados = ficha.treinos_exercicios.sort((a: any, b: any) => a.ordem - b.ordem);
+    const exerciciosOrdenados = prescricao.treinos_exercicios.sort((a: any, b: any) => a.ordem - b.ordem);
     
     const formatado = exerciciosOrdenados.map((ex: any) => {
       const seriesOrdenadas = ex.treinos_series_prescritas.sort((a: any, b: any) => a.numero_serie - b.numero_serie);
       
+      const historicoExercicio = ultimaExecucao ? ultimaExecucao.find((he: any) => he.nome === ex.exercicios_dicionario?.nome) : null;
+
       return {
         id: ex.id,
         nome: ex.exercicios_dicionario?.nome,
@@ -51,15 +84,23 @@ export function useWorkoutSession(navigation: any, route: any) {
         descanso: ex.descanso_segundos || 60,
         observacao_personal: ex.observacao_personal,
         observacao_aluno: "",
-        series: seriesOrdenadas.map((s: any) => ({
-          id: s.id,
-          numero: s.numero_serie,
-          reps_alvo: s.reps_alvo,
-          carga_alvo: s.carga_alvo,
-          reps_feitas: s.reps_alvo, 
-          carga_feita: s.carga_alvo,
-          concluida: false
-        }))
+        series: seriesOrdenadas.map((s: any, sIdx: number) => {
+          
+          const cargaAnterior = historicoExercicio?.series?.[sIdx]?.carga_feita || null;
+          const repsAnteriores = historicoExercicio?.series?.[sIdx]?.reps_feitas || null;
+
+          return {
+            id: s.id,
+            numero: s.numero_serie,
+            reps_alvo: s.reps_alvo,
+            carga_alvo: s.carga_alvo,
+            reps_feitas: s.reps_alvo, 
+            carga_feita: cargaAnterior ? cargaAnterior : s.carga_alvo, 
+            carga_historico: cargaAnterior, 
+            reps_historico: repsAnteriores,
+            concluida: false
+          };
+        })
       };
     });
 
@@ -73,32 +114,21 @@ export function useWorkoutSession(navigation: any, route: any) {
       .then(dados => { if (isMounted && dados) prepararTreino(dados); })
       .catch(err => console.log("Erro ao carregar execução:", err));
     return () => { isMounted = false; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [treinoId]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTempoTotalTreino(prev => prev + 1);
-    }, 1000);
+    const timer = setInterval(() => { setTempoTotalTreino(prev => prev + 1); }, 1000);
     return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval>;
-    
     if (emDescanso && tempoDescansoRestante > 0) {
-      timer = setInterval(() => {
-        setTempoDescansoRestante(prev => prev - 1);
-      }, 1000);
+      timer = setInterval(() => { setTempoDescansoRestante(prev => prev - 1); }, 1000);
     } else if (emDescanso && tempoDescansoRestante <= 0) {
-      setTimeout(() => {
-        setEmDescanso(false);
-      }, 0);
+      setTimeout(() => { setEmDescanso(false); }, 0);
     }
-    
-    return () => {
-      if (timer) clearInterval(timer);
-    };
+    return () => { if (timer) clearInterval(timer); };
   }, [emDescanso, tempoDescansoRestante]);
 
   const formatarTempo = (segundos: number) => {
@@ -130,7 +160,7 @@ export function useWorkoutSession(navigation: any, route: any) {
     setExercicios(novaLista);
   };
 
-  const concluirSerie = async (exIndex: number, sIndex: number) => {
+  const concluirSerie = (exIndex: number, sIndex: number) => {
     const novaLista = [...exercicios];
     novaLista[exIndex].series[sIndex].concluida = true;
     setExercicios(novaLista);
@@ -148,7 +178,7 @@ export function useWorkoutSession(navigation: any, route: any) {
     const isUltimoExercicio = exIndex === novaLista.length - 1;
 
     if (isUltimaSerieDoExercicio && isUltimoExercicio) {
-      await finalizarTreinoNoBanco();
+      setMostrarFinalizacao(true);
       return;
     }
 
@@ -161,17 +191,36 @@ export function useWorkoutSession(navigation: any, route: any) {
   };
 
   const finalizarTreinoNoBanco = async () => {
+    if (nivelEsforco === null || sentiuDor === null) {
+        return Alert.alert("Atenção", "Por favor, indique seu nível de esforço e se sentiu alguma dor antes de finalizar.");
+    }
+
     try {
+      const jsonExecucao = exercicios.map(ex => ({
+          nome: ex.nome,
+          observacao_aluno: ex.observacao_aluno,
+          series: ex.series.map((s: any) => ({
+              numero: s.numero,
+              reps_feitas: s.reps_feitas,
+              carga_feita: s.carga_feita
+          }))
+      }));
+
       const { error } = await supabase
         .from('treinos_execucoes')
         .insert([{
           treino_id: treinoId,
-          data_inicio: dataInicio
+          data_inicio: dataInicio,
+          tempo_total_segundos: tempoTotalTreino,
+          esforco_rpe: nivelEsforco, 
+          sentiu_dor: sentiuDor, 
+          observacao_geral: observacaoTreinoGeral,
+          dados_execucao: jsonExecucao 
         }]);
 
       if (error) throw error;
 
-      navigation.replace("WorkoutCompletion", { tempoTotal: tempoTotalTreino, conexaoId });
+      navigation.replace("WorkoutCompletion", { tempoTotal: tempoTotalTreino, conexaoId, dor: sentiuDor });
       
     } catch (error) {
       console.log("Erro ao salvar treino:", error);
@@ -184,7 +233,9 @@ export function useWorkoutSession(navigation: any, route: any) {
     treinoInfo, exercicios, indiceAtual, progressoBarra,
     emDescanso, tempoDescansoRestante, tempoTotalTreino,
     observacaoTreinoGeral, setObservacaoTreinoGeral,
+    mostrarFinalizacao, nivelEsforco, setNivelEsforco, sentiuDor, setSentiuDor,
+    modalDorVisivel, exercicioDorId, abrirModalDor, fecharModalDor, handleDorRegistradaSucesso,
     formatarTempo, atualizarExecucaoSerie, atualizarObservacaoAluno,
-    focarExercicio, concluirSerie, pularDescanso, cancelarTreino
+    focarExercicio, concluirSerie, pularDescanso, cancelarTreino, finalizarTreinoNoBanco
   };
 }

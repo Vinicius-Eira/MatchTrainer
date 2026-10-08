@@ -86,7 +86,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1, borderColor: "#2A2A2A",
   },
   bubbleText: { fontSize: moderateScale(15), lineHeight: moderateScale(22), fontWeight: "500" },
-  bubbleTextRight: { color: "#000" }, // Texto escuro na bolha laranja pra dar contraste premium
+  bubbleTextRight: { color: "#000" },
   bubbleTextLeft: { color: "#FFF" },
 
   timeRow: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginTop: verticalScale(6) },

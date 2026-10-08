@@ -1,4 +1,3 @@
-// src/components/BotaoPrincipal.tsx
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, GestureResponderEvent } from "react-native";
 import { theme } from "../../../theme/theme";

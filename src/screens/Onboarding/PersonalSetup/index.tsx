@@ -42,6 +42,21 @@ const OPCOES_GENERO_ATENDIDO = [
   { id: "homem", titulo: "Apenas Homens", icon: "man" as any, desc: "Atendimento e metodologia 100% masculina" },
 ];
 
+const OPCOES_FAIXA_ETARIA = [
+  { id: "jovens", titulo: "Geração Z (16-25)", icon: "zap" as any, desc: "Foco em estética, energia e hipertrofia" },
+  { id: "adultos", titulo: "Profissionais (26-40)", icon: "briefcase" as any, desc: "Treinos otimizados para rotinas corridas" },
+  { id: "maturidade", titulo: "Maturidade (41-55)", icon: "shield-checkmark" as any, desc: "Prevenção de dores, tônus e saúde" },
+  { id: "longevidade", titulo: "Longevidade (55+)", icon: "leaf" as any, desc: "Mobilidade, qualidade de vida e funcionalidade" },
+  { id: "todas", titulo: "Todas as Idades", icon: "infinite" as any, desc: "Tenho didática adaptável para qualquer público" },
+];
+
+const OPCOES_ESTILO_COMUNICACAO = [
+  { id: "motivador", titulo: "Motivador / Energético", icon: "flame" as any, desc: "Muita energia, incentivo e push mental" },
+  { id: "tecnico", titulo: "Técnico / Analítico", icon: "analytics" as any, desc: "Focado em biomecânica e dados de evolução" },
+  { id: "militar", titulo: "Militar / Direto", icon: "flash" as any, desc: "Sem desculpas, foco em execução e disciplina" },
+  { id: "empatico", titulo: "Acolhedor / Parceiro", icon: "heart" as any, desc: "Escuta ativa e adaptação ao dia do aluno" },
+];
+
 const OPCOES_PUBLICO = [
   { id: "iniciantes", titulo: "Iniciantes", icon: "walk" as any, desc: "Pessoas sedentárias começando do zero" },
   { id: "intermediarios", titulo: "Intermediários", icon: "bicycle" as any, desc: "Alunos que já treinam com certa frequência" },
@@ -302,6 +317,9 @@ export function PersonalSetup({ navigation }: any) {
             <Text style={[styles.inputLabel, { marginTop: verticalScale(20) }]}>Perfil dos Alunos</Text>
             {renderGrid(OPCOES_PUBLICO, state.publicoAtendido, actions.setPublicoAtendido)}
 
+            <Text style={[styles.inputLabel, { marginTop: verticalScale(20) }]}>Foco em Momento de Vida (Faixa Etária) *</Text>
+            {renderGrid(OPCOES_FAIXA_ETARIA, state.faixasEtariasAtendidas, actions.setFaixasEtariasAtendidas)}
+
             <Text style={[styles.sectionTitle, { marginTop: verticalScale(35) }]}>Focos de Treino *</Text>
             <Text style={styles.helpText}>Quais os objetivos que você domina entregar?</Text>
             {renderGrid(OPCOES_OBJETIVO, state.objetivosAtendidos, actions.setObjetivosAtendidos)}
@@ -338,7 +356,11 @@ export function PersonalSetup({ navigation }: any) {
               <Text style={styles.subTitle}>A psicologia por trás do seu atendimento. Como você funciona.</Text>
             </View>
 
-            <Text style={styles.sectionTitle}>Nível de Cobrança *</Text>
+            <Text style={styles.sectionTitle}>Seu Estilo de Comunicação *</Text>
+            <Text style={styles.helpText}>Como você fala e motiva seus alunos no dia a dia?</Text>
+            {renderGrid(OPCOES_ESTILO_COMUNICACAO, state.estiloComunicacao, actions.setEstiloComunicacao, true)}
+
+            <Text style={[styles.sectionTitle, { marginTop: verticalScale(30) }]}>Nível de Cobrança *</Text>
             <Text style={styles.helpText}>Como você exige resultados dos alunos?</Text>
             {renderGrid(OPCOES_COBRANCA, state.cobranca, actions.setCobranca, true)}
 

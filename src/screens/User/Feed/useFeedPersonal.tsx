@@ -11,6 +11,16 @@ const calcularDistancia = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
+const calcularIdade = (dataNascimento?: string) => {
+  if (!dataNascimento) return null;
+  const hoje = new Date();
+  const nascimento = new Date(dataNascimento);
+  let idade = hoje.getFullYear() - nascimento.getFullYear();
+  const m = hoje.getMonth() - nascimento.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate())) idade--;
+  return idade;
+};
+
 export function useFeedPersonal(navigation: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,7 +59,7 @@ export function useFeedPersonal(navigation: any) {
         return;
       }
 
-      const { data: alunoData } = await supabase.from("usuarios").select("latitude, longitude, preferencias").eq("id", user.id).single();
+      const { data: alunoData } = await supabase.from("usuarios").select("latitude, longitude, preferencias, data_nascimento").eq("id", user.id).single();
       const prefsAluno = typeof alunoData?.preferencias === "string" ? JSON.parse(alunoData.preferencias) : alunoData?.preferencias || {};
 
       setIsAlunoConsultoria(prefsAluno.servico_buscado === "Consultoria");
@@ -71,9 +81,6 @@ export function useFeedPersonal(navigation: any) {
         const modalidadeAluno = prefsAluno.servico_buscado || "Indiferente";
         const servicosPersonal = personal.servicos_oferecidos || [];
         
-        const isConsultoria = modalidadeAluno === "Consultoria" || (modalidadeAluno === "Indiferente" && servicosPersonal.includes("Consultoria"));
-        const isPresencial = modalidadeAluno === "Presencial" || (modalidadeAluno === "Indiferente" && servicosPersonal.includes("Presencial"));
-        
         let atendeModalidade = false;
         if (modalidadeAluno === "Indiferente") atendeModalidade = true;
         else if (modalidadeAluno === "Consultoria" && servicosPersonal.includes("Consultoria")) atendeModalidade = true;
@@ -84,37 +91,50 @@ export function useFeedPersonal(navigation: any) {
         const generoPref = prefsAluno.genero_treinador || "indiferente";
         if (generoPref !== "indiferente" && personal.genero && personal.genero.toLowerCase() !== generoPref.toLowerCase()) return null; 
 
-        const distancia = calcularDistancia(alunoData?.latitude, alunoData?.longitude, personal.latitude, personal.longitude);
-        
         const objetivosAluno = prefsAluno.objetivos || [];
         const objetivosPersonal = prefsPersonal.objetivos || [];
         const matchObj = objetivosAluno.some((obj: string) => objetivosPersonal.includes(obj));
-        if (matchObj) { score += 30; motivos.push({ icone: "🎯", texto: "Especialista no seu objetivo principal." }); }
+        if (matchObj) { score += 25; motivos.push({ icone: "🎯", texto: "Especialista no seu objetivo principal." }); }
 
         const limitsAluno = prefsAluno.limitacoes || [];
         const limitsPersonal = prefsPersonal.limitacoes || [];
         if (limitsAluno.length > 0 && !limitsAluno.includes("nenhuma")) {
           const matchLimit = limitsAluno.some((lim: string) => limitsPersonal.includes(lim));
-          if (matchLimit) { score += 20; motivos.push({ icone: "🏥", texto: "Possui experiência com suas restrições de saúde." }); }
+          if (matchLimit) { score += 15; motivos.push({ icone: "🏥", texto: "Possui experiência com suas restrições de saúde." }); }
         } else {
-          score += 20; 
+          score += 15; 
         }
 
-        if (prefsAluno.cobranca === prefsPersonal.cobranca) {
-          score += 20; motivos.push({ icone: "🧠", texto: "O estilo de cobrança e motivação é ideal para você." });
-        } else if (prefsAluno.cobranca && prefsPersonal.cobranca) {
-           score += 10; 
+        if (prefsAluno.cobranca === prefsPersonal.cobranca && prefsAluno.cobranca) {
+          score += 10; motivos.push({ icone: "🧠", texto: "O estilo de cobrança e ritmo é ideal para você." });
         }
 
+        if (prefsAluno.estilo_comunicacao === prefsPersonal.estiloComunicacao && prefsAluno.estilo_comunicacao) {
+          score += 10; motivos.push({ icone: "🗣️", texto: "A vibe da comunicação bate 100% com o seu perfil." });
+        }
+
+        let alunoAge = calcularIdade(alunoData?.data_nascimento);
+        let faixaAluno = "";
+        if (alunoAge) {
+          if (alunoAge >= 16 && alunoAge <= 25) faixaAluno = "jovens";
+          else if (alunoAge >= 26 && alunoAge <= 40) faixaAluno = "adultos";
+          else if (alunoAge >= 41 && alunoAge <= 55) faixaAluno = "maturidade";
+          else if (alunoAge > 55) faixaAluno = "longevidade";
+        }
+        const faixasPersonal = prefsPersonal.faixasEtarias || [];
+        if (faixaAluno && (faixasPersonal.includes("todas") || faixasPersonal.includes(faixaAluno))) {
+           score += 10; motivos.push({ icone: "⏳", texto: "Especialista no seu atual momento de vida." });
+        }
+
+        const distancia = calcularDistancia(alunoData?.latitude, alunoData?.longitude, personal.latitude, personal.longitude);
         if (servicosPersonal.includes("Presencial") && modalidadeAluno !== "Consultoria") {
-          if (distancia <= 5) { score += 30; motivos.push({ icone: "📍", texto: "Atende na sua região." }); }
-          else if (distancia <= 15) { score += 15; }
+          if (distancia <= 5) { score += 30; motivos.push({ icone: "📍", texto: "Atende pertinho de você." }); }
+          else if (distancia <= 15) { score += 15; motivos.push({ icone: "📍", texto: "Atende na sua região." }); }
         } else if (servicosPersonal.includes("Consultoria")) {
           score += 30; motivos.push({ icone: "📱", texto: "Treino 100% Digital na palma da sua mão." });
         }
 
         const { data: nota } = await supabase.rpc("get_media_avaliacoes", { p_id: personal.id });
-
         let badgeUi = servicosPersonal.length > 1 ? "HÍBRIDO" : servicosPersonal[0]?.toUpperCase() || "TREINADOR";
         let iconUi = badgeUi === "CONSULTORIA" ? "phone-portrait" : (badgeUi === "HÍBRIDO" ? "options" : "barbell");
 
@@ -122,7 +142,7 @@ export function useFeedPersonal(navigation: any) {
           ...personal,
           nota_media: nota,
           distanciaReal: distancia,
-          matchPercentual: Math.min(score + Math.floor(Math.random() * 5), 99), 
+          matchPercentual: Math.min(score + Math.floor(Math.random() * 4), 99), 
           matchMotivos: motivos.length > 0 ? motivos : [{ icone: "🤝", texto: "Perfil alinhado com suas necessidades gerais." }],
           specsParsed: prefsPersonal,
           badgeUi,
@@ -132,7 +152,7 @@ export function useFeedPersonal(navigation: any) {
         };
       }));
 
-      const validos = matchResults.filter((p) => p !== null && p.matchPercentual >= 80);
+      const validos = matchResults.filter((p) => p !== null && p.matchPercentual >= 75); 
 
       setAllPersonals(validos);
       aplicarFiltrosDistancia(validos, distanciaMaxima);
