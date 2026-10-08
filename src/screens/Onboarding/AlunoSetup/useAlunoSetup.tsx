@@ -39,6 +39,7 @@ export function useClientSetup(navigation: any) {
   const [subsLimitacoes, setSubsLimitacoes] = useState<string[]>([]);
   const [outraLimitacaoTexto, setOutraLimitacaoTexto] = useState("");
 
+  const [estiloComunicacao, setEstiloComunicacao] = useState("");
   const [cobranca, setCobranca] = useState("");
   const [acompanhamento, setAcompanhamento] = useState("");
   const [autonomia, setAutonomia] = useState("");
@@ -91,6 +92,7 @@ export function useClientSetup(navigation: any) {
           if (data.preferencias) {
             const p = data.preferencias;
             if (p.meta_peso) setMetaPeso(String(p.meta_peso));
+            if (p.estilo_comunicacao) setEstiloComunicacao(p.estilo_comunicacao); 
           }
         }
       } catch (error) {
@@ -150,7 +152,7 @@ export function useClientSetup(navigation: any) {
   const passoAnterior = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
   const handleFinalizar = async () => {
-    if (!cobranca || !acompanhamento || !autonomia || valoresTreinador.length === 0) {
+    if (!cobranca || !acompanhamento || !autonomia || !estiloComunicacao || valoresTreinador.length === 0) {
       return Alert.alert("Atenção", "Preencha suas preferências de Match no último passo.");
     }
     setLoading(true);
@@ -179,6 +181,7 @@ export function useClientSetup(navigation: any) {
         limitacoes: limitacoes,
         subs_limitacoes: subsLimitacoes,
         outra_limitacao: limitacoes.includes("outra") ? outraLimitacaoTexto.trim() : null,
+        estilo_comunicacao: estiloComunicacao, 
         cobranca: cobranca,
         acompanhamento: acompanhamento,
         autonomia: autonomia,
@@ -218,13 +221,13 @@ export function useClientSetup(navigation: any) {
       nome, fotoUri, dataNascimento, telefone, cidade, peso, altura, metaPeso,
       servicoBuscado, locaisTreino, turnos, horarioEspecifico, frequencia, generoTreinador, investimento,
       historico, objetivos, outroObjetivoTexto, subsObjetivos, limitacoes, subsLimitacoes, outraLimitacaoTexto,
-      cobranca, acompanhamento, autonomia, valoresTreinador, outroValorTexto
+      estiloComunicacao, cobranca, acompanhamento, autonomia, valoresTreinador, outroValorTexto 
     },
     actions: {
       proximoPasso, passoAnterior, setInputFocado, setNome, setTelefone, setCidade, setPeso, setAltura, setMetaPeso,
       setServicoBuscado, setLocaisTreino, setTurnos, setHorarioEspecifico, setFrequencia, setGeneroTreinador, setInvestimento,
       setHistorico, setObjetivos, setOutroObjetivoTexto, setSubsObjetivos, setLimitacoes, setSubsLimitacoes, setOutraLimitacaoTexto,
-      setCobranca, setAcompanhamento, setAutonomia, setValoresTreinador, setOutroValorTexto,
+      setEstiloComunicacao, setCobranca, setAcompanhamento, setAutonomia, setValoresTreinador, setOutroValorTexto, 
       formatarNome, formatarWhatsApp, formatarData, formatarPeso, formatarAltura, formatarMetaPeso,
       escolherFoto, buscarLocalizacao, toggleArrayItem, handleFinalizar
     }

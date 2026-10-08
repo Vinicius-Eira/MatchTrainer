@@ -35,7 +35,6 @@ export const styles = StyleSheet.create({
   },
   searchIcon: { marginRight: scale(8) },
   
-  // CORREÇÃO AQUI 👇 (removido o outlineStyle)
   searchInput: { flex: 1, color: MATCH_COLORS.text, fontSize: moderateScale(14) },
   
   filtersWrapper: { marginVertical: verticalScale(16) },

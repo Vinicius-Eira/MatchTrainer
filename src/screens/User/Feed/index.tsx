@@ -130,7 +130,7 @@ export function FeedPersonal({ navigation }: any) {
                       <View style={styles.digitalLocation}>
                         <Ionicons name="location-outline" size={15} color={ORANGE_NEON} />
                         <Text style={styles.cardLocation}>
-                           {formatarBairroCidade(currentItem.cidade, currentItem.bairro)} • {currentItem.distanciaReal?.toFixed(1)}km
+                             {formatarBairroCidade(currentItem.cidade, currentItem.bairro)} • {currentItem.distanciaReal?.toFixed(1)}km
                         </Text>
                       </View>
                     )}
@@ -184,7 +184,7 @@ export function FeedPersonal({ navigation }: any) {
           <View style={styles.emptyState}>
             <Ionicons name="scan-outline" size={60} color={ORANGE_NEON} />
             <Text style={styles.emptyTitle}>Buscando a Elite...</Text>
-            <Text style={styles.emptyText}>Exibimos apenas profissionais com mais de <Text style={{fontWeight:'bold', color: ORANGE_NEON}}>80% de compatibilidade</Text> com você.</Text>
+            <Text style={styles.emptyText}>Exibimos apenas profissionais com alta taxa de compatibilidade comportamental e logística com você.</Text>
             {!state.isAlunoConsultoria ? (
               <Text style={styles.emptyHint}>Dica: Aumente o raio do radar para expandir as buscas presenciais.</Text>
             ) : null}
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   
   headerFeed: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingTop: 50, paddingBottom: 15, backgroundColor: "transparent" },
   logoRow: { flexDirection: "row", alignItems: "center" },
-  headerTitle: { fontSize: 26, fontWeight: "900", color: "#FFF", letterSpacing: 2 }, // Fonte maior e mais espaçada
+  headerTitle: { fontSize: 26, fontWeight: "900", color: "#FFF", letterSpacing: 2 },
   btnLogout: { position: "absolute", right: 20, top: 50 },
 
   scrollContent: { padding: 20, paddingBottom: 50, paddingTop: 10 },

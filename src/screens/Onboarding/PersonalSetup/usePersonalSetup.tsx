@@ -36,6 +36,7 @@ export function usePersonalSetup(navigation: any) {
 
   const [generoAtendido, setGeneroAtendido] = useState("ambos");
   const [publicoAtendido, setPublicoAtendido] = useState<string[]>([]);
+  const [faixasEtariasAtendidas, setFaixasEtariasAtendidas] = useState<string[]>([]); 
   const [objetivosAtendidos, setObjetivosAtendidos] = useState<string[]>([]);
   const [outroObjetivoTexto, setOutroObjetivoTexto] = useState("");
   const [subsAtendidos, setSubsAtendidos] = useState<string[]>([]);
@@ -44,6 +45,7 @@ export function usePersonalSetup(navigation: any) {
   const [bio, setBio] = useState("");
   const [diferenciais, setDiferenciais] = useState("");
 
+  const [estiloComunicacao, setEstiloComunicacao] = useState(""); 
   const [cobranca, setCobranca] = useState(""); 
   const [acompanhamento, setAcompanhamento] = useState("");
   const [autonomiaEsperada, setAutonomiaEsperada] = useState("");
@@ -118,6 +120,9 @@ export function usePersonalSetup(navigation: any) {
             setGeneroAtendido(p.generoAtendido || "ambos");
             setHorariosEspecificos(p.horarios_especificos || "");
             
+            setFaixasEtariasAtendidas(p.faixasEtarias || []); 
+            setEstiloComunicacao(p.estiloComunicacao || "");
+
             setCobranca(p.cobranca || "");
             setAcompanhamento(p.acompanhamento || "");
             setAutonomiaEsperada(p.autonomia || "");
@@ -152,8 +157,8 @@ export function usePersonalSetup(navigation: any) {
       }
     }
     if (currentStep === 3) {
-      if (objetivosAtendidos.length === 0 || publicoAtendido.length === 0 || limitacoesAtendidas.length === 0) {
-        return Alert.alert("Atenção", "Selecione seu público, focos e eventuais restrições.");
+      if (objetivosAtendidos.length === 0 || publicoAtendido.length === 0 || limitacoesAtendidas.length === 0 || faixasEtariasAtendidas.length === 0) {
+        return Alert.alert("Atenção", "Selecione seu público, faixas etárias, focos e eventuais restrições.");
       }
     }
     setCurrentStep(prev => Math.min(prev + 1, 4));
@@ -213,7 +218,7 @@ export function usePersonalSetup(navigation: any) {
   };
 
   const handleSalvar = async () => {
-    if (!cobranca || !acompanhamento || !autonomiaEsperada || valoresAluno.length === 0) {
+    if (!cobranca || !acompanhamento || !autonomiaEsperada || valoresAluno.length === 0 || !estiloComunicacao) {
       return Alert.alert("Atenção", "Preencha suas preferências de trabalho no último passo.");
     }
     setLoading(true);
@@ -230,6 +235,8 @@ export function usePersonalSetup(navigation: any) {
         locais: locaisAtendidos,
         publico: publicoAtendido,
         generoAtendido,
+        faixasEtarias: faixasEtariasAtendidas, 
+        estiloComunicacao: estiloComunicacao, 
         diferenciais: diferenciais.trim(),
         horarios_especificos: turnos.includes("variado") ? horariosEspecificos.trim() : null,
         cobranca, acompanhamento, autonomia: autonomiaEsperada, 
@@ -265,7 +272,8 @@ export function usePersonalSetup(navigation: any) {
       servicosOferecidos, servicosBloqueados, precoConsultoria, precoPresencial, experiencia,
       publicoAtendido, diferenciais, galeria, objetivosAtendidos, instagram, tiktok,
       cobranca, acompanhamento, autonomiaEsperada, valoresAluno, locaisAtendidos, generoAtendido,
-      subsAtendidos, limitacoesAtendidas, outroObjetivoTexto, outraLimitacaoTexto, outroValorTexto
+      subsAtendidos, limitacoesAtendidas, outroObjetivoTexto, outraLimitacaoTexto, outroValorTexto,
+      faixasEtariasAtendidas, estiloComunicacao 
     },
     actions: {
       proximoPasso, passoAnterior, setNome, setBio, setCref, setTelefone, setGenero, setTurnos, setHorariosEspecificos, setStatusAgenda, setInputFocado,
@@ -273,7 +281,8 @@ export function usePersonalSetup(navigation: any) {
       setObjetivosAtendidos, setInstagram, setTiktok, setCobranca, setAcompanhamento, setAutonomiaEsperada, setValoresAluno,
       obterLocalizacaoAtual, selecionarFotoPrincipal, selecionarFotosGaleria, removerFotoGaleria, setLocaisAtendidos, setGeneroAtendido,
       formatarNome, formatarWhatsApp, handlePrecoChange, toggleArrayItem, handleToggleServicos, handleSalvar, setSubsAtendidos,
-      setLimitacoesAtendidas, setOutroObjetivoTexto, setOutraLimitacaoTexto, setOutroValorTexto, setServicosOferecidos
+      setLimitacoesAtendidas, setOutroObjetivoTexto, setOutraLimitacaoTexto, setOutroValorTexto, setServicosOferecidos,
+      setFaixasEtariasAtendidas, setEstiloComunicacao 
     }
   };
 }

@@ -57,7 +57,7 @@ export function useMiniOnboarding(route: any, navigation: any) {
     
     async function carregarDadosIniciais() {
       if (!conexaoId) {
-        Alert.alert("Erro", "Conexão não encontrada.");
+        Alert.alert("Erro", "Conexão VIP não encontrada. Solicite um novo link.");
         return navigation.goBack();
       }
 
@@ -168,10 +168,12 @@ export function useMiniOnboarding(route: any, navigation: any) {
         data_nascimento: dataBanco,
         peso: peso ? parseFloat(peso) : null,
         altura: altura ? parseFloat(altura) : null,
+        setup_completo: true, 
         preferencias: {
           ...preferenciasAntigas,
           frequencia_semanal: diasTreino,
           meta_peso: metaPeso ? parseFloat(metaPeso) : null,
+          origem_setup: "convite_direto" 
         }
       };
 
