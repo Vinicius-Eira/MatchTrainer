@@ -18,10 +18,11 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
       const { data: conexao, error: errConexao } = await supabase
         .from('conexoes')
         .select('id')
-        .eq('aluno_id', user.id)
+        .eq('usuario_id', user.id) 
+        .in('status', ['aluno_ativo', 'aguardando_assinatura'])
         .single();
 
-      if (errConexao || !conexao) throw new Error("Conexão não encontrada");
+      if (errConexao || !conexao) throw new Error("Nenhuma conexão ativa encontrada.");
       cid = conexao.id;
     }
 
@@ -41,7 +42,7 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
       `)
       .eq('conexao_id', cid)
       .eq('ativo', true)
-      .order('nome', { ascending: true });
+      .order('nome', { ascending: true }); 
 
     if (errTreinos) throw errTreinos;
 
@@ -49,35 +50,71 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
   };
 
   const formatarTreinos = (treinosPrescritos: any[]) => {
-    return treinosPrescritos.map((ficha: any, index: number) => {
+    let treinosMapeados = treinosPrescritos.map((ficha: any) => {
       let totalSeries = 0;
       ficha.treinos_exercicios.forEach((ex: any) => {
         totalSeries += ex.treinos_series_prescritas?.length || 0;
       });
 
+      let ultimaExecucaoData: Date | null = null;
       let ultimaExecucaoStr = "Nunca";
+      let fezHoje = false;
+      
+      const hojeStr = new Date().toLocaleDateString('pt-BR');
+
       if (ficha.treinos_execucoes && ficha.treinos_execucoes.length > 0) {
         const execucoesOrdenadas = ficha.treinos_execucoes.sort(
           (a: any, b: any) => new Date(b.data_inicio).getTime() - new Date(a.data_inicio).getTime()
         );
-        const dataUltima = new Date(execucoesOrdenadas[0].data_inicio);
-        ultimaExecucaoStr = dataUltima.toLocaleDateString('pt-BR');
+        ultimaExecucaoData = new Date(execucoesOrdenadas[0].data_inicio);
+        ultimaExecucaoStr = ultimaExecucaoData.toLocaleDateString('pt-BR');
+        
+        if (ultimaExecucaoStr === hojeStr) fezHoje = true;
       }
-
-      const isHoje = index === 0;
 
       return {
         id: ficha.id,
         nome: ficha.nome,
-        objetivo: ficha.descricao_geral || "Foco em Hipertrofia",
-        is_hoje: isHoje,
-        status: isHoje ? "A FAZER" : "DISPONÍVEL",
+        objetivo: ficha.descricao_geral || "Foco em Metas",
         qtd_exercicios: ficha.treinos_exercicios.length,
         qtd_series: totalSeries,
         duracao_estimada: `${Math.max(30, ficha.treinos_exercicios.length * 8)} min`,
-        ultima_execucao: ultimaExecucaoStr
+        ultimaExecucaoData, 
+        ultima_execucao: ultimaExecucaoStr,
+        fez_hoje: fezHoje,
+        is_hoje: false, 
+        status: "DISPONÍVEL"
       };
     });
+
+    let dataMaisRecenteGlobal: Date | null = null;
+    let indexUltimoTreinoFeito = -1;
+
+    treinosMapeados.forEach((t: any, idx: number) => {
+      if (t.ultimaExecucaoData) {
+        if (!dataMaisRecenteGlobal || t.ultimaExecucaoData > dataMaisRecenteGlobal) {
+          dataMaisRecenteGlobal = t.ultimaExecucaoData;
+          indexUltimoTreinoFeito = idx;
+        }
+      }
+    });
+
+    let indexHoje = 0; 
+    if (indexUltimoTreinoFeito !== -1) {
+      indexHoje = indexUltimoTreinoFeito + 1;
+      if (indexHoje >= treinosMapeados.length) {
+        indexHoje = 0;
+      }
+    }
+
+    treinosMapeados[indexHoje].is_hoje = true;
+        if (treinosMapeados[indexHoje].fez_hoje) {
+        treinosMapeados[indexHoje].status = "CONCLUÍDO 🔥";
+    } else {
+        treinosMapeados[indexHoje].status = "A FAZER";
+    }
+
+    return treinosMapeados;
   };
 
   useEffect(() => {
@@ -95,7 +132,7 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
         }
       } catch (error: any) {
         console.log("Erro ao buscar treinos (inicial):", error);
-        if (isMounted) Alert.alert("Erro", "Não foi possível carregar seus treinos.");
+        if (isMounted) Alert.alert("Aviso", "Não encontramos treinos ativos ou seu personal ainda não enviou a ficha.");
       } finally {
         if (isMounted) setLoading(false);
       }

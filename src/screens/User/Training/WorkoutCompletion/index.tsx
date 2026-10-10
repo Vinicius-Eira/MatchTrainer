@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StatusBar, SafeAreaView, TextInput, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TouchableOpacity, StatusBar, SafeAreaView, ScrollView } from "react-native";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
@@ -7,17 +7,14 @@ import { useFinalizacaoTreino } from "./useWorkoutCompletion";
 
 export function WorkoutCompletion({ route, navigation }: any) {
   const {
-    treinoNome, tempoTotal, volumeTotal, prsBatidos,
-    esforco, setEsforco, niveisEsforco,
-    observacao, setObservacao,
-    salvando, finalizarESalvar
+    treinoNome, tempoTotal, volumeTotal, prsBatidos, voltarAoInicio
   } = useFinalizacaoTreino(navigation, route);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#050505" translucent={false} />
       
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           
           <View style={styles.successHeader}>
@@ -52,37 +49,14 @@ export function WorkoutCompletion({ route, navigation }: any) {
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Como foi o treino?</Text>
-          
-          <View style={styles.esforcoGrid}>
-            {niveisEsforco.map((nivel) => {
-              const selecionado = esforco === nivel.id;
-              return (
-                <TouchableOpacity 
-                  key={nivel.id} 
-                  style={[styles.esforcoBtn, selecionado && { borderColor: nivel.cor, backgroundColor: `${nivel.cor}15` }]}
-                  activeOpacity={0.8}
-                  onPress={() => setEsforco(nivel.id)}
-                >
-                  <Ionicons name={nivel.icon as any} size={24} color={selecionado ? nivel.cor : "#555"} />
-                  <Text style={[styles.esforcoLabel, selecionado && { color: nivel.cor }]}>{nivel.label}</Text>
-                  <Text style={styles.esforcoSub}>{nivel.sub}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Observações (Opcional)</Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Sentiu alguma dor? Faltou energia?"
-              placeholderTextColor="#555"
-              multiline
-              maxLength={200}
-              value={observacao}
-              onChangeText={setObservacao}
-            />
+          <View style={{ marginTop: 40, alignItems: 'center', paddingHorizontal: 20 }}>
+            <Ionicons name="flame" size={32} color="#FF6B00" style={{ marginBottom: 10 }} />
+            <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold', textAlign: 'center' }}>
+              Excelente trabalho!
+            </Text>
+            <Text style={{ color: '#888', fontSize: 14, textAlign: 'center', marginTop: 8, lineHeight: 20 }}>
+              Os dados de carga, repetições e o seu feedback já foram sincronizados com o painel do seu treinador.
+            </Text>
           </View>
 
         </ScrollView>
@@ -90,22 +64,15 @@ export function WorkoutCompletion({ route, navigation }: any) {
         <View style={styles.footer}>
           <LinearGradient colors={["transparent", "#050505"]} style={styles.footerGradient} />
           <TouchableOpacity 
-            style={[styles.btnSalvar, esforco === 0 && styles.btnSalvarDisabled]} 
+            style={[styles.btnSalvar, { backgroundColor: '#00E676' }]} 
             activeOpacity={0.9} 
-            onPress={finalizarESalvar}
-            disabled={salvando}
+            onPress={voltarAoInicio}
           >
-            {salvando ? (
-              <ActivityIndicator color="#000" />
-            ) : (
-              <>
-                <Text style={styles.btnSalvarText}>SALVAR NO HISTÓRICO</Text>
-                <Ionicons name="save" size={18} color="#000" style={{ marginLeft: 8 }} />
-              </>
-            )}
+            <Text style={[styles.btnSalvarText, { color: '#000' }]}>VOLTAR AO INÍCIO</Text>
+            <Ionicons name="arrow-forward" size={18} color="#000" style={{ marginLeft: 8 }} />
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }

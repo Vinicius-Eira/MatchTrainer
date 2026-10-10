@@ -48,13 +48,7 @@ export function MeusAlunos({ navigation }: MeusAlunosProps) {
   const [filtroTipo, setFiltroTipo] = useState<"todos" | "consultoria" | "presencial">("todos");
   const [ordemAZ, setOrdemAZ] = useState<boolean>(true);
 
-  useFocusEffect(
-    useCallback(() => {
-      buscarAlunos();
-    }, [])
-  );
-
-  const buscarAlunos = async () => {
+   const buscarAlunos = async () => {
     setLoading(true);
     try {
       const {
@@ -82,6 +76,12 @@ export function MeusAlunos({ navigation }: MeusAlunosProps) {
       setLoading(false);
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      buscarAlunos();
+    }, [])
+  );
 
   const processarFiltros = (): (Aluno | ConvitePendente)[] => {
     let base: (Aluno | ConvitePendente)[] =

@@ -40,10 +40,19 @@ export function useWorkoutPreview(navigation: any, route: any) {
       .single();
 
     if (errFicha) throw errFicha;
-    return ficha;
+
+    const { data: execucoes } = await supabase
+      .from('treinos_execucoes')
+      .select('data_inicio')
+      .eq('treino_id', treinoId)
+      .order('data_inicio', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return { ficha, ultimaData: execucoes?.data_inicio || null };
   };
 
-  const formatarDadosDoTreino = (fichaSupabase: any) => {
+  const formatarDadosDoTreino = (fichaSupabase: any, ultimaData: string | null) => {
     let totalSeriesGlobais = 0;
     const exerciciosOrdenados = fichaSupabase.treinos_exercicios.sort((a: any, b: any) => a.ordem - b.ordem);
 
@@ -68,12 +77,30 @@ export function useWorkoutPreview(navigation: any, route: any) {
       };
     });
 
+    let mensagemHype = "Novo treino! Estabeleça suas primeiras marcas.";
+    if (ultimaData) {
+      const dataUltima = new Date(ultimaData);
+      const hoje = new Date();
+      dataUltima.setHours(0, 0, 0, 0);
+      hoje.setHours(0, 0, 0, 0);
+      
+      const diffTime = Math.abs(hoje.getTime() - dataUltima.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) {
+        mensagemHype = "Você já treinou esta ficha hoje! Modo insano ativado 🔥";
+      } else {
+        mensagemHype = `Você fez este treino há ${diffDays} dias. Tente bater suas cargas de antes!`;
+      }
+    }
+
     const treinoFormatado = {
       nome: fichaSupabase.nome,
       objetivo: fichaSupabase.descricao_geral || "Treino Personalizado",
       observacao_geral: null,
       total_series: totalSeriesGlobais,
-      duracao: `${Math.max(30, exerciciosFormatados.length * 8)} min`
+      mensagem_hype: mensagemHype,
+      duracao: `~ ${Math.max(30, exerciciosFormatados.length * 8)} min` 
     };
 
     return { treinoFormatado, exerciciosFormatados };
@@ -84,9 +111,9 @@ export function useWorkoutPreview(navigation: any, route: any) {
 
     const carregarInicial = async () => {
       try {
-        const ficha = await buscarDetalhesDoTreino();
+        const { ficha, ultimaData } = await buscarDetalhesDoTreino();
         if (ficha && isMounted) {
-          const { treinoFormatado, exerciciosFormatados } = formatarDadosDoTreino(ficha);
+          const { treinoFormatado, exerciciosFormatados } = formatarDadosDoTreino(ficha, ultimaData);
           setTreino(treinoFormatado);
           setExercicios(exerciciosFormatados);
         }
@@ -111,9 +138,9 @@ export function useWorkoutPreview(navigation: any, route: any) {
   const onRefresh = async () => {
     try {
       setRefreshing(true);
-      const ficha = await buscarDetalhesDoTreino();
+      const { ficha, ultimaData } = await buscarDetalhesDoTreino();
       if (ficha) {
-        const { treinoFormatado, exerciciosFormatados } = formatarDadosDoTreino(ficha);
+        const { treinoFormatado, exerciciosFormatados } = formatarDadosDoTreino(ficha, ultimaData);
         setTreino(treinoFormatado);
         setExercicios(exerciciosFormatados);
       }

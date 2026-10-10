@@ -113,36 +113,48 @@ export function useVisaoAluno(route: any, navigation: any) {
 
   const calcularMetricasEvolucao = async () => {
     try {
-      const { data: sessoes } = await supabase
-        .from("workout_sessions")
-        .select("id, workout_id, completed_at, has_pain_alert")
-        .eq("student_id", aluno.id)
-        .not("completed_at", "is", null)
-        .order("completed_at", { ascending: false });
+      const { data: treinosPrescritos } = await supabase
+        .from('treinos_prescritos')
+        .select('id, nome')
+        .eq('conexao_id', conexaoId);
 
-      if (sessoes && sessoes.length > 0) {
-        setTotalTreinos(sessoes.length);
+      if (!treinosPrescritos || treinosPrescritos.length === 0) {
+        setTotalTreinos(0); setStreak(0); setAdesao([]); setUltimosLogs([]);
+        return;
+      }
+
+      const idsTreinos = treinosPrescritos.map(t => t.id);
+
+      const { data: execucoes } = await supabase
+        .from("treinos_execucoes")
+        .select("id, treino_id, data_inicio, sentiu_dor, esforco_rpe, duracao_segundos, dados_execucao")
+        .in("treino_id", idsTreinos)
+        .order("data_inicio", { ascending: false });
+
+      if (execucoes && execucoes.length > 0) {
+        setTotalTreinos(execucoes.length);
 
         const dataHoje = new Date();
         const trintaDiasAtras = new Date();
         trintaDiasAtras.setDate(dataHoje.getDate() - 30);
         
-        const sessoesRecentes = sessoes.filter(s => new Date(s.completed_at) >= trintaDiasAtras);
+        const sessoesRecentes = execucoes.filter(s => new Date(s.data_inicio) >= trintaDiasAtras);
         setStreak(sessoesRecentes.length); 
 
         const adesaoMap: any = {};
-        sessoes.forEach(s => {
-          if (s.workout_id) {
-            adesaoMap[s.workout_id] = (adesaoMap[s.workout_id] || 0) + 1;
+        execucoes.forEach(s => {
+          if (s.treino_id) {
+            adesaoMap[s.treino_id] = (adesaoMap[s.treino_id] || 0) + 1;
           }
         });
 
-        const adesaoArray = Object.keys(adesaoMap).map(workoutId => {
-          const qtd = adesaoMap[workoutId];
-          const percentual = Math.round((qtd / sessoes.length) * 100);
+        const adesaoArray = Object.keys(adesaoMap).map(treinoId => {
+          const qtd = adesaoMap[treinoId];
+          const percentual = Math.round((qtd / execucoes.length) * 100);
+          const nomeTreino = treinosPrescritos.find(t => t.id === treinoId)?.nome || `Treino`;
           return {
-            workout_id: workoutId,
-            nome: `Treino ${workoutId.substring(0,4).toUpperCase()}`, 
+            workout_id: treinoId,
+            nome: nomeTreino, 
             percentual: percentual,
             quantidade: qtd
           };
@@ -150,22 +162,40 @@ export function useVisaoAluno(route: any, navigation: any) {
 
         setAdesao(adesaoArray);
 
-        const sessoesIds = sessoes.map(s => s.id);
-        const { data: logs } = await supabase
-          .from("workout_logs")
-          .select("*")
-          .in("session_id", sessoesIds)
-          .order("created_at", { ascending: false })
-          .limit(10); 
+        const formatarKGs = (pesoTotal: number) => pesoTotal.toLocaleString('pt-BR');
 
-        if (logs) {
-          setUltimosLogs(logs);
-        }
+        const logsFormatados = execucoes.slice(0, 10).map(exec => {
+            const nomeTreino = treinosPrescritos.find(t => t.id === exec.treino_id)?.nome || "Treino";
+            const mins = Math.floor((exec.duracao_segundos || 0) / 60);
+
+            let volumeDoTreino = 0;
+            if (exec.dados_execucao && Array.isArray(exec.dados_execucao)) {
+                exec.dados_execucao.forEach((ex: any) => {
+                    if (ex.series && Array.isArray(ex.series)) {
+                        ex.series.forEach((s: any) => {
+                            const reps = Number(s.reps_feitas) || 0;
+                            const carga = Number(s.carga_feita) || 0;
+                            volumeDoTreino += (reps * carga);
+                        });
+                    }
+                });
+            }
+
+            return {
+                id: exec.id,
+                created_at: exec.data_inicio,
+                nomeTreino: nomeTreino,
+                duracao: `${mins} min`,
+                rpe: exec.esforco_rpe,
+                sentiuDor: exec.sentiu_dor,
+                volumeTotal: volumeDoTreino > 0 ? `${formatarKGs(volumeDoTreino)} kg` : "--"
+            };
+        });
+
+        setUltimosLogs(logsFormatados);
+
       } else {
-        setTotalTreinos(0);
-        setStreak(0);
-        setAdesao([]);
-        setUltimosLogs([]);
+        setTotalTreinos(0); setStreak(0); setAdesao([]); setUltimosLogs([]);
       }
     } catch (error) {
       console.log("Erro ao buscar evolução:", error);

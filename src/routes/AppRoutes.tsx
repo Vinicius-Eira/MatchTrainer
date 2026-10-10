@@ -32,7 +32,7 @@ import { ExerciseLibraryScreen } from "../screens/Personal/ExerciseLibrary";
 import { Avaliacoes } from "../screens/Personal/Feedback";
 import { FeedbackPersonal } from "../screens/Personal/Feedback/Personal";
 import { Presets } from "../screens/Personal/Presets/Presets";
-import { WorkoutCreator } from "../screens/Personal/WorkoutCreator/WorkoutCreator";
+import { WorkoutCreator } from "../screens/Personal/WorkoutCreator";
 import { Anamnese } from "../screens/User/Anamnese/";
 import { QuestionnaireForm } from "../screens/User/Anamnese/QuestionnaireForm";
 import { AlunoDashboard } from "../screens/User/Dashboard";

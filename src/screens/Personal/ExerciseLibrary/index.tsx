@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, 
   ActivityIndicator, SafeAreaView, StatusBar, RefreshControl
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video'; 
 import { CreateCustomExerciseModal } from '../../../components/Exercise/CreateCustomExerciseModal';
@@ -59,12 +59,14 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
                 />
               )
             ) : (
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: MATCH_COLORS.surfaceCard }]} />
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: MATCH_COLORS.surfaceCard, justifyContent: 'center', alignItems: 'center' }]}>
+                <MaterialCommunityIcons name="dumbbell" size={60} color="#1E1E24" />
+              </View>
             )}
           </View>
           
           <LinearGradient
-            colors={['transparent', 'rgba(9, 9, 11, 0.4)', '#09090B']}
+            colors={['transparent', 'rgba(5, 5, 5, 0.6)', '#050505']}
             locations={[0, 0.4, 1]}
             style={StyleSheet.absoluteFill}
           />
@@ -72,15 +74,15 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
           {isUploading && (
             <View style={styles.uploadingOverlay}>
               <ActivityIndicator size="large" color={MATCH_COLORS.primary} />
-              <Text style={styles.uploadingText}>Enviando e Processando...</Text>
+              <Text style={styles.uploadingText}>Enviando Vídeo...</Text>
             </View>
           )}
 
           <View style={styles.content}>
             {item.type === 'PERSONAL' ? (
               <View style={styles.customBadge}>
-                <Feather name="star" size={10} color="#000" />
-                <Text style={styles.customBadgeText}>Meu Vídeo</Text>
+                <Feather name="star" size={12} color="#FFF" />
+                <Text style={styles.customBadgeText}>Meu Exercício</Text>
               </View>
             ) : <View />}
 
@@ -94,14 +96,14 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
 
               {state.isSelectionMode && (
                 <View style={styles.addButton}>
-                  <Feather name="plus" size={20} color="#FFF" />
+                  <Feather name="plus" size={22} color="#FFF" />
                 </View>
               )}
 
               {state.isStudioMode && !isUploading && (
                 <View style={styles.studioButton}>
                   <Feather name="upload" size={16} color={MATCH_COLORS.primary} style={{ marginRight: scale(6) }} />
-                  <Text style={styles.studioButtonText}>Subir</Text>
+                  <Text style={styles.studioButtonText}>Gravar</Text>
                 </View>
               )}
             </View>
@@ -114,18 +116,17 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: MATCH_COLORS.surfaceDark }]} />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
-          <Feather name="arrow-left" size={22} color={MATCH_COLORS.text} />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
+          <Feather name="chevron-left" size={26} color={MATCH_COLORS.text} />
         </TouchableOpacity>
         
         <View style={{ alignItems: 'center' }}>
           <Text style={styles.headerTitle}>
-            {state.isSelectionMode ? 'SELECIONAR EXERCÍCIO' : state.isStudioMode ? 'ESTÚDIO DE VÍDEOS' : 'BIBLIOTECA'}
+            {state.isSelectionMode ? 'SELECIONAR EXERCÍCIO' : state.isStudioMode ? 'MEU ESTÚDIO' : 'BIBLIOTECA'}
           </Text>
-          {state.isStudioMode && <Text style={{ color: MATCH_COLORS.primary, fontSize: moderateScale(10), fontWeight: '700' }}>Toque em um exercício para gravar</Text>}
+          {state.isStudioMode && <Text style={styles.headerSubtitle}>Toque em um exercício para gravar</Text>}
         </View>
 
         <TouchableOpacity onPress={() => actions.setIsModalVisible(true)} style={styles.iconButtonPrimary}>
@@ -134,7 +135,7 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
       </View>
 
       <View style={styles.searchContainer}>
-        <Feather name="search" size={18} color={MATCH_COLORS.textDim} style={styles.searchIcon} />
+        <Feather name="search" size={20} color={MATCH_COLORS.textDim} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar exercício..."
@@ -143,8 +144,8 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
           onChangeText={actions.setSearchQuery}
         />
         {state.searchQuery !== '' && (
-          <TouchableOpacity onPress={() => actions.setSearchQuery('')}>
-            <Feather name="x" size={18} color={MATCH_COLORS.textDim} />
+          <TouchableOpacity onPress={() => actions.setSearchQuery('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Feather name="x-circle" size={20} color={MATCH_COLORS.textDim} />
           </TouchableOpacity>
         )}
       </View>
@@ -182,11 +183,13 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
           showsVerticalScrollIndicator={false}
           onEndReached={actions.handleLoadMore}
           onEndReachedThreshold={0.5}
-          refreshControl={<RefreshControl refreshing={state.isRefreshing} onRefresh={actions.handleRefresh} tintColor={MATCH_COLORS.primary} colors={[MATCH_COLORS.primary]} />}
+          refreshControl={<RefreshControl refreshing={state.isRefreshing} onRefresh={actions.handleRefresh} tintColor={MATCH_COLORS.primary} />}
           ListFooterComponent={state.isLoadingMore ? <ActivityIndicator size="small" color={MATCH_COLORS.primary} style={{ marginVertical: 16 }} /> : null}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <View style={styles.emptyIconBg}><Feather name="database" size={32} color={MATCH_COLORS.textDim} /></View>
+              <View style={styles.emptyIconBg}>
+                <MaterialCommunityIcons name="dumbbell" size={40} color={MATCH_COLORS.primary} />
+              </View>
               <Text style={styles.emptyTitle}>Nenhum exercício encontrado</Text>
             </View>
           }

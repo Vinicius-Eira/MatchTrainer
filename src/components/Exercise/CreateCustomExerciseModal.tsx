@@ -3,7 +3,6 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Modal, ActivityInd
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import { ExerciseService } from '../../services/ExerciseService';
 
@@ -17,9 +16,10 @@ interface Props {
 const MATCH_COLORS = {
   primary: '#FF5100',
   primaryGlow: 'rgba(255, 81, 0, 0.15)',
-  surfaceDark: '#09090B',
-  surfaceCard: 'rgba(24, 24, 27, 0.8)', 
-  borderLight: 'rgba(255, 255, 255, 0.08)',
+  surfaceDark: '#050505',
+  surfaceCard: '#0A0A0C', 
+  borderLight: '#1A1A20',
+  borderNeon: 'rgba(255, 81, 0, 0.4)',
   text: '#FAFAFA',
   textMuted: '#A1A1AA',
   textDim: '#71717A',
@@ -92,7 +92,7 @@ export const CreateCustomExerciseModal = ({ visible, onClose, onSuccess }: Props
         <View style={styles.overlay}>
           <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
           
-          <BlurView intensity={Platform.OS === "ios" ? 40 : 100} tint="dark" style={styles.container}>
+          <View style={styles.container}>
             <View style={styles.dragIndicator} />
             
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -100,10 +100,10 @@ export const CreateCustomExerciseModal = ({ visible, onClose, onSuccess }: Props
               <View style={styles.header}>
                 <View>
                   <Text style={styles.title}>Estúdio de Criação</Text>
-                  <Text style={styles.subtitle}>Adicione um exercício à sua biblioteca pessoal</Text>
+                  <Text style={styles.subtitle}>Adicione um exercício à sua biblioteca</Text>
                 </View>
                 <TouchableOpacity onPress={onClose} disabled={isSaving} style={styles.closeButton}>
-                  <Feather name="x" size={20} color={MATCH_COLORS.textMuted} />
+                  <Feather name="x" size={22} color={MATCH_COLORS.textMuted} />
                 </TouchableOpacity>
               </View>
 
@@ -114,11 +114,11 @@ export const CreateCustomExerciseModal = ({ visible, onClose, onSuccess }: Props
                   activeOpacity={0.8}
                   onPress={pickMedia}
                 >
-                  <View style={[styles.iconWrapper, mediaUri ? { backgroundColor: 'rgba(76, 175, 80, 0.15)' } : null]}>
-                    <Feather name={mediaUri ? "video" : "upload-cloud"} size={28} color={mediaUri ? "#4CAF50" : MATCH_COLORS.primary} />
+                  <View style={[styles.iconWrapper, mediaUri ? { backgroundColor: 'rgba(0, 230, 118, 0.15)' } : null]}>
+                    <Feather name={mediaUri ? "video" : "upload-cloud"} size={28} color={mediaUri ? "#00E676" : MATCH_COLORS.primary} />
                   </View>
                   <View style={styles.uploadTextContainer}>
-                    <Text style={[styles.uploadTitle, mediaUri ? { color: '#4CAF50' } : null]}>
+                    <Text style={[styles.uploadTitle, mediaUri ? { color: '#00E676' } : null]}>
                       {mediaUri ? 'Vídeo Carregado!' : 'Subir Vídeo de Execução'}
                     </Text>
                     <Text style={styles.uploadSubtitle}>
@@ -130,7 +130,7 @@ export const CreateCustomExerciseModal = ({ visible, onClose, onSuccess }: Props
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>NOME DO EXERCÍCIO *</Text>
                   <View style={styles.inputWrapper}>
-                    <Feather name="edit-2" size={16} color={MATCH_COLORS.textDim} style={styles.inputIcon} />
+                    <Feather name="edit-2" size={18} color={MATCH_COLORS.primary} style={styles.inputIcon} />
                     <TextInput 
                       style={styles.input} 
                       placeholder="Ex: Agachamento Búlgaro" 
@@ -145,7 +145,7 @@ export const CreateCustomExerciseModal = ({ visible, onClose, onSuccess }: Props
                   <View style={[styles.inputGroup, { flex: 1 }]}>
                     <Text style={styles.label}>GRUPO MUSCULAR *</Text>
                     <View style={styles.inputWrapper}>
-                      <MaterialCommunityIcons name="arm-flex-outline" size={18} color={MATCH_COLORS.textDim} style={styles.inputIcon} />
+                      <MaterialCommunityIcons name="arm-flex-outline" size={20} color={MATCH_COLORS.primary} style={styles.inputIcon} />
                       <TextInput 
                         style={styles.input} 
                         placeholder="Ex: Pernas" 
@@ -159,10 +159,10 @@ export const CreateCustomExerciseModal = ({ visible, onClose, onSuccess }: Props
                   <View style={[styles.inputGroup, { flex: 1 }]}>
                     <Text style={styles.label}>EQUIPAMENTO</Text>
                     <View style={styles.inputWrapper}>
-                      <MaterialCommunityIcons name="dumbbell" size={18} color={MATCH_COLORS.textDim} style={styles.inputIcon} />
+                      <MaterialCommunityIcons name="dumbbell" size={20} color={MATCH_COLORS.primary} style={styles.inputIcon} />
                       <TextInput 
                         style={styles.input} 
-                        placeholder="Ex: Halteres..." 
+                        placeholder="Ex: Halteres" 
                         placeholderTextColor={MATCH_COLORS.textDim} 
                         value={equipment} 
                         onChangeText={setEquipment} 
@@ -175,26 +175,24 @@ export const CreateCustomExerciseModal = ({ visible, onClose, onSuccess }: Props
             </ScrollView>
             
             <View style={styles.footer}>
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={isSaving} activeOpacity={0.8}>
-                <LinearGradient
-                  colors={isSaving ? [MATCH_COLORS.borderLight, MATCH_COLORS.borderLight] : [MATCH_COLORS.primary, '#CC4100']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.saveGradient}
-                >
-                  {isSaving ? (
-                    <ActivityIndicator color={MATCH_COLORS.textMuted} />
-                  ) : (
-                    <>
-                      <Feather name="check" size={22} color="#000" />
-                      <Text style={styles.saveButtonText}>SALVAR NA BIBLIOTECA</Text>
-                    </>
-                  )}
-                </LinearGradient>
+              <TouchableOpacity 
+                style={[styles.saveNeonButton, isSaving && { opacity: 0.6 }]} 
+                onPress={handleSave} 
+                disabled={isSaving} 
+                activeOpacity={0.8}
+              >
+                {isSaving ? (
+                  <ActivityIndicator color={MATCH_COLORS.primary} />
+                ) : (
+                  <>
+                    <Feather name="check" size={22} color={MATCH_COLORS.primary} />
+                    <Text style={styles.saveNeonText}>SALVAR EXERCÍCIO</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
             
-          </BlurView>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -202,21 +200,21 @@ export const CreateCustomExerciseModal = ({ visible, onClose, onSuccess }: Props
 };
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFill },
   
   container: { 
-    backgroundColor: 'rgba(14, 14, 17, 0.95)', 
+    backgroundColor: '#0A0A0C', 
     borderTopLeftRadius: moderateScale(28), 
     borderTopRightRadius: moderateScale(28), 
     borderTopWidth: 1,
-    borderColor: MATCH_COLORS.borderLight,
+    borderColor: '#1A1A20',
     maxHeight: '90%',
   },
   
   dragIndicator: {
     width: scale(40), height: scale(4),
-    backgroundColor: MATCH_COLORS.borderLight,
+    backgroundColor: '#333',
     borderRadius: scale(2),
     alignSelf: 'center',
     marginTop: verticalScale(12),
@@ -228,18 +226,18 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: verticalScale(30) },
   title: { color: MATCH_COLORS.text, fontSize: moderateScale(22), fontWeight: '900', letterSpacing: 0.5, marginBottom: scale(4) },
   subtitle: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(13), fontWeight: '500' },
-  closeButton: { padding: scale(6), backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: scale(12) },
+  closeButton: { padding: scale(8), backgroundColor: '#121214', borderRadius: scale(12), borderWidth: 1, borderColor: '#1E1E24' },
   
   form: { gap: verticalScale(24) },
   
   uploadBox: { 
     flexDirection: 'row', alignItems: 'center', 
-    backgroundColor: 'rgba(255, 255, 255, 0.03)', 
-    borderWidth: 1, borderColor: MATCH_COLORS.borderLight, borderStyle: 'dashed', 
+    backgroundColor: '#121214', 
+    borderWidth: 1, borderColor: '#1E1E24', borderStyle: 'dashed', 
     borderRadius: moderateScale(16), 
     padding: scale(20), gap: scale(16) 
   },
-  uploadBoxActive: { backgroundColor: 'rgba(76, 175, 80, 0.05)', borderColor: 'rgba(76, 175, 80, 0.3)' },
+  uploadBoxActive: { backgroundColor: 'rgba(0, 230, 118, 0.05)', borderColor: 'rgba(0, 230, 118, 0.3)' },
   iconWrapper: { 
     width: scale(56), height: scale(56), 
     borderRadius: moderateScale(16), 
@@ -252,12 +250,12 @@ const styles = StyleSheet.create({
 
   inputGroup: { gap: verticalScale(8) },
   rowInputs: { flexDirection: 'row', gap: scale(16) },
-  label: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(11), fontWeight: '800', letterSpacing: 1 },
+  label: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(11), fontWeight: '900', letterSpacing: 1 },
   
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)', 
-    borderWidth: 1, borderColor: MATCH_COLORS.borderLight, 
+    backgroundColor: '#121214', 
+    borderWidth: 1, borderColor: '#1E1E24', 
     borderRadius: moderateScale(14), 
     paddingHorizontal: scale(14),
   },
@@ -269,10 +267,25 @@ const styles = StyleSheet.create({
     paddingTop: verticalScale(16),
     paddingBottom: Platform.OS === 'ios' ? verticalScale(40) : verticalScale(24),
     borderTopWidth: 1,
-    borderColor: MATCH_COLORS.borderLight,
-    backgroundColor: 'rgba(9, 9, 11, 0.95)'
+    borderColor: '#1A1A20',
+    backgroundColor: '#0A0A0C'
   },
-  saveButton: { borderRadius: moderateScale(16), overflow: 'hidden' },
-  saveGradient: { flexDirection: 'row', height: verticalScale(56), justifyContent: 'center', alignItems: 'center', gap: scale(8) },
-  saveButtonText: { color: '#000', fontSize: moderateScale(14), fontWeight: '900', letterSpacing: 1 },
+  
+  saveNeonButton: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    backgroundColor: 'rgba(10, 10, 12, 0.85)', 
+    borderWidth: 1.5, 
+    borderColor: '#FF5100', 
+    borderRadius: scale(20), 
+    paddingVertical: verticalScale(16), 
+    gap: scale(10),
+    shadowColor: '#FF5100', 
+    shadowOffset: { width: 0, height: 0 }, 
+    shadowOpacity: 0.4, 
+    shadowRadius: 10, 
+    elevation: 8 
+  },
+  saveNeonText: { color: '#FF5100', fontSize: moderateScale(14), fontWeight: '900', letterSpacing: 1 },
 });

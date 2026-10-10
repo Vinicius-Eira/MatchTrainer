@@ -27,7 +27,7 @@ export function WorkoutPreview({ route, navigation }: any) {
         <TouchableOpacity style={styles.btnVoltar} onPress={voltar} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
           <Ionicons name="chevron-back" size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>TREINO DE HOJE</Text>
+        <Text style={styles.headerTitle}>VISÃO GERAL</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -40,7 +40,7 @@ export function WorkoutPreview({ route, navigation }: any) {
         <View style={styles.heroSection}>
           <View style={styles.badgeTreinoHoje}>
             <FontAwesome5 name="fire-alt" size={12} color="#FF6B00" />
-            <Text style={styles.badgeTreinoHojeText}>FOCO DO DIA</Text>
+            <Text style={styles.badgeTreinoHojeText}>PREPARAÇÃO</Text>
           </View>
           
           <Text style={styles.treinoTitle}>{treino.nome}</Text>
@@ -48,6 +48,11 @@ export function WorkoutPreview({ route, navigation }: any) {
           <View style={styles.treinoObjetivoBox}>
             <MaterialCommunityIcons name="target" size={16} color="#AAA" />
             <Text style={styles.treinoObjetivo}>{treino.objetivo}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 107, 0, 0.1)', padding: 12, borderRadius: 8, marginTop: 15, borderWidth: 1, borderColor: 'rgba(255, 107, 0, 0.3)' }}>
+             <Ionicons name="analytics-outline" size={20} color="#FF6B00" style={{ marginRight: 10 }} />
+             <Text style={{ color: '#FFF', fontSize: 13, flex: 1, lineHeight: 18 }}>{treino.mensagem_hype}</Text>
           </View>
 
           {treino.observacao_geral && (
@@ -141,9 +146,9 @@ export function WorkoutPreview({ route, navigation }: any) {
       <View style={styles.footerFixo}>
         <LinearGradient colors={["transparent", "rgba(5,5,5,0.9)", "#050505"]} style={styles.footerGradient} />
         <TouchableOpacity style={styles.btnIniciar} activeOpacity={0.9} onPress={iniciarTreino}>
-          <Text style={styles.btnIniciarText}>INICIAR TREINO</Text>
+          <Text style={styles.btnIniciarText}>COMEÇAR A SUAR</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
-}
+};
