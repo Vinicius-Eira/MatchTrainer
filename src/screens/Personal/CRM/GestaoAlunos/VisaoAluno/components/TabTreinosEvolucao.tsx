@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons, FontAwesome5, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { styles } from '../styles';
 import { theme } from '../../../../../../theme/theme';
@@ -133,14 +133,14 @@ export function TabTreinosEvolucao({
       <View style={styles.progressionCard}>
         <View style={styles.progressionHeader}>
           <Ionicons name="swap-vertical" size={20} color={theme.colors.primary} />
-          <Text style={styles.progressionTitle}>Últimos Exercícios</Text>
+          <Text style={styles.progressionTitle}>Últimos Treinos Concluídos</Text>
         </View>
 
         {!ultimosLogs || ultimosLogs.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: verticalScale(20) }}>
             <MaterialCommunityIcons name="chart-bell-curve-cumulative" size={40} color={theme.colors.borderLight} />
             <Text style={{ color: theme.colors.textMuted, marginTop: 8, fontSize: moderateScale(12), textAlign: 'center' }}>
-              A evolução de cargas aparecerá aqui após o primeiro treino.
+              A evolução de volume aparecerá aqui após o primeiro treino.
             </Text>
           </View>
         ) : (
@@ -152,12 +152,22 @@ export function TabTreinosEvolucao({
                   {index !== ultimosLogs.length - 1 && <View style={styles.comparisonLine} />}
                 </View>
                 <View style={styles.comparisonContent}>
-                  <Text style={[styles.comparisonDate, index === 0 && { color: theme.colors.text }]}>
-                    {log.exercise_name || "Exercício"}
-                  </Text>
+                  
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={[styles.comparisonDate, index === 0 && { color: theme.colors.text }]}>
+                      {log.nomeTreino || "Treino"}
+                    </Text>
+                    {log.sentiuDor && (
+                      <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8 }}>
+                        <Text style={{ color: theme.colors.danger, fontSize: 9, fontWeight: 'bold' }}>ALERTA DE DOR</Text>
+                      </View>
+                    )}
+                  </View>
+                  
                   <Text style={[styles.comparisonData, index === 0 && { color: theme.colors.success }]}>
-                    {log.weight_used ? `Carga: ${log.weight_used}kg` : "Sem carga"}  |  Esforço: RPE {log.rpe || "--"}
+                    Volume: {log.volumeTotal}  |  RPE {log.rpe || "--"}  |  {log.duracao}
                   </Text>
+                  
                 </View>
               </View>
             ))}

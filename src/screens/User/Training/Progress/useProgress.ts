@@ -26,7 +26,12 @@ export function useProgress(navigation: any, routeConexaoId?: string) {
   const formatarTempo = (segundosTotais: number) => {
     const horas = Math.floor(segundosTotais / 3600);
     const minutos = Math.floor((segundosTotais % 3600) / 60);
-    return `${horas}h ${minutos}m`;
+    if (horas > 0) return `${horas}h ${minutos}m`;
+    return `${minutos} min`;
+  };
+
+  const formatarKGs = (pesoTotal: number) => {
+    return pesoTotal.toLocaleString('pt-BR');
   };
 
   useEffect(() => {
@@ -43,7 +48,7 @@ export function useProgress(navigation: any, routeConexaoId?: string) {
           const { data: conexao } = await supabase
             .from('conexoes')
             .select('id, recado_evolucao, data_recado')
-            .eq('aluno_id', user.id)
+            .eq('usuario_id', user.id) 
             .single();
             
           if (conexao && isMounted) {
@@ -100,7 +105,7 @@ export function useProgress(navigation: any, routeConexaoId?: string) {
           setRecordes(prs.map(pr => ({
             id: pr.id,
             exercicio: pr.exercicio_nome,
-            carga: pr.carga,
+            carga: `${pr.carga} kg`,
             data: pr.data_quebra ? pr.data_quebra.split('-').reverse().join('/') : "Recente"
           })));
         }
@@ -115,32 +120,55 @@ export function useProgress(navigation: any, routeConexaoId?: string) {
           
           const { data: execucoes } = await supabase
             .from('treinos_execucoes')
-            .select('*')
+            .select('id, treino_id, data_inicio, duracao_segundos, dados_execucao, esforco_rpe')
             .in('treino_id', idsTreinos)
             .order('data_inicio', { ascending: false });
 
           if (execucoes && execucoes.length > 0 && isMounted) {
-            const tempoTotalSegundos = execucoes.reduce((acc, curr) => acc + (curr.duracao_segundos || 0), 0);
             
-            setResumoTreinos({
-              concluidos: execucoes.length,
-              volume: "-", 
-              tempo: formatarTempo(tempoTotalSegundos)
-            });
+            let tempoTotalSegundos = 0;
+            let volumeTotalKg = 0;
 
-            setHistorico(execucoes.slice(0, 5).map(exec => {
+            const historicoProcessado = execucoes.map(exec => {
               const nomeTreino = treinosPrescritos.find(t => t.id === exec.treino_id)?.nome || "Treino";
               const dataExec = new Date(exec.data_inicio).toLocaleDateString('pt-BR');
-              const mins = Math.floor((exec.duracao_segundos || 0) / 60);
               
+              const duracaoSecs = exec.duracao_segundos || 0;
+              tempoTotalSegundos += duracaoSecs;
+              const mins = Math.floor(duracaoSecs / 60);
+
+              let volumeDoTreino = 0;
+              if (exec.dados_execucao && Array.isArray(exec.dados_execucao)) {
+                exec.dados_execucao.forEach((ex: any) => {
+                  if (ex.series && Array.isArray(ex.series)) {
+                    ex.series.forEach((s: any) => {
+                      const reps = Number(s.reps_feitas) || 0;
+                      const carga = Number(s.carga_feita) || 0;
+                      volumeDoTreino += (reps * carga);
+                    });
+                  }
+                });
+              }
+              
+              volumeTotalKg += volumeDoTreino;
+
               return {
                 id: exec.id,
                 treino: nomeTreino,
                 data: dataExec,
                 duracao: `${mins} min`,
-                volume: "- kg"
+                volume: volumeDoTreino > 0 ? `${formatarKGs(volumeDoTreino)} kg` : "--",
+                rpe: exec.esforco_rpe || null
               };
-            }));
+            });
+
+            setResumoTreinos({
+              concluidos: execucoes.length,
+              volume: formatarKGs(volumeTotalKg), 
+              tempo: formatarTempo(tempoTotalSegundos)
+            });
+
+            setHistorico(historicoProcessado.slice(0, 8)); 
           }
         }
       } catch (error) {
@@ -158,7 +186,6 @@ export function useProgress(navigation: any, routeConexaoId?: string) {
       isMounted = false;
       clearTimeout(timerId);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const abrirEvolucaoExercicio = (exercicioNome: string) => {

@@ -8,10 +8,11 @@ import { useWorkoutCreatorStore } from '../../../../src/store/useWorkoutCreatorS
 
 export const MATCH_COLORS = {
   primary: '#FF5100',
-  primaryGlow: 'rgba(255, 81, 0, 0.2)',
-  surfaceDark: '#09090B',
-  surfaceCard: 'rgba(28, 28, 33, 0.6)', 
-  borderLight: 'rgba(255, 255, 255, 0.08)',
+  primaryGlow: 'rgba(255, 81, 0, 0.15)',
+  surfaceDark: '#050505',
+  surfaceCard: '#0A0A0C', 
+  borderLight: '#1A1A20',
+  borderNeon: 'rgba(255, 81, 0, 0.4)',
   text: '#FAFAFA',
   textMuted: '#A1A1AA',
   textDim: '#71717A',

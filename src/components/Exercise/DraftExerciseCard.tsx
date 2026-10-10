@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, LayoutAnimation, Alert, ActivityIndicator } from 'react-native';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useVideoPlayer, VideoView } from 'expo-video'; 
 import { scale, verticalScale } from '../../utils/responsive';
@@ -85,16 +85,23 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
           delayLongPress={150} 
           style={styles.dragHandle}
         >
-          <Feather name="menu" size={24} color={isActive ? "#FF5100" : "#666"} />
+          <MaterialCommunityIcons name="drag-vertical" size={26} color={isActive ? "#FF5100" : "#555"} />
         </TouchableOpacity>
 
         <View style={styles.titleContainer}>
           <Text style={styles.title} numberOfLines={2}>{exercise.exercise_name}</Text>
-          <Text style={styles.subtitle}>{exercise.group_code} • {exercise.technique}</Text>
+          <View style={styles.badgeRow}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{exercise.group_code || 'Geral'}</Text>
+            </View>
+            <View style={[styles.badge, { backgroundColor: 'rgba(255, 81, 0, 0.1)' }]}>
+              <Text style={[styles.badgeText, { color: '#FF5100' }]}>{exercise.technique || 'Normal'}</Text>
+            </View>
+          </View>
         </View>
 
         <TouchableOpacity onPress={() => removeExercise(dayId, exercise.id)} style={styles.deleteBtn}>
-          <Feather name="trash-2" size={18} color="#FF3B30" />
+          <Feather name="trash-2" size={16} color="#FF3B30" />
         </TouchableOpacity>
       </View>
 
@@ -129,8 +136,7 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
             </>
           ) : (
             <TouchableOpacity style={styles.imagePlaceholder} onPress={handleUploadVideo}>
-              <Feather name="video" size={28} color="#555" style={{ marginBottom: 8 }} />
-              <Text style={styles.noMediaText}>Adicionar</Text>
+              <Feather name="video" size={24} color="#555" style={{ marginBottom: 6 }} />
               <Text style={styles.noMediaText}>Vídeo</Text>
             </TouchableOpacity>
           )}
@@ -147,10 +153,11 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
               <TextInput style={styles.input} value={exercise.reps_target} onChangeText={(text) => updateExercise(dayId, exercise.id, { reps_target: text })} />
             </View>
           </View>
+          
           <View style={styles.inputRow}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Carga (kg)</Text>
-              <TextInput style={styles.input} placeholder="Ex: 20" placeholderTextColor="#555" value={exercise.weight_target} onChangeText={(text) => updateExercise(dayId, exercise.id, { weight_target: text })} />
+              <TextInput style={styles.input} placeholder="Ex: 20" placeholderTextColor="#444" value={exercise.weight_target} onChangeText={(text) => updateExercise(dayId, exercise.id, { weight_target: text })} />
             </View>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Pausa (s)</Text>
@@ -160,17 +167,17 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
         </View>
       </View>
 
-      <TouchableOpacity style={styles.expandButton} onPress={toggleExpand}>
-        <Text style={styles.expandButtonText}>{isExpanded ? 'Ocultar Observações' : '+ Adicionar Observações'}</Text>
-        <Feather name={isExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#FF5100" />
+      <TouchableOpacity style={styles.expandButton} onPress={toggleExpand} activeOpacity={0.8}>
+        <Text style={styles.expandButtonText}>{isExpanded ? 'Ocultar Anotações' : 'Anotações (Públicas/Privadas)'}</Text>
+        <Feather name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color="#FF5100" />
       </TouchableOpacity>
 
       {isExpanded && (
         <View style={styles.expandedArea}>
           <View style={styles.detailGroup}>
              <View style={styles.detailHeader}>
-               <Ionicons name="eye-outline" size={14} color="#00E676" />
-               <Text style={[styles.detailLabel, { color: '#00E676' }]}>Nota Pública (O Aluno vê na hora do treino)</Text>
+               <Ionicons name="eye" size={16} color="#00E676" />
+               <Text style={[styles.detailLabel, { color: '#00E676' }]}>Nota Pública (O Aluno vê no treino)</Text>
              </View>
              <TextInput 
                style={[styles.textArea, { borderColor: 'rgba(0, 230, 118, 0.3)' }]} 
@@ -182,14 +189,15 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
                onChangeText={(text) => updateExercise(dayId, exercise.id, { public_note: text })} 
              />
           </View>
+          
           <View style={styles.detailGroup}>
              <View style={styles.detailHeader}>
-               <Ionicons name="lock-closed-outline" size={14} color="#FFD700" />
+               <Ionicons name="lock-closed" size={16} color="#FFD700" />
                <Text style={[styles.detailLabel, { color: '#FFD700' }]}>Nota Privada (Só você vê)</Text>
              </View>
              <TextInput 
                style={[styles.textArea, { borderColor: 'rgba(255, 215, 0, 0.3)' }]} 
-               placeholder="Ex: Aluno sente desconforto no ombro esquerdo. Acompanhar evolução." 
+               placeholder="Ex: Aluno sente desconforto no ombro. Acompanhar." 
                placeholderTextColor="#555" 
                multiline
                textAlignVertical="top"
@@ -205,33 +213,43 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
 };
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: '#1E1E24', borderRadius: scale(16), padding: scale(14), marginBottom: verticalScale(12), borderWidth: 1, borderColor: '#2A2A32', marginHorizontal: scale(20) },
-  activeCard: { borderColor: '#FF5100', backgroundColor: '#25252D', transform: [{ scale: 1.02 }], shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 10, zIndex: 999 },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: verticalScale(12) },
-  dragHandle: { paddingRight: scale(12), paddingVertical: scale(8), justifyContent: 'center', alignItems: 'center' },
+  card: { backgroundColor: '#0A0A0C', borderRadius: scale(16), padding: scale(14), marginBottom: verticalScale(12), borderWidth: 1, borderColor: '#1A1A20', marginHorizontal: scale(16) },
+  activeCard: { borderColor: '#FF5100', backgroundColor: '#121214', transform: [{ scale: 1.02 }], shadowColor: '#FF5100', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 10, zIndex: 999 },
+  
+  header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: verticalScale(14) },
+  dragHandle: { paddingRight: scale(10), paddingVertical: scale(2), justifyContent: 'center', alignItems: 'center' },
   titleContainer: { flex: 1, paddingRight: scale(10) },
-  title: { color: '#FFFFFF', fontSize: scale(15), fontWeight: 'bold' },
-  subtitle: { color: '#A0A0A5', fontSize: scale(11), marginTop: verticalScale(2) },
-  deleteBtn: { padding: scale(8), backgroundColor: 'rgba(255, 59, 48, 0.1)', borderRadius: scale(8) },
+  title: { color: '#FFFFFF', fontSize: scale(15), fontWeight: '900', letterSpacing: 0.5, marginBottom: verticalScale(4) },
+  
+  badgeRow: { flexDirection: 'row', gap: scale(6), flexWrap: 'wrap' },
+  badge: { backgroundColor: '#121214', paddingHorizontal: scale(8), paddingVertical: verticalScale(2), borderRadius: scale(6), borderWidth: 1, borderColor: '#1E1E24' },
+  badgeText: { color: '#A0A0A5', fontSize: scale(10), fontWeight: '700', textTransform: 'uppercase' },
+  
+  deleteBtn: { padding: scale(6), backgroundColor: 'rgba(255, 59, 48, 0.05)', borderRadius: scale(10), borderWidth: 1, borderColor: 'rgba(255, 59, 48, 0.2)' },
+  
   body: { flexDirection: 'row', gap: scale(12) },
-  mediaColumn: { width: scale(95), height: verticalScale(130), borderRadius: scale(12), backgroundColor: '#121214', overflow: 'hidden', borderWidth: 1, borderColor: '#2A2A32', justifyContent: 'center', alignItems: 'center' },
+  
+  mediaColumn: { width: scale(95), height: verticalScale(120), borderRadius: scale(12), backgroundColor: '#121214', overflow: 'hidden', borderWidth: 1, borderColor: '#1E1E24', justifyContent: 'center', alignItems: 'center' },
   image: { width: '100%', height: '100%' },
   
-  playOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 5 },
-  editMediaBadge: { position: 'absolute', bottom: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.8)', padding: 6, borderRadius: 12, zIndex: 10 },
+  playOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 5 },
+  editMediaBadge: { position: 'absolute', bottom: 6, right: 6, backgroundColor: 'rgba(255, 81, 0, 0.9)', padding: 6, borderRadius: 12, zIndex: 10 },
   
-  imagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' },
-  noMediaText: { color: '#888', fontSize: scale(11), fontWeight: 'bold' },
-  inputsColumn: { flex: 1, justifyContent: 'space-between', paddingVertical: verticalScale(4) },
-  inputRow: { flexDirection: 'row', gap: scale(8), marginBottom: verticalScale(10) },
+  imagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', borderStyle: 'dashed', borderWidth: 1, borderColor: '#333', borderRadius: scale(12) },
+  noMediaText: { color: '#777', fontSize: scale(10), fontWeight: 'bold', textTransform: 'uppercase' },
+  
+  inputsColumn: { flex: 1, justifyContent: 'space-between' },
+  inputRow: { flexDirection: 'row', gap: scale(8), marginBottom: verticalScale(8) },
   inputGroup: { flex: 1 },
-  label: { color: '#A0A0A5', fontSize: scale(10), marginBottom: verticalScale(4), fontWeight: '700', textTransform: 'uppercase' },
-  input: { backgroundColor: '#121214', borderWidth: 1, borderColor: '#2A2A32', borderRadius: scale(8), color: '#FFFFFF', fontSize: scale(14), paddingVertical: verticalScale(8), paddingHorizontal: scale(8), textAlign: 'center', fontWeight: 'bold' },
-  expandButton: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(12), paddingTop: verticalScale(12), borderTopWidth: 1, borderTopColor: '#2A2A32' },
-  expandButtonText: { color: '#FF5100', fontSize: scale(12), fontWeight: 'bold', marginRight: scale(6) },
+  label: { color: '#888', fontSize: scale(10), marginBottom: verticalScale(4), fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+  input: { backgroundColor: '#121214', borderWidth: 1, borderColor: '#1E1E24', borderRadius: scale(10), color: '#FFFFFF', fontSize: scale(14), paddingVertical: verticalScale(10), paddingHorizontal: scale(8), textAlign: 'center', fontWeight: 'bold' },
+  
+  expandButton: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(16), paddingTop: verticalScale(14), borderTopWidth: 1, borderTopColor: '#1A1A20' },
+  expandButtonText: { color: '#FF5100', fontSize: scale(12), fontWeight: '900', marginRight: scale(6), letterSpacing: 0.5 },
+  
   expandedArea: { marginTop: verticalScale(16), gap: verticalScale(16) },
   detailGroup: { flex: 1 },
   detailHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: verticalScale(6), gap: scale(6) },
-  detailLabel: { color: '#A0A0A5', fontSize: scale(11), fontWeight: 'bold' },
-  textArea: { backgroundColor: '#121214', borderWidth: 1, borderColor: '#2A2A32', borderRadius: scale(12), color: '#FFF', fontSize: scale(13), padding: scale(12), minHeight: verticalScale(80) }
+  detailLabel: { fontSize: scale(11), fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+  textArea: { backgroundColor: '#050505', borderWidth: 1, borderRadius: scale(12), color: '#FFF', fontSize: scale(13), padding: scale(12), minHeight: verticalScale(70) }
 });

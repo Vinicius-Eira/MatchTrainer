@@ -1,24 +1,13 @@
 import { useEffect, useState } from "react";
-import { Alert } from "react-native";
 import { supabase } from "../../../../services/supabase"; 
 
 export function useFinalizacaoTreino(navigation: any, route: any) {
   const { tempoTotal = 0, conexaoId, treinoId } = route.params || {};
 
   const [treinoNome, setTreinoNome] = useState("Treino Finalizado");
-  const [salvando, setSalvando] = useState(false);
-  const [esforco, setEsforco] = useState(0);
-  const [observacao, setObservacao] = useState("");
 
   const volumeTotal = "2.450 kg"; 
   const prsBatidos = 1;
-
-  const niveisEsforco = [
-    { id: 1, label: "Leve", sub: "Sem suor", icon: "happy-outline", cor: "#00E676" },
-    { id: 2, label: "Moderado", sub: "Suor leve", icon: "walk-outline", cor: "#FFB300" },
-    { id: 3, label: "Difícil", sub: "Ofegante", icon: "flame-outline", cor: "#FF6B00" },
-    { id: 4, label: "Máximo", sub: "Falha total", icon: "skull-outline", cor: "#D50000" }
-  ];
 
   const formatarTempo = (segundos: number) => {
     const mins = Math.floor(segundos / 60);
@@ -44,44 +33,8 @@ export function useFinalizacaoTreino(navigation: any, route: any) {
     return () => { isMounted = false; };
   }, [treinoId]);
 
-  const finalizarESalvar = async () => {
-    if (esforco === 0) {
-      Alert.alert("Feedback", "Por favor, selecione o nível de esforço do treino.");
-      return;
-    }
-
-    setSalvando(true);
-    try {
-      const { data: ultimasExecucoes } = await supabase
-        .from('treinos_execucoes')
-        .select('id')
-        .order('data_inicio', { ascending: false })
-        .limit(1);
-
-      if (ultimasExecucoes && ultimasExecucoes.length > 0) {
-        const execucaoId = ultimasExecucoes[0].id;
-
-        const { error } = await supabase
-          .from('treinos_execucoes')
-          .update({
-            duracao_segundos: tempoTotal,
-            nivel_esforco: esforco,
-            observacao_aluno: observacao
-          })
-          .eq('id', execucaoId);
-
-        if (error) throw error;
-      }
-
-      navigation.popToTop(); 
-
-    } catch (error) {
-      console.log("Erro ao salvar feedback:", error);
-      Alert.alert("Erro", "Não foi possível salvar seu feedback, mas seu treino foi registrado!");
-      navigation.popToTop();
-    } finally {
-      setSalvando(false);
-    }
+  const voltarAoInicio = () => {
+    navigation.popToTop(); 
   };
 
   return {
@@ -89,12 +42,6 @@ export function useFinalizacaoTreino(navigation: any, route: any) {
     tempoTotal: formatarTempo(tempoTotal),
     volumeTotal,
     prsBatidos,
-    esforco,
-    setEsforco,
-    niveisEsforco,
-    observacao,
-    setObservacao,
-    salvando,
-    finalizarESalvar
+    voltarAoInicio
   };
 }

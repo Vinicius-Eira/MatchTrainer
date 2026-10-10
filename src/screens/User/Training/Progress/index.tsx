@@ -9,6 +9,12 @@ export function Progress({ route, navigation }: any) {
   const { conexaoId } = route?.params || {};
   const { loading, mensagemPersonal, composicaoCorporal, resumoTreinos, recordes, historico, abrirEvolucaoExercicio, voltar } = useProgress(navigation, conexaoId);
 
+  const getCorRPE = (rpe: number) => {
+      if (rpe <= 5) return "#00E676";
+      if (rpe <= 7) return "#FFB300";
+      return "#FF6B00";
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#050505" translucent={false} />
@@ -17,7 +23,7 @@ export function Progress({ route, navigation }: any) {
         <TouchableOpacity style={styles.btnVoltar} onPress={voltar} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
           <Ionicons name="chevron-back" size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>EVOLUÇÃO</Text>
+        <Text style={styles.headerTitle}>SEU PROGRESSO</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -40,6 +46,26 @@ export function Progress({ route, navigation }: any) {
             <Text style={[styles.coachMessage, !mensagemPersonal.temRecado && { color: "#888", fontStyle: "normal" }]}>
                 {mensagemPersonal.texto}
             </Text>
+          </View>
+
+          <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Estatísticas Globais</Text>
+              <View style={styles.resumoGrid}>
+                  <View style={styles.resumoItem}>
+                      <Text style={styles.resumoValor}>{resumoTreinos.concluidos}</Text>
+                      <Text style={styles.resumoLabel}>Treinos Feitos</Text>
+                  </View>
+                  <View style={styles.resumoDivider} />
+                  <View style={styles.resumoItem}>
+                      <Text style={styles.resumoValor}>{resumoTreinos.volume}<Text style={styles.resumoUnidade}> kg</Text></Text>
+                      <Text style={styles.resumoLabel}>Volume Total</Text>
+                  </View>
+                  <View style={styles.resumoDivider} />
+                  <View style={styles.resumoItem}>
+                      <Text style={styles.resumoValor}>{resumoTreinos.tempo}</Text>
+                      <Text style={styles.resumoLabel}>Tempo Suando</Text>
+                  </View>
+              </View>
           </View>
 
           <View style={styles.section}>
@@ -69,27 +95,7 @@ export function Progress({ route, navigation }: any) {
           </View>
 
           <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Resumo de Treinos</Text>
-              <View style={styles.resumoGrid}>
-                  <View style={styles.resumoItem}>
-                      <Text style={styles.resumoValor}>{resumoTreinos.concluidos}</Text>
-                      <Text style={styles.resumoLabel}>Treinos Feitos</Text>
-                  </View>
-                  <View style={styles.resumoDivider} />
-                  <View style={styles.resumoItem}>
-                      <Text style={styles.resumoValor}>{resumoTreinos.volume}<Text style={styles.resumoUnidade}> kg</Text></Text>
-                      <Text style={styles.resumoLabel}>Volume Total</Text>
-                  </View>
-                  <View style={styles.resumoDivider} />
-                  <View style={styles.resumoItem}>
-                      <Text style={styles.resumoValor}>{resumoTreinos.tempo}</Text>
-                      <Text style={styles.resumoLabel}>Tempo Total</Text>
-                  </View>
-              </View>
-          </View>
-
-          <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Recordes (PR)</Text>
+              <Text style={styles.sectionTitle}>Maiores Recordes (PR)</Text>
               <View style={styles.listContainer}>
                   {recordes.length > 0 ? (
                       recordes.map((pr: any) => (
@@ -115,13 +121,18 @@ export function Progress({ route, navigation }: any) {
           </View>
 
           <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Últimos Treinos</Text>
+              <Text style={styles.sectionTitle}>Histórico de Treinos</Text>
               <View style={styles.listContainer}>
                   {historico.length > 0 ? (
                       historico.map((hist: any) => (
                           <View key={hist.id} style={styles.historyCard}>
                               <View style={styles.historyHeader}>
-                                  <Text style={styles.historyTitle}>{hist.treino}</Text>
+                                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                      <Text style={styles.historyTitle}>{hist.treino}</Text>
+                                      {hist.rpe && (
+                                          <Ionicons name="flame" size={14} color={getCorRPE(hist.rpe)} style={{ marginLeft: 6 }} />
+                                      )}
+                                  </View>
                                   <Text style={styles.historyDate}>{hist.data}</Text>
                               </View>
                               <View style={styles.historyMetricsRow}>
@@ -151,4 +162,4 @@ export function Progress({ route, navigation }: any) {
       )}
     </SafeAreaView>
   );
-}
+};

@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, SafeAreaView, RefreshControl } from "react-native";
-import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
-import { useWorkoutList } from "./useWorkouts";
+import { useWorkoutList } from "./useWorkoutList";
 
 export function WorkoutList({ route, navigation }: any) {
   const { conexaoId } = route.params || { conexaoId: "1" };
@@ -42,7 +42,7 @@ export function WorkoutList({ route, navigation }: any) {
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 80 }}>
               <MaterialCommunityIcons name="clipboard-text-off-outline" size={64} color="#333" />
               <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold', marginTop: 16 }}>Nenhum treino prescrito</Text>
-              <Text style={{ color: '#888', fontSize: 14, textAlign: 'center', marginTop: 8, paddingHorizontal: 20 }}>
+              <Text style={{ color: '#888', fontSize: 14, textAlign: 'center', marginTop: 8, paddingHorizontal: 20, lineHeight: 20 }}>
                 Seu personal ainda não disponibilizou sua ficha de treinamentos.
               </Text>
             </View>
@@ -50,17 +50,18 @@ export function WorkoutList({ route, navigation }: any) {
 
           {treinoDeHoje ? (
             <View style={styles.sectionContainer}>
-              <TouchableOpacity style={styles.cardHoje} activeOpacity={0.9} onPress={() => openWorkoutList(treinoDeHoje.id)}>
-                <LinearGradient colors={["rgba(255, 107, 0, 0.15)", "rgba(255, 107, 0, 0.0)"]} style={styles.cardGradientBg} />
+              <TouchableOpacity style={[styles.cardHoje, treinoDeHoje.fez_hoje && { borderColor: '#00E676' }]} activeOpacity={0.9} onPress={() => openWorkoutList(treinoDeHoje.id)}>
+                
+                <LinearGradient colors={treinoDeHoje.fez_hoje ? ["rgba(0, 230, 118, 0.15)", "transparent"] : ["rgba(255, 107, 0, 0.15)", "transparent"]} style={styles.cardGradientBg} />
                 
                 <View style={styles.cardHojeTop}>
-                  <View style={styles.badgeHoje}>
+                  <View style={[styles.badgeHoje, treinoDeHoje.fez_hoje && { backgroundColor: '#00E676' }]}>
                     <Ionicons name="flame" size={12} color="#FFF" style={{ marginRight: 6 }} />
-                    <Text style={styles.badgeHojeText}>TREINO DE HOJE</Text>
+                    <Text style={styles.badgeHojeText}>{treinoDeHoje.fez_hoje ? "TREINOU HOJE!" : "TREINO DE HOJE"}</Text>
                   </View>
                   <View style={styles.statusPill}>
-                    <View style={styles.statusDotGreen} />
-                    <Text style={styles.statusPillText}>{treinoDeHoje.status}</Text>
+                    <View style={[styles.statusDotGreen, treinoDeHoje.fez_hoje && { backgroundColor: '#00E676' }]} />
+                    <Text style={[styles.statusPillText, treinoDeHoje.fez_hoje && { color: '#00E676' }]}>{treinoDeHoje.status}</Text>
                   </View>
                 </View>
 
@@ -69,22 +70,22 @@ export function WorkoutList({ route, navigation }: any) {
 
                 <View style={styles.infoGridHoje}>
                   <View style={styles.infoRow}>
-                    <MaterialCommunityIcons name="dumbbell" size={16} color="#FF6B00" />
+                    <MaterialCommunityIcons name="dumbbell" size={16} color={treinoDeHoje.fez_hoje ? "#00E676" : "#FF6B00"} />
                     <Text style={styles.infoText}>{treinoDeHoje.qtd_exercicios} exercícios</Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <Ionicons name="layers-outline" size={16} color="#FF6B00" />
+                    <Ionicons name="layers-outline" size={16} color={treinoDeHoje.fez_hoje ? "#00E676" : "#FF6B00"} />
                     <Text style={styles.infoText}>{treinoDeHoje.qtd_series} séries</Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <Ionicons name="time-outline" size={16} color="#FF6B00" />
+                    <Ionicons name="time-outline" size={16} color={treinoDeHoje.fez_hoje ? "#00E676" : "#FF6B00"} />
                     <Text style={styles.infoText}>~ {treinoDeHoje.duracao_estimada}</Text>
                   </View>
                 </View>
 
                 <View style={styles.btnIniciarHoje}>
-                  <Text style={styles.btnIniciarHojeText}>VER TREINO</Text>
-                  <Ionicons name="arrow-forward" size={18} color="#000" style={{ marginLeft: 8 }} />
+                  <Text style={styles.btnIniciarHojeText}>{treinoDeHoje.fez_hoje ? "VER TREINO CONCLUÍDO" : "INICIAR TREINO"}</Text>
+                  <Ionicons name={treinoDeHoje.fez_hoje ? "checkmark" : "arrow-forward"} size={18} color="#000" style={{ marginLeft: 8 }} />
                 </View>
               </TouchableOpacity>
             </View>
@@ -92,7 +93,7 @@ export function WorkoutList({ route, navigation }: any) {
 
           {outrosTreinos.length > 0 ? (
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Todos os Treinos</Text>
+              <Text style={styles.sectionTitle}>Sua Rotina</Text>
               
               {outrosTreinos.map((treino) => (
                 <TouchableOpacity key={treino.id} style={styles.cardNormal} activeOpacity={0.8} onPress={() => openWorkoutList(treino.id)}>
@@ -124,7 +125,7 @@ export function WorkoutList({ route, navigation }: any) {
                   <View style={styles.cardNormalFooter}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Ionicons name="calendar-outline" size={14} color="#666" style={{ marginRight: 6 }} />
-                      <Text style={styles.footerLabel}>Última execução: <Text style={styles.footerValue}>{treino.ultima_execucao || "Nunca"}</Text></Text>
+                      <Text style={styles.footerLabel}>Última execução: <Text style={styles.footerValue}>{treino.ultima_execucao}</Text></Text>
                     </View>
                   </View>
 
@@ -137,4 +138,4 @@ export function WorkoutList({ route, navigation }: any) {
       )}
     </SafeAreaView>
   );
-}
+};
