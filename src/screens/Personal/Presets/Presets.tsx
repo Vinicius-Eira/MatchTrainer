@@ -83,7 +83,11 @@ export const Presets = ({ navigation }: any) => {
       <View style={styles.container}>
         
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()} 
+            style={styles.backBtn} 
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          >
             <Feather name="chevron-left" size={26} color="#FFF" />
           </TouchableOpacity>
           <View style={styles.headerTitleBox}>
@@ -103,7 +107,10 @@ export const Presets = ({ navigation }: any) => {
             data={presets}
             keyExtractor={(item) => item.id}
             renderItem={renderPresetCard}
-            contentContainerStyle={styles.listContainer}
+            contentContainerStyle={[
+              styles.listContainer,
+              presets.length === 0 && styles.emptyListContainer
+            ]}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <View style={styles.emptyState}>
@@ -139,14 +146,24 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#050505' },
   container: { flex: 1 },
   
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: scale(16), paddingTop: Platform.OS === 'android' ? verticalScale(30) : verticalScale(10), paddingBottom: verticalScale(20), borderBottomWidth: 1, borderBottomColor: '#121214' },
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: scale(16), 
+    paddingTop: Platform.OS === 'android' ? verticalScale(20) : verticalScale(10), 
+    paddingBottom: verticalScale(16), 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#121214' 
+  },
   backBtn: { padding: scale(4) },
-  headerTitleBox: { alignItems: 'center' },
-  headerTitle: { color: '#FFF', fontSize: scale(16), fontWeight: '900', letterSpacing: 1 },
-  headerSubtitle: { color: '#888', fontSize: scale(12), marginTop: verticalScale(2) },
+  headerTitleBox: { flex: 1, alignItems: 'center' },
+  headerTitle: { color: '#FFF', fontSize: scale(16), fontWeight: '900', letterSpacing: 1, textAlign: 'center' },
+  headerSubtitle: { color: '#888', fontSize: scale(12), marginTop: verticalScale(2), textAlign: 'center' },
   
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContainer: { padding: scale(16), paddingBottom: verticalScale(120) }, 
+  emptyListContainer: { flexGrow: 1, justifyContent: 'center' },
   
   presetCard: { backgroundColor: '#0A0A0C', borderRadius: scale(16), padding: scale(16), marginBottom: verticalScale(16), borderWidth: 1, borderColor: '#1A1A20' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: verticalScale(16) },
@@ -161,9 +178,9 @@ const styles = StyleSheet.create({
   tagText: { color: '#A0A0A5', fontSize: scale(12), fontWeight: '600', marginLeft: scale(6) },
   dateText: { color: '#555', fontSize: scale(12) },
 
-  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(80), paddingHorizontal: scale(30) },
+  emptyState: { alignItems: 'center', paddingHorizontal: scale(30), paddingBottom: verticalScale(60) },
   emptyIconGlow: { width: scale(100), height: scale(100), borderRadius: scale(50), backgroundColor: 'rgba(255, 81, 0, 0.03)', borderWidth: 1, borderColor: 'rgba(255, 81, 0, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: verticalScale(20), shadowColor: '#FF5100', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 20 },
-  emptyTitle: { color: '#FFF', fontSize: scale(20), fontWeight: 'bold', marginBottom: verticalScale(10) },
+  emptyTitle: { color: '#FFF', fontSize: scale(20), fontWeight: 'bold', marginBottom: verticalScale(10), textAlign: 'center' },
   emptySubtitle: { color: '#777', fontSize: scale(14), textAlign: 'center', lineHeight: 22 },
 
   fabContainer: { position: 'absolute', bottom: verticalScale(30), width: '100%', alignItems: 'center', justifyContent: 'center' },

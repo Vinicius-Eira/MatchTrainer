@@ -157,19 +157,19 @@ export function VisaoAluno({ route, navigation }: any) {
               )}
               
               <TouchableOpacity style={[styles.btnChat, { flex: 1 }]} onPress={v.abrirChat} activeOpacity={0.85}>
-                <Ionicons name="chatbubbles" size={22} color={theme.colors.backgroundPure} />
+                <Ionicons name="chatbubbles" size={22} color={theme.colors.primary} />
                 <Text style={styles.btnChatText}>
-                  {v.status === "pendente" || v.status === "aguardando_personal" ? "Entrar em Conversa" : "Responder Aluno"}
-                </Text>
-              </TouchableOpacity>
+                 {v.status === "pendente" || v.status === "aguardando_personal" ? "Entrar em Conversa" : "Responder Aluno"}
+               </Text>
+             </TouchableOpacity>
             </View>
 
           ) : (
             
             <TouchableOpacity style={styles.btnChat} onPress={v.abrirChat} activeOpacity={0.85}>
-              <Ionicons name="chatbubbles" size={22} color={theme.colors.backgroundPure} />
-              <Text style={styles.btnChatText}>Abrir Conversa</Text>
-            </TouchableOpacity>
+             <Ionicons name="chatbubbles" size={22} color={theme.colors.primary} />
+             <Text style={styles.btnChatText}>Abrir Conversa</Text>
+           </TouchableOpacity>
             
           )}
         </View>

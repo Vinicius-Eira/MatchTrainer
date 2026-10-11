@@ -19,8 +19,8 @@ export function AdicionarAluno({ route, navigation }: any) {
       <View style={styles.glowBottom} />
 
       <BlurView intensity={Platform.OS === "ios" ? 60 : 100} tint="dark" style={styles.headerGlass}>
-        <TouchableOpacity style={styles.btnVoltar} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Ionicons name="close" size={moderateScale(20)} color="#FFF" />
+        <TouchableOpacity style={styles.btnVoltar} onPress={() => navigation.goBack()} activeOpacity={0.7} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
+          <Ionicons name="close" size={moderateScale(22)} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {state.planoAtivo ? "Ajuste de Plano" : "Gerar Proposta"}
@@ -34,7 +34,7 @@ export function AdicionarAluno({ route, navigation }: any) {
             
             <View style={styles.heroSection}>
               <View style={styles.iconBadge}>
-                <MaterialCommunityIcons name="file-document-edit-outline" size={moderateScale(32)} color={theme.colors.primary} />
+                <MaterialCommunityIcons name="file-document-edit-outline" size={moderateScale(32)} color="#FF5100" />
               </View>
               
               <Text style={styles.title}>
@@ -55,13 +55,13 @@ export function AdicionarAluno({ route, navigation }: any) {
             
             <View style={styles.inputGroup}>
               <View style={[styles.inputWrapper, state.inputFocado === "nome" && styles.inputWrapperFocused, state.leadInjetado && {opacity: 0.5}]}>
-                <Ionicons name="person-outline" size={moderateScale(18)} color={state.inputFocado === "nome" ? theme.colors.primary : "rgba(255, 107, 0, 0.4)"} style={styles.inputIcon} />
-                <TextInput style={styles.input} placeholder="Nome do aluno" placeholderTextColor="#555" value={state.nome} onChangeText={actions.setNome} onFocus={() => actions.setInputFocado("nome")} onBlur={() => actions.setInputFocado(null)} cursorColor={theme.colors.primary} keyboardAppearance="dark" autoCapitalize="words" editable={!state.leadInjetado}/>
+                <Ionicons name="person-outline" size={moderateScale(18)} color={state.inputFocado === "nome" ? "#FF5100" : "rgba(255, 81, 0, 0.4)"} style={styles.inputIcon} />
+                <TextInput style={styles.input} placeholder="Nome do aluno" placeholderTextColor="#555" value={state.nome} onChangeText={actions.setNome} onFocus={() => actions.setInputFocado("nome")} onBlur={() => actions.setInputFocado(null)} cursorColor="#FF5100" keyboardAppearance="dark" autoCapitalize="words" editable={!state.leadInjetado}/>
               </View>
               
               <View style={[styles.inputWrapper, state.inputFocado === "email" && styles.inputWrapperFocused, state.leadInjetado && {opacity: 0.5}]}>
-                <Ionicons name="mail-outline" size={moderateScale(18)} color={state.inputFocado === "email" ? theme.colors.primary : "rgba(255, 107, 0, 0.4)"} style={styles.inputIcon} />
-                <TextInput style={styles.input} placeholder="E-mail principal" placeholderTextColor="#555" keyboardType="email-address" autoCapitalize="none" value={state.email} onChangeText={actions.setEmail} onFocus={() => actions.setInputFocado("email")} onBlur={() => actions.setInputFocado(null)} cursorColor={theme.colors.primary} keyboardAppearance="dark" editable={!state.leadInjetado} />
+                <Ionicons name="mail-outline" size={moderateScale(18)} color={state.inputFocado === "email" ? "#FF5100" : "rgba(255, 81, 0, 0.4)"} style={styles.inputIcon} />
+                <TextInput style={styles.input} placeholder="E-mail do aluno" placeholderTextColor="#555" keyboardType="email-address" autoCapitalize="none" value={state.email} onChangeText={actions.setEmail} onFocus={() => actions.setInputFocado("email")} onBlur={() => actions.setInputFocado(null)} cursorColor="#FF5100" keyboardAppearance="dark" editable={!state.leadInjetado} />
               </View>
             </View>
 
@@ -73,7 +73,7 @@ export function AdicionarAluno({ route, navigation }: any) {
             <View style={styles.modalityContainer}>
               {OPCOES_MODALIDADE.map((opcao) => {
                 const isSelected = state.modalidade === opcao.id;
-                const iconColor = isSelected ? theme.colors.primary : "rgba(255, 107, 0, 0.4)";
+                const iconColor = isSelected ? "#FF5100" : "rgba(255, 81, 0, 0.4)";
                 
                 return (
                   <TouchableOpacity key={opcao.id} style={[styles.modalityCard, isSelected && styles.modalityCardActive]} onPress={() => actions.setModalidade(opcao.id)} activeOpacity={0.8}>
@@ -142,21 +142,21 @@ export function AdicionarAluno({ route, navigation }: any) {
             </View>
 
             <View style={styles.sectionHeader}>
-              <View style={[styles.sectionDot, { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary }]} />
+              <View style={[styles.sectionDot, { backgroundColor: "#FF5100", shadowColor: "#FF5100" }]} />
               <Text style={styles.sectionTitle}>Termos Legais</Text>
             </View>
 
             <View style={styles.editorHeader}>
               <Text style={styles.editorHeaderDesc}>Adicione cláusulas personalizadas ou anexe um PDF para compor o contrato oficial.</Text>
               <TouchableOpacity style={styles.btnImportar} onPress={() => actions.setModalUploadVisivel(true)} activeOpacity={0.7}>
-                <Ionicons name="cloud-upload" size={14} color={theme.colors.primary} />
+                <Ionicons name="cloud-upload" size={14} color="#FF5100" />
                 <Text style={styles.btnImportarText}>Importar</Text>
               </TouchableOpacity>
             </View>
 
             {state.isProcessandoTexto ? (
               <View style={styles.iaProcessingContainer}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <ActivityIndicator size="large" color="#FF5100" />
                 <Text style={styles.iaProcessingTitle}>Analisando regras...</Text>
                 <Text style={styles.iaProcessingStatus}>{state.statusProcessamento}</Text>
               </View>
@@ -171,7 +171,7 @@ export function AdicionarAluno({ route, navigation }: any) {
                   onChangeText={actions.setObservacoes}
                   onFocus={() => actions.setInputFocado("obs")}
                   onBlur={() => actions.setInputFocado(null)}
-                  cursorColor={theme.colors.primary}
+                  cursorColor="#FF5100"
                   keyboardAppearance="dark"
                 />
               </View>
@@ -179,15 +179,15 @@ export function AdicionarAluno({ route, navigation }: any) {
 
             {!state.isProcessandoTexto && (
               <TouchableOpacity style={styles.btnMagicIA} onPress={actions.handleMelhorarTextoManual} activeOpacity={0.8}>
-                <FontAwesome5 name="magic" size={moderateScale(14)} color={theme.colors.primary} />
+                <FontAwesome5 name="magic" size={moderateScale(14)} color="#FF5100" />
                 <Text style={styles.btnMagicIAText}>Estruturar com I.A.</Text>
               </TouchableOpacity>
             )}
 
             <TouchableOpacity style={[styles.btnFinalizar, state.loading && { opacity: 0.7 }]} onPress={actions.handleAdicionarAluno} disabled={state.loading} activeOpacity={0.9}>
-              {state.loading ? <ActivityIndicator size="small" color={theme.colors.primary} /> : (
+              {state.loading ? <ActivityIndicator size="small" color="#FF5100" /> : (
                 <>
-                  <Ionicons name="paper-plane" size={moderateScale(20)} color={theme.colors.primary} />
+                  <Ionicons name="paper-plane" size={moderateScale(20)} color="#FF5100" />
                   <Text style={styles.btnFinalizarText}>{state.planoAtivo ? "Salvar Ajustes" : "Enviar Proposta"}</Text>
                 </>
               )}
@@ -206,19 +206,19 @@ export function AdicionarAluno({ route, navigation }: any) {
             <Text style={styles.sheetSubtitle}>Como deseja subir o seu contrato base?</Text>
 
             <TouchableOpacity style={styles.uploadOptionBtn} onPress={actions.handlePickDocument} activeOpacity={0.7}>
-              <View style={[styles.uploadOptionIcon, { backgroundColor: 'rgba(255, 107, 0, 0.1)', borderColor: 'rgba(255, 107, 0, 0.3)' }]}><Ionicons name="document-text" size={24} color={theme.colors.primary} /></View>
+              <View style={[styles.uploadOptionIcon, { backgroundColor: 'rgba(255, 81, 0, 0.05)', borderColor: 'rgba(255, 81, 0, 0.2)' }]}><Ionicons name="document-text" size={24} color="#FF5100" /></View>
               <View style={styles.uploadOptionTexts}><Text style={styles.uploadOptionTitle}>Arquivo Digital (PDF)</Text><Text style={styles.uploadOptionDesc}>Ficará anexado para o aluno assinar.</Text></View>
               <Ionicons name="chevron-forward" size={18} color="#444" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.uploadOptionBtn} onPress={actions.handlePickImage} activeOpacity={0.7}>
-              <View style={[styles.uploadOptionIcon, { backgroundColor: 'rgba(255, 107, 0, 0.1)', borderColor: 'rgba(255, 107, 0, 0.3)' }]}><Ionicons name="images" size={24} color={theme.colors.primary} /></View>
+              <View style={[styles.uploadOptionIcon, { backgroundColor: 'rgba(255, 81, 0, 0.05)', borderColor: 'rgba(255, 81, 0, 0.2)' }]}><Ionicons name="images" size={24} color="#FF5100" /></View>
               <View style={styles.uploadOptionTexts}><Text style={styles.uploadOptionTitle}>Print da Galeria (Leitura IA)</Text><Text style={styles.uploadOptionDesc}>A IA extrai o texto do print direto pro editor.</Text></View>
               <Ionicons name="chevron-forward" size={18} color="#444" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.uploadOptionBtn} onPress={actions.handleTakePicture} activeOpacity={0.7}>
-              <View style={[styles.uploadOptionIcon, { backgroundColor: 'rgba(255, 107, 0, 0.1)', borderColor: 'rgba(255, 107, 0, 0.3)' }]}><Ionicons name="camera" size={24} color={theme.colors.primary} /></View>
+              <View style={[styles.uploadOptionIcon, { backgroundColor: 'rgba(255, 81, 0, 0.05)', borderColor: 'rgba(255, 81, 0, 0.2)' }]}><Ionicons name="camera" size={24} color="#FF5100" /></View>
               <View style={styles.uploadOptionTexts}><Text style={styles.uploadOptionTitle}>Câmera (Leitura IA)</Text><Text style={styles.uploadOptionDesc}>Tire uma foto do papel e a IA lê o texto.</Text></View>
               <Ionicons name="chevron-forward" size={18} color="#444" />
             </TouchableOpacity>

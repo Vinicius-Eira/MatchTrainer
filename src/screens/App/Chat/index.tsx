@@ -28,7 +28,6 @@ export function Chat({ route, navigation }: any) {
   const renderDynamicIsland = () => {
     if (loading) return null;
 
-    // ALUNO: Modal para fechar parceria
     if (tipoUsuarioLogado === "aluno" && ["pendente", "em_contato", "lead"].includes(statusConexao)) {
       if (mensagens.length === 0) return null;
       return (
@@ -50,7 +49,6 @@ export function Chat({ route, navigation }: any) {
       );
     }
 
-    // PERSONAL: Recebeu solicitação -> Vai pro Contrato
     if (tipoUsuarioLogado === "personal" && statusConexao === "aguardando_personal") {
       return (
         <View style={styles.islandContainer}>
@@ -74,7 +72,17 @@ export function Chat({ route, navigation }: any) {
       );
     }
 
-    // ALUNO: Aguardando Personal Criar Contrato
+    if (tipoUsuarioLogado === "personal" && ["aguardando_aluno", "proposta_enviada", "aguardando_pagamento"].includes(statusConexao)) {
+      return (
+        <View style={styles.pillContainer}>
+          <View style={[styles.pillWaiting, { backgroundColor: 'rgba(0, 230, 118, 0.1)', borderColor: 'rgba(0, 230, 118, 0.3)' }]}>
+            <Ionicons name="checkmark-circle" size={16} color="#00E676" style={{ marginRight: 8 }} />
+            <Text style={[styles.pillText, { color: '#00E676' }]}>Contrato Gerado! Aguardando o aluno finalizar.</Text>
+          </View>
+        </View>
+      );
+    }
+
     if (tipoUsuarioLogado === "aluno" && statusConexao === "aguardando_personal") {
       return (
         <View style={styles.pillContainer}>
@@ -85,6 +93,7 @@ export function Chat({ route, navigation }: any) {
         </View>
       );
     }
+    
     return null;
   };
 
@@ -181,4 +190,4 @@ export function Chat({ route, navigation }: any) {
       )}
     </View>
   );
-}
+};

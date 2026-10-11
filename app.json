@@ -19,7 +19,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#070707",
+        "backgroundColor": "#050505",
         "foregroundImage": "./src/assets/images/icon.png"
       },
       "edgeToEdgeEnabled": true,
@@ -40,21 +40,14 @@
         }
       ]
     },
-    "web": {
-      "output": "static",
-      "favicon": "./src/assets/images/favicon.png"
-    },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./src/assets/images/icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#070707",
+          "backgroundColor": "#050505",
           "dark": {
-            "backgroundColor": "#070707"
+            "backgroundColor": "#050505"
           }
         }
       ],
