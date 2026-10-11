@@ -178,6 +178,6 @@ export const styles = StyleSheet.create({
   btnDecline: { width: scale(64), height: scale(64), borderRadius: moderateScale(20), backgroundColor: "rgba(255,59,48,0.1)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,59,48,0.3)" },
   btnAccept: { flex: 1, backgroundColor: "#00E676", height: verticalScale(64), borderRadius: moderateScale(20), flexDirection: "row", justifyContent: "center", alignItems: "center", shadowColor: "#00E676", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10 },
   btnAcceptText: { color: "#000", fontSize: moderateScale(16), fontWeight: "900", letterSpacing: 0.5, textTransform: "uppercase" },
-  btnChat: { backgroundColor: theme.colors.primary, height: verticalScale(64), borderRadius: moderateScale(20), flexDirection: "row", justifyContent: "center", alignItems: "center", gap: scale(10) },
-  btnChatText: { color: theme.colors.backgroundPure, fontSize: moderateScale(17), fontWeight: "900", letterSpacing: 0.5 },
+  btnChat: { backgroundColor: "rgba(10, 10, 12, 0.85)", borderWidth: 1.5, borderColor: theme.colors.primary, height: verticalScale(64), borderRadius: moderateScale(20), flexDirection: "row", justifyContent: "center", alignItems: "center", gap: scale(10), shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 8 },
+  btnChatText: { color: theme.colors.primary, fontSize: moderateScale(15), fontWeight: "900", letterSpacing: 1,textTransform: "uppercase"},
 });

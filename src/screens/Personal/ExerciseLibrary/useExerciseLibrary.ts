@@ -26,6 +26,7 @@ export function useExerciseLibrary(route: any, navigation: any) {
   const params = route.params || {};
   const isSelectionMode = params.isSelectionMode || false;
   const isStudioMode = params.isStudioMode || false; 
+
   const dayId = params.dayId; 
 
   const addExerciseToDay = useWorkoutCreatorStore((state: any) => state.addExerciseToDay || state.addExercise);

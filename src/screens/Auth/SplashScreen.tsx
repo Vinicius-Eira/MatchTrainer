@@ -71,7 +71,7 @@ export function SplashScreen({ navigation }: any) {
           if (isSetupFinalizado) {
             navigation.replace("UsuarioTabs"); 
           } else {
-            navigation.replace("ClienteSetup"); 
+            navigation.replace("AlunoSetup"); 
           }
           return;
         }

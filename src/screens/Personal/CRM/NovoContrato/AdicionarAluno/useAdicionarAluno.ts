@@ -70,7 +70,7 @@ export function useAdicionarAluno(route: any, navigation: any) {
   const mostrarAjudaFinanceiro = () => {
     Alert.alert(
       "Como funciona o Fechamento?",
-      "O valor definido aqui será a base do seu contrato.\n\n• O aluno só terá acesso às planilhas de treino após o app confirmar o aceite deste valor.\n• O ciclo de cobrança (Mensal, Trimestral) determinará quando ele será avisado da renovação.",
+      "O valor definido aqui será a base do seu contrato.\n\nO aluno só terá acesso às planilhas de treino após o app confirmar o aceite deste valor.\nO ciclo de cobrança (Mensal, Trimestral) determinará quando ele será avisado da renovação.",
       [{ text: "Entendi", style: "default" }]
     );
   };
@@ -164,7 +164,7 @@ export function useAdicionarAluno(route: any, navigation: any) {
     
     setTimeout(() => {
       const textoBase = observacoes.trim();
-      const textoFormatado = `TERMOS E CONDIÇÕES DO ACOMPANHAMENTO\n\nEscopo de Trabalho:\n${textoBase}\n\n1. O aluno compromete-se a seguir as diretrizes prescritas no aplicativo.\n2. Os pagamentos devem ocorrer até a data de vencimento acordada.\n3. O suporte para dúvidas será realizado via chat com SLA de resposta em até 24h.`;
+      const textoFormatado = `TERMOS E CONDIÇÕES DO ACOMPANHAMENTO\n\nEscopo de Trabalho:\n${textoBase}\n\nO aluno compromete-se a seguir as diretrizes prescritas no aplicativo.\n2. Os pagamentos devem ocorrer até a data de vencimento acordada.\n3. O suporte para dúvidas será realizado via chat com SLA de resposta em até 24h.`;
       
       setObservacoes(textoFormatado);
       setIsProcessandoTexto(false);
@@ -228,10 +228,10 @@ export function useAdicionarAluno(route: any, navigation: any) {
             tipo_evento: "NOVO_CONTRATO", descricao: `Nova proposta de R$ ${valorFloat} enviada ao aluno.`, metadados: { valor: valorFloat }
           }]);
           
-          await supabase.from("conexoes").update({ status: "aguardando_assinatura" }).eq("id", conexaoId);
+          await supabase.from("conexoes").update({ status: "aguardando_aluno" }).eq("id", conexaoId);
           
           Alert.alert("Proposta Enviada!", "O aluno receberá a proposta para assinar.");
-          navigation.navigate("Messages"); 
+          navigation.goBack(); 
         }
 
       } else {

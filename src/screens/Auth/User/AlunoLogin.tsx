@@ -72,13 +72,13 @@ export function AlunoLogin({ navigation }: any) {
             if (userData.preferencias?.setup_completo === true || userData.setup_completo === true) {
                  navigation.replace("UsuarioTabs");
             } else {
-                 navigation.reset({ index: 0, routes: [{ name: "ClienteSetup" }] });
+                 navigation.reset({ index: 0, routes: [{ name: "AlunoSetup" }] });
             }
           } else {
             navigation.replace("UsuarioTabs");
           }
         } else {
-          navigation.reset({ index: 0, routes: [{ name: "ClienteSetup" }] });
+          navigation.reset({ index: 0, routes: [{ name: "AlunoSetup" }] });
         }
       }
     } catch (error) {

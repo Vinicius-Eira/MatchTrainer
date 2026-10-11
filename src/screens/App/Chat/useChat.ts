@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Alert } from "react-native";
 import { supabase } from "../../../services/supabase"; 
+import { useFocusEffect } from "@react-navigation/native";
 
 export function useChat(route: any, navigation: any) {
   const { conexaoId, nomeOutro, fotoOutro, tipoUsuarioLogado } = route.params;
@@ -17,13 +18,29 @@ export function useChat(route: any, navigation: any) {
     await supabase.from("mensagens").update({ lida: true }).eq("id", msgId);
   };
 
+  const checarStatusAtualizado = async () => {
+    try {
+      const { data } = await supabase.from("conexoes").select("status").eq("id", conexaoId).single();
+      if (data && data.status) {
+        setStatusConexao(data.status);
+      }
+    } catch (error) {
+      console.log("Erro ao checar status da conexão no foco:", error);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      checarStatusAtualizado();
+    }, [conexaoId])
+  );
+
   const iniciarChat = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) setMyUserId(user.id);
 
-      const { data: conexaoData } = await supabase.from("conexoes").select("status").eq("id", conexaoId).single();
-      if (conexaoData) setStatusConexao(conexaoData.status);
+      await checarStatusAtualizado();
 
       const { data: msgs, error } = await supabase
         .from("mensagens")
@@ -148,4 +165,4 @@ export function useChat(route: any, navigation: any) {
       setTexto, enviarMensagem, handleAlunoSolicitaParceria, irParaContrato, navigation
     }
   }
-};
+}
