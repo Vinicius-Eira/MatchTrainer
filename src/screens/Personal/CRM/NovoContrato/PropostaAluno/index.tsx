@@ -213,7 +213,7 @@ export function PropostaAluno({ route, navigation }: any) {
                 actions.setModalSucessoVisivel(false);
                 navigation.reset({
                   index: 0,
-                  routes: [{ name: "PainelMeuTreinador", params: { conexaoId: state.conexaoId } }]
+                  routes: [{ name: "AlunoDashboard", params: { conexaoId: state.conexaoId } }]
                 });
               }}
               activeOpacity={0.8}

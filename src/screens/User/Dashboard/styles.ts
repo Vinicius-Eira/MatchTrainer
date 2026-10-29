@@ -64,20 +64,130 @@ export const styles = StyleSheet.create({
 
   btnVerTodos: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 107, 0, 0.1)', paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: moderateScale(12) },
   btnVerTodosText: { color: "#FF6B00", fontSize: moderateScale(12), fontWeight: "bold", marginRight: scale(4) },
-  workoutCard: { borderRadius: moderateScale(20), marginBottom: verticalScale(12), overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,107,0,0.3)" },
-  workoutCardBg: { ...StyleSheet.absoluteFill },
-  workoutCardContent: { padding: scale(20) },
-  workoutHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: verticalScale(12) },
-  workoutTitle: { color: "#FFF", fontSize: moderateScale(20), fontWeight: "900" },
-  workoutSpecs: { flexDirection: "row", gap: scale(12), marginBottom: verticalScale(20) },
-  workoutSpecItem: { flexDirection: "row", alignItems: "center", gap: scale(4) },
-  workoutSpecText: { color: "#CCC", fontSize: moderateScale(12), fontWeight: "bold" },
-  btnStartWorkout: { backgroundColor: "#FFF", paddingVertical: verticalScale(14), borderRadius: moderateScale(12), alignItems: "center" },
-  btnStartWorkoutText: { color: "#000", fontSize: moderateScale(14), fontWeight: "900", textTransform: "uppercase" },
+
+  premiumWorkoutCard: { 
+    backgroundColor: "#0A0A0C", 
+    borderRadius: moderateScale(24), 
+    borderWidth: 1, 
+    borderColor: "#1A1A20", 
+    overflow: "hidden", 
+    padding: scale(20), 
+    shadowColor: "#FF6B00", 
+    shadowOffset: { width: 0, height: 8 }, 
+    shadowOpacity: 0.15, 
+    shadowRadius: 20, 
+    elevation: 8, 
+    marginBottom: verticalScale(20) 
+  },
+  premiumWorkoutHeader: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "flex-start", 
+    marginBottom: verticalScale(16) 
+  },
+  premiumWorkoutBadge: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    backgroundColor: "rgba(255, 107, 0, 0.1)", 
+    paddingHorizontal: scale(10), 
+    paddingVertical: verticalScale(4), 
+    borderRadius: moderateScale(12), 
+    marginBottom: verticalScale(8), 
+    alignSelf: "flex-start", 
+    borderWidth: 1, 
+    borderColor: "rgba(255, 107, 0, 0.2)" 
+  },
+  premiumWorkoutBadgeText: { 
+    color: "#FF6B00", 
+    fontSize: moderateScale(10), 
+    fontWeight: "900", 
+    marginLeft: scale(4), 
+    letterSpacing: 0.5 
+  },
+  premiumWorkoutTitle: { 
+    color: "#FFF", 
+    fontSize: moderateScale(24), 
+    fontWeight: "900", 
+    letterSpacing: -0.5 
+  },
+  premiumWorkoutInfoRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    marginBottom: verticalScale(24) 
+  },
+  premiumWorkoutInfoItem: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    gap: scale(6) 
+  },
+  premiumWorkoutInfoText: { 
+    color: "#AAA", 
+    fontSize: moderateScale(13), 
+    fontWeight: "600" 
+  },
+  premiumWorkoutInfoDot: { 
+    width: scale(4), 
+    height: scale(4), 
+    borderRadius: moderateScale(2), 
+    backgroundColor: "#333", 
+    marginHorizontal: scale(12) 
+  },
+
+  premiumBtnStartOutline: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    paddingVertical: verticalScale(14), 
+    borderRadius: moderateScale(16), 
+    backgroundColor: "rgba(255, 107, 0, 0.05)", 
+    borderWidth: 1,
+    borderColor: "rgba(255, 107, 0, 0.5)",
+    shadowColor: "#FF6B00", 
+    shadowOffset: { width: 0, height: 0 }, 
+    shadowOpacity: 0.2, 
+    shadowRadius: 10, 
+    elevation: 3 
+  },
+  premiumBtnStartTextOutline: { 
+    color: "#FF6B00", 
+    fontSize: moderateScale(14), 
+    fontWeight: "900", 
+    letterSpacing: 1,
+    textShadowColor: "rgba(255, 107, 0, 0.4)", 
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4
+  },
   
-  emptyWorkoutCard: { backgroundColor: "rgba(255, 107, 0, 0.03)", borderRadius: moderateScale(20), padding: scale(30), alignItems: "center", borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.3)", marginBottom: verticalScale(15) },
-  emptyWorkoutTitle: { color: "#FFF", fontSize: moderateScale(16), fontWeight: "bold", marginBottom: verticalScale(4) },
-  emptyWorkoutDesc: { color: "#888", fontSize: moderateScale(12), textAlign: "center" },
+  premiumEmptyWorkout: { 
+    backgroundColor: "#0A0A0C", 
+    borderRadius: moderateScale(20), 
+    borderWidth: 1, 
+    borderColor: "#151515", 
+    padding: scale(30), 
+    alignItems: "center", 
+    marginBottom: verticalScale(20) 
+  },
+  emptyWorkoutIconBg: { 
+    width: scale(64), 
+    height: scale(64), 
+    borderRadius: moderateScale(32), 
+    backgroundColor: "#111", 
+    justifyContent: "center", 
+    alignItems: "center", 
+    marginBottom: verticalScale(16) 
+  },
+  emptyWorkoutTitle: { 
+    color: "#FFF", 
+    fontSize: moderateScale(18), 
+    fontWeight: "bold", 
+    marginBottom: verticalScale(8) 
+  },
+  emptyWorkoutDesc: { 
+    color: "#666", 
+    fontSize: moderateScale(14), 
+    textAlign: "center", 
+    lineHeight: moderateScale(20) 
+  },
 
   feedbackBubble: { backgroundColor: "rgba(255, 107, 0, 0.05)", borderRadius: moderateScale(16), padding: scale(16), borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.3)", marginBottom: verticalScale(10), flexDirection: "row" },
   feedbackText: { color: "#CCC", fontSize: moderateScale(13), lineHeight: moderateScale(18), flex: 1, marginLeft: scale(12) },
@@ -88,11 +198,13 @@ export const styles = StyleSheet.create({
   financeiroIconBox: { width: scale(44), height: scale(44), borderRadius: moderateScale(12), justifyContent: 'center', alignItems: 'center' },
   financeiroTitle: { color: "#FFF", fontSize: moderateScale(14), fontWeight: "bold" },
   financeiroSub: { fontSize: moderateScale(12), fontWeight: "bold", marginTop: verticalScale(4) },
+  
   gridActionsPremium: { flexDirection: 'row', justifyContent: 'space-between', gap: scale(12), marginBottom: verticalScale(25) },
   actionCardPremium: { flex: 1, backgroundColor: "#0A0A0A", borderRadius: moderateScale(16), padding: scale(16), borderWidth: 1, borderColor: "#151515", overflow: "hidden", position: "relative" },
   actionIconWrapper: { width: scale(44), height: scale(44), borderRadius: moderateScale(12), justifyContent: 'center', alignItems: 'center' },
   actionCardTitle: { color: "#FFF", fontSize: moderateScale(15), fontWeight: "bold", marginBottom: verticalScale(4) },
   actionCardDesc: { color: "#888", fontSize: moderateScale(11), fontWeight: "600" },
+  
   trackerCard: { backgroundColor: "#0A0A0A", borderRadius: moderateScale(20), padding: scale(20), borderWidth: 1, borderColor: "#151515", marginBottom: verticalScale(20) },
   trackerHeader: { flexDirection: "row", alignItems: "center", gap: scale(8), marginBottom: verticalScale(8) },
   trackerTitle: { color: "#FFF", fontSize: moderateScale(14), fontWeight: "bold" },
@@ -102,6 +214,7 @@ export const styles = StyleSheet.create({
   progressLabels: { flexDirection: "row", justifyContent: "space-between", marginTop: verticalScale(8) },
   progressLabelLeft: { color: "#FF6B00", fontSize: moderateScale(11), fontWeight: "bold" },
   progressLabelRight: { color: "#666", fontSize: moderateScale(11), fontWeight: "bold" },
+  
   footerRow: { paddingHorizontal: scale(20), marginBottom: verticalScale(20) },
   btnDangerOutline: { paddingVertical: verticalScale(14), borderRadius: moderateScale(16), borderWidth: 1, borderColor: "rgba(255,59,48,0.3)", alignItems: "center" },
   btnDangerText: { color: "#FF3B30", fontSize: moderateScale(13), fontWeight: "bold" },

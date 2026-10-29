@@ -11,69 +11,59 @@ export function useWorkoutPreview(navigation: any, route: any) {
   const [exercicios, setExercicios] = useState<any[]>([]);
 
   const buscarDetalhesDoTreino = async () => {
-    if (!treinoId) throw new Error("ID do treino não fornecido.");
+    if (!treinoId) throw new Error("ID do dia do treino não fornecido.");
 
-    const { data: ficha, error: errFicha } = await supabase
-      .from('treinos_prescritos')
+    const { data: diaTreino, error: errDia } = await supabase
+      .from('workout_days')
       .select(`
         id,
-        nome,
-        descricao_geral,
-        treinos_exercicios (
+        name,
+        training_programs (
+          name,
+          objective,
+          general_observation
+        ),
+        planned_exercises (
           id,
-          ordem,
-          descanso_segundos,
-          observacao_personal,
-          exercicios_dicionario (
-            nome,
-            grupo_muscular,
-            midia_url
-          ),
-          treinos_series_prescritas (
-            numero_serie,
-            reps_alvo,
-            carga_alvo
+          rest_seconds,
+          sets,
+          reps_target,
+          weight_target,
+          public_note,
+          global_exercises (
+            name,
+            muscle_group,
+            gif_url
           )
         )
       `)
       .eq('id', treinoId)
       .single();
 
-    if (errFicha) throw errFicha;
+    if (errDia) throw errDia;
 
-    const { data: execucoes } = await supabase
-      .from('treinos_execucoes')
-      .select('data_inicio')
-      .eq('treino_id', treinoId)
-      .order('data_inicio', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    return { ficha, ultimaData: execucoes?.data_inicio || null };
+    return { diaTreino, ultimaData: null };
   };
 
-  const formatarDadosDoTreino = (fichaSupabase: any, ultimaData: string | null) => {
+  const formatarDadosDoTreino = (diaSupabase: any, ultimaData: string | null) => {
     let totalSeriesGlobais = 0;
-    const exerciciosOrdenados = fichaSupabase.treinos_exercicios.sort((a: any, b: any) => a.ordem - b.ordem);
-
-    const exerciciosFormatados = exerciciosOrdenados.map((ex: any) => {
-      const seriesOrdenadas = ex.treinos_series_prescritas.sort((sa: any, sb: any) => sa.numero_serie - sb.numero_serie);
-      const numSeries = seriesOrdenadas.length;
+    
+    const listaOriginal = diaSupabase.planned_exercises || [];
+    
+    const exerciciosFormatados = listaOriginal.map((ex: any) => {
+      const numSeries = Number(ex.sets) || 0;
       totalSeriesGlobais += numSeries;
-
-      const repsAlvoVisual = seriesOrdenadas.length > 0 ? seriesOrdenadas[0].reps_alvo : "--";
-      const cargaAlvoVisual = seriesOrdenadas.length > 0 ? seriesOrdenadas[0].carga_alvo : "--";
 
       return {
         id: ex.id,
-        nome: ex.exercicios_dicionario?.nome || "Exercício sem nome",
-        grupo_muscular: ex.exercicios_dicionario?.grupo_muscular || "",
-        imagem_url: ex.exercicios_dicionario?.midia_url || null,
+        nome: ex.global_exercises?.name || "Exercício Customizado",
+        grupo_muscular: ex.global_exercises?.muscle_group || "",
+        imagem_url: ex.global_exercises?.gif_url || null,
         series: numSeries,
-        reps_alvo: repsAlvoVisual,
-        carga_alvo: cargaAlvoVisual,
-        descanso: ex.descanso_segundos || 60,
-        observacao: ex.observacao_personal || null
+        reps_alvo: ex.reps_target || "--",
+        carga_alvo: ex.weight_target || "--",
+        descanso: ex.rest_seconds || 60,
+        observacao: ex.public_note || null
       };
     });
 
@@ -90,14 +80,16 @@ export function useWorkoutPreview(navigation: any, route: any) {
       if (diffDays === 0) {
         mensagemHype = "Você já treinou esta ficha hoje! Modo insano ativado 🔥";
       } else {
-        mensagemHype = `Você fez este treino há ${diffDays} dias. Tente bater suas cargas de antes!`;
+        mensagemHype = `Você fez este treino há ${diffDays} dias. Tente bater suas cargas!`;
       }
     }
 
+    const programaBase = diaSupabase.training_programs;
+
     const treinoFormatado = {
-      nome: fichaSupabase.nome,
-      objetivo: fichaSupabase.descricao_geral || "Treino Personalizado",
-      observacao_geral: null,
+      nome: diaSupabase.name,
+      objetivo: programaBase?.objective || "Treino Personalizado",
+      observacao_geral: programaBase?.general_observation || null,
       total_series: totalSeriesGlobais,
       mensagem_hype: mensagemHype,
       duracao: `~ ${Math.max(30, exerciciosFormatados.length * 8)} min` 
@@ -111,9 +103,9 @@ export function useWorkoutPreview(navigation: any, route: any) {
 
     const carregarInicial = async () => {
       try {
-        const { ficha, ultimaData } = await buscarDetalhesDoTreino();
-        if (ficha && isMounted) {
-          const { treinoFormatado, exerciciosFormatados } = formatarDadosDoTreino(ficha, ultimaData);
+        const { diaTreino, ultimaData } = await buscarDetalhesDoTreino();
+        if (diaTreino && isMounted) {
+          const { treinoFormatado, exerciciosFormatados } = formatarDadosDoTreino(diaTreino, ultimaData);
           setTreino(treinoFormatado);
           setExercicios(exerciciosFormatados);
         }
@@ -138,9 +130,9 @@ export function useWorkoutPreview(navigation: any, route: any) {
   const onRefresh = async () => {
     try {
       setRefreshing(true);
-      const { ficha, ultimaData } = await buscarDetalhesDoTreino();
-      if (ficha) {
-        const { treinoFormatado, exerciciosFormatados } = formatarDadosDoTreino(ficha, ultimaData);
+      const { diaTreino, ultimaData } = await buscarDetalhesDoTreino();
+      if (diaTreino) {
+        const { treinoFormatado, exerciciosFormatados } = formatarDadosDoTreino(diaTreino, ultimaData);
         setTreino(treinoFormatado);
         setExercicios(exerciciosFormatados);
       }
@@ -159,13 +151,5 @@ export function useWorkoutPreview(navigation: any, route: any) {
     navigation.goBack();
   };
 
-  return {
-    loading,
-    refreshing,
-    onRefresh,
-    treino,
-    exercicios,
-    iniciarTreino,
-    voltar
-  };
+  return { loading, refreshing, onRefresh, treino, exercicios, iniciarTreino, voltar };
 }

@@ -36,14 +36,12 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
     const mediaUrl = item.gif_url || item.video_url || '';
     const hasMedia = mediaUrl.trim().length > 0;
     const isVideo = hasMedia && (mediaUrl.toLowerCase().includes('.mp4') || mediaUrl.toLowerCase().includes('.mov'));
-    const isUploading = state.uploadingId === item.id;
 
     return (
       <TouchableOpacity
         style={styles.cardWrapper}
-        onPress={() => actions.handleSelectExercise(item)}
-        activeOpacity={0.8}
-        disabled={isUploading}
+        onPress={state.isSelectionMode ? () => actions.handleSelectExercise(item) : undefined}
+        activeOpacity={state.isSelectionMode ? 0.8 : 1}
       >
         <View style={styles.card}>
           <View style={StyleSheet.absoluteFill}>
@@ -71,13 +69,6 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
             style={StyleSheet.absoluteFill}
           />
 
-          {isUploading && (
-            <View style={styles.uploadingOverlay}>
-              <ActivityIndicator size="large" color={MATCH_COLORS.primary} />
-              <Text style={styles.uploadingText}>Enviando Vídeo...</Text>
-            </View>
-          )}
-
           <View style={styles.content}>
             {item.type === 'PERSONAL' ? (
               <View style={styles.customBadge}>
@@ -99,13 +90,7 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
                   <Feather name="plus" size={22} color="#FFF" />
                 </View>
               )}
-
-              {state.isStudioMode && !isUploading && (
-                <View style={styles.studioButton}>
-                  <Feather name="upload" size={16} color={MATCH_COLORS.primary} style={{ marginRight: scale(6) }} />
-                  <Text style={styles.studioButtonText}>Gravar</Text>
-                </View>
-              )}
+              {/* O botão "Gravar" que ficava aqui foi removido conforme solicitado */}
             </View>
           </View>
         </View>
@@ -126,7 +111,7 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
           <Text style={styles.headerTitle}>
             {state.isSelectionMode ? 'SELECIONAR EXERCÍCIO' : state.isStudioMode ? 'MEU ESTÚDIO' : 'BIBLIOTECA'}
           </Text>
-          {state.isStudioMode && <Text style={styles.headerSubtitle}>Toque em um exercício para gravar</Text>}
+          {state.isStudioMode && <Text style={styles.headerSubtitle}>Crie seu exercício no botão (+)</Text>}
         </View>
 
         <TouchableOpacity onPress={() => actions.setIsModalVisible(true)} style={styles.iconButtonPrimary}>

@@ -1,10 +1,11 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ActivityIndicator, Image, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { supabase } from "../../../services/supabase"; 
 import { CONSTANTS } from "./constants";
 import { styles } from "./styles";
-import { usePainelMeuTreinador } from "./useDashboard";
+import { useDashboard } from "./useDashboard";
 
 export function AlunoDashboard({ route, navigation }: any) {
   const { conexaoId } = route.params || { conexaoId: "1" };
@@ -13,26 +14,80 @@ export function AlunoDashboard({ route, navigation }: any) {
     semanaAtual, temTreinosNaSemana, treinoHoje, recadoPersonal, anamnesePendente, jaAvaliou,
     onRefresh, handleLogout, handleWhatsApp, featureBloqueada,
     handleAcaoEncerramento, verPerfilPersonal, irParaMeuPerfil, irParaChat
-  } = usePainelMeuTreinador(navigation, conexaoId);
+  } = useDashboard(navigation, conexaoId);
 
-  const [statusFinanceiro] = useState<'em_dia' | 'pendente' | 'atrasado'>('pendente'); 
-  
+  const [financeiroInfo, setFinanceiroInfo] = useState({
+    status: 'em_dia' as 'em_dia' | 'pendente' | 'atrasado',
+    valor: 'R$ 0,00',
+    vencimento: '--/--'
+  });
+
   const [imgErroAluno, setImgErroAluno] = useState(false);
   const [imgErroPersonal, setImgErroPersonal] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const carregarResumoFinanceiro = async () => {
+      if (!conexaoId) return;
+      try {
+        const { data: contrato } = await supabase
+          .from('planos')
+          .select('valor_mensal, dia_vencimento')
+          .eq('conexao_id', conexaoId)
+          .in('status', ['ativo', 'aguardando_assinatura', 'pendente'])
+          .maybeSingle();
+
+        if (contrato && isMounted) {
+          const valorFloat = contrato.valor_mensal || 0;
+          const diaVencimento = contrato.dia_vencimento || 10;
+          
+          const hoje = new Date();
+          let mesVencimento = hoje.getMonth();
+          let anoVencimento = hoje.getFullYear();
+
+          if (hoje.getDate() > diaVencimento + 5) {
+             mesVencimento += 1;
+             if (mesVencimento > 11) {
+                mesVencimento = 0;
+                anoVencimento += 1;
+             }
+          }
+
+          const dataVenc = new Date(anoVencimento, mesVencimento, diaVencimento);
+          const diffDias = Math.ceil((dataVenc.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+
+          let novoStatus: 'em_dia' | 'pendente' | 'atrasado' = 'em_dia';
+          if (diffDias < 0) novoStatus = 'atrasado';
+          else if (diffDias <= 5) novoStatus = 'pendente';
+
+          setFinanceiroInfo({
+            status: novoStatus,
+            valor: `R$ ${valorFloat.toFixed(2).replace('.', ',')}`,
+            vencimento: dataVenc.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+          });
+        }
+      } catch (error) {
+        console.log("Erro ao carregar widget financeiro:", error);
+      }
+    };
+    carregarResumoFinanceiro();
+    return () => { isMounted = false; };
+  }, [conexaoId, refreshing]);
 
   if (loading || !aluno || !personal) {
     return (
       <View style={styles.center}>
+        <StatusBar barStyle="light-content" backgroundColor="#050505" translucent={false} />
         <ActivityIndicator size="large" color="#FF6B00" />
       </View>
     );
   }
 
   const getFinanceiroProps = () => {
-    switch (statusFinanceiro) {
-      case 'em_dia': return { cor: "#00E676", bg: "rgba(0, 230, 118, 0.05)", border: "rgba(0, 230, 118, 0.2)", icone: "checkmark-circle", titulo: "Tudo em dia", sub: "Assinatura ativa" };
-      case 'atrasado': return { cor: "#FF3B30", bg: "rgba(255, 59, 48, 0.05)", border: "rgba(255, 59, 48, 0.3)", icone: "alert-circle", titulo: "Pagamento Atrasado", sub: "Regularize agora" };
-      case 'pendente': default: return { cor: "#FF6B00", bg: "rgba(255, 107, 0, 0.05)", border: "rgba(255, 107, 0, 0.3)", icone: "time", titulo: "Vence em breve", sub: "Dia 10/10 • R$ 150,00" };
+    switch (financeiroInfo.status) {
+      case 'em_dia': return { cor: "#00E676", bg: "rgba(0, 230, 118, 0.08)", border: "rgba(0, 230, 118, 0.4)", icone: "checkmark-circle", titulo: "Tudo em dia" };
+      case 'atrasado': return { cor: "#FF3B30", bg: "rgba(255, 59, 48, 0.08)", border: "rgba(255, 59, 48, 0.4)", icone: "alert-circle", titulo: "Pagamento Atrasado" };
+      case 'pendente': default: return { cor: "#FF6B00", bg: "rgba(255, 107, 0, 0.08)", border: "rgba(255, 107, 0, 0.4)", icone: "time", titulo: "Vence em breve" };
     }
   };
   const finProps = getFinanceiroProps();
@@ -50,12 +105,12 @@ export function AlunoDashboard({ route, navigation }: any) {
                onError={() => setImgErroAluno(true)} 
              />
            ) : (
-             <View style={[styles.studentAvatar, { backgroundColor: '#1A1A1A', justifyContent: 'center', alignItems: 'center' }]}>
+             <View style={[styles.studentAvatar, { backgroundColor: '#1A1A1A', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#333' }]}>
                 <Ionicons name="person" size={20} color="#666" />
              </View>
            )}
            <View style={{ marginLeft: 12 }}>
-              <Text style={styles.studentGreeting}>Olá, {aluno.nome?.split(' ')[0]}</Text>
+              <Text style={styles.studentGreeting}>Olá, <Text style={{ color: "#FFF" }}>{aluno.nome?.split(' ')[0]}</Text></Text>
               <Text style={styles.studentSub}>Pronto para o treino de hoje?</Text>
            </View>
         </View>
@@ -63,7 +118,7 @@ export function AlunoDashboard({ route, navigation }: any) {
           <TouchableOpacity style={styles.btnIcon} onPress={irParaMeuPerfil}>
             <Ionicons name="person-outline" size={22} color="#FF6B00" />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.btnIcon, { marginLeft: 10 }]} onPress={handleLogout}>
+          <TouchableOpacity style={[styles.btnIcon, { marginLeft: 10, backgroundColor: 'rgba(255, 59, 48, 0.1)' }]} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={22} color="#FF3B30" />
           </TouchableOpacity>
         </View>
@@ -73,7 +128,7 @@ export function AlunoDashboard({ route, navigation }: any) {
         
         <View style={styles.dashboardSection}>
           <Text style={styles.sectionTitle}>{CONSTANTS.TITLE_TREINADOR}</Text>
-          <View style={styles.trainerPremiumCard}>
+          <View style={[styles.trainerPremiumCard, { overflow: 'hidden', borderWidth: 1, borderColor: '#1A1A20' }]}>
             <LinearGradient colors={["rgba(255,107,0,0.1)", "transparent"]} style={styles.absoluteFill} />
             
             <View style={styles.trainerRow}>
@@ -128,7 +183,7 @@ export function AlunoDashboard({ route, navigation }: any) {
                       <Ionicons name="checkmark" size={10} color="#000" />
                     </View>
                   ) : (
-                    <View style={[styles.statusDot, dia.status === 'hoje' ? {backgroundColor: '#FF6B00'} : {backgroundColor: 'transparent'}]} />
+                    <View style={[styles.statusDot, dia.status === 'hoje' ? {backgroundColor: '#FF6B00', shadowColor: '#FF6B00', shadowOpacity: 0.8, shadowRadius: 5} : {backgroundColor: 'transparent'}]} />
                   )}
                 </View>
               );
@@ -140,7 +195,8 @@ export function AlunoDashboard({ route, navigation }: any) {
 
           <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Acompanhamento</Text>
           {anamnesePendente ? (
-            <TouchableOpacity style={styles.checkinCardPendente} activeOpacity={0.9} onPress={() => navigation.navigate("Anamnese")}>
+            <TouchableOpacity style={[styles.checkinCardPendente, { overflow: 'hidden' }]} activeOpacity={0.9} onPress={() => navigation.navigate("Anamnese")}>
+              <LinearGradient colors={["rgba(255,107,0,0.15)", "transparent"]} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.absoluteFill} />
               <View style={styles.checkinIconBox}>
                 <Ionicons name="document-text" size={24} color="#FF6B00" />
                 <View style={styles.checkinAlertDot} />
@@ -156,7 +212,7 @@ export function AlunoDashboard({ route, navigation }: any) {
             </TouchableOpacity>
           ) : (
              <View style={styles.checkinCardNeutro}>
-              <Ionicons name="checkmark-circle" size={24} color="#FF6B00" />
+              <Ionicons name="checkmark-circle" size={24} color="#00E676" />
               <View style={{ marginLeft: 12, flex: 1 }}>
                 <Text style={{ color: "#FFF", fontWeight: "bold", fontSize: 14 }}>Tudo em dia</Text>
                 <Text style={{ color: "#888", fontSize: 12 }}>Seu personal ainda não enviou um check-in.</Text>
@@ -173,29 +229,45 @@ export function AlunoDashboard({ route, navigation }: any) {
           </View>
 
           {treinoHoje ? (
-            <TouchableOpacity style={styles.workoutCard} activeOpacity={0.9} onPress={() => featureBloqueada("Tela de Execução de Treino")}>
-              <LinearGradient colors={["rgba(255,107,0,0.15)", "rgba(255,107,0,0.02)"]} style={styles.workoutCardBg} />
-              <View style={styles.workoutCardContent}>
-                <View style={styles.workoutHeader}>
-                  <Text style={styles.workoutTitle}>{treinoHoje.nome || "Treino"}</Text>
-                  <Ionicons name="play-circle" size={32} color="#FFF" />
-                </View>
-                <View style={styles.workoutSpecs}>
-                  <View style={styles.workoutSpecItem}>
-                    <Ionicons name="time-outline" size={14} color="#CCC" />
-                    <Text style={styles.workoutSpecText}>Previsto: 60 min</Text>
+            <TouchableOpacity style={styles.premiumWorkoutCard} activeOpacity={0.9} onPress={() => navigation.navigate("WorkoutPreview", { treinoId: treinoHoje.id, conexaoId })}>
+              <LinearGradient colors={["#1A0B02", "#0A0A0C"]} style={styles.absoluteFill} />
+              
+              <View style={styles.premiumWorkoutHeader}>
+                <View>
+                  <View style={styles.premiumWorkoutBadge}>
+                    <Ionicons name="flame" size={12} color="#FF6B00" />
+                    <Text style={styles.premiumWorkoutBadgeText}>FOCO DO DIA</Text>
                   </View>
+                  <Text style={styles.premiumWorkoutTitle}>{treinoHoje.nome || "Treino do Dia"}</Text>
                 </View>
-                <View style={styles.btnStartWorkout}>
-                  <Text style={styles.btnStartWorkoutText}>Iniciar Treino</Text>
+                {/* O Ícone de Play foi removido daqui! */}
+              </View>
+
+              <View style={styles.premiumWorkoutInfoRow}>
+                <View style={styles.premiumWorkoutInfoItem}>
+                  <MaterialCommunityIcons name="dumbbell" size={16} color="#888" />
+                  <Text style={styles.premiumWorkoutInfoText}>{treinoHoje.qtd_exercicios} exercícios</Text>
                 </View>
+                <View style={styles.premiumWorkoutInfoDot} />
+                <View style={styles.premiumWorkoutInfoItem}>
+                  <Ionicons name="time-outline" size={16} color="#888" />
+                  <Text style={styles.premiumWorkoutInfoText}>~ {treinoHoje.duracao_estimada}</Text>
+                </View>
+              </View>
+
+              {/* Botão Vazado Neon */}
+              <View style={styles.premiumBtnStartOutline}>
+                <Text style={styles.premiumBtnStartTextOutline}>INICIAR TREINO</Text>
+                <Ionicons name="arrow-forward" size={18} color="#FF6B00" style={{ marginLeft: 8 }} />
               </View>
             </TouchableOpacity>
           ) : (
-            <View style={styles.emptyWorkoutCard}>
-              <MaterialCommunityIcons name="weight-lifter" size={32} color="#FF6B00" style={{marginBottom: 8}} />
-              <Text style={styles.emptyWorkoutTitle}>Sem treino previsto</Text>
-              <Text style={styles.emptyWorkoutDesc}>Seu personal ainda não liberou o próximo treino.</Text>
+            <View style={styles.premiumEmptyWorkout}>
+              <View style={styles.emptyWorkoutIconBg}>
+                 <MaterialCommunityIcons name="sleep" size={32} color="#555" />
+              </View>
+              <Text style={styles.emptyWorkoutTitle}>Descanso ou Fim de Ciclo</Text>
+              <Text style={styles.emptyWorkoutDesc}>Nenhum treino programado para hoje. Aguarde seu personal atualizar a ficha.</Text>
             </View>
           )}
 
@@ -215,15 +287,20 @@ export function AlunoDashboard({ route, navigation }: any) {
           )}
 
           <Text style={[styles.sectionTitle, { marginTop: 20, marginBottom: 10 }]}>Financeiro</Text>
-          <TouchableOpacity style={[styles.financeiroCard, { backgroundColor: finProps.bg, borderColor: finProps.border }]} activeOpacity={0.8} onPress={() => navigation.navigate("Finance")}>
+          <TouchableOpacity style={[styles.financeiroCard, { backgroundColor: finProps.bg, borderColor: finProps.border, overflow: 'hidden' }]} activeOpacity={0.8} onPress={() => navigation.navigate("Finance")}>
+            <LinearGradient colors={[finProps.bg, "transparent"]} style={styles.absoluteFill} />
             <View style={[styles.financeiroIconBox, { backgroundColor: finProps.cor + '20' }]}>
-              <Ionicons name={finProps.icone as any} size={20} color={finProps.cor} />
+              <Ionicons name={finProps.icone as any} size={20} color={finProps.cor} style={{ textShadowColor: finProps.cor, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 }} />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.financeiroTitle}>Assinatura do Contrato</Text>
-              <Text style={[styles.financeiroSub, { color: finProps.cor }]}>{finProps.titulo} • {finProps.sub}</Text>
+              <Text style={[styles.financeiroSub, { color: finProps.cor, fontWeight: 'bold' }]}>
+                {finProps.titulo} • Dia {financeiroInfo.vencimento} • {financeiroInfo.valor}
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#555" />
+            <View style={{ backgroundColor: '#1A1A20', padding: 6, borderRadius: 12 }}>
+               <Ionicons name="chevron-forward" size={16} color="#FFF" />
+            </View>
           </TouchableOpacity>
 
           <View style={styles.gridActionsPremium}>

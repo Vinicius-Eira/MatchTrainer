@@ -18,13 +18,14 @@ export const styles = StyleSheet.create({
   badgeTreinoHoje: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255, 107, 0, 0.1)", paddingHorizontal: scale(12), paddingVertical: verticalScale(6), borderRadius: moderateScale(12), borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.3)", marginBottom: verticalScale(16), gap: scale(6) },
   badgeTreinoHojeText: { color: "#FF6B00", fontSize: moderateScale(11), fontWeight: "900", letterSpacing: 1 },
   treinoTitle: { color: "#FFF", fontSize: moderateScale(32), fontWeight: "900", textAlign: "center", letterSpacing: -1, marginBottom: verticalScale(8) },
-  treinoObjetivoBox: { flexDirection: "row", alignItems: "center", gap: scale(6), marginBottom: verticalScale(20) },
-  treinoObjetivo: { color: "#AAA", fontSize: moderateScale(14), fontWeight: "600" },
   
-  obsGeralBox: { backgroundColor: "#111", padding: scale(16), borderRadius: moderateScale(12), borderWidth: 1, borderColor: "#222", marginBottom: verticalScale(20), width: "100%" },
+  treinoObjetivoBox: { flexDirection: "row", alignItems: "center", gap: scale(6), marginBottom: verticalScale(10) },
+  treinoObjetivo: { color: "#FF6B00", fontSize: moderateScale(14), fontWeight: "900", textTransform: "uppercase", letterSpacing: 1 },
+  
+  obsGeralBox: { backgroundColor: "#111", padding: scale(16), borderRadius: moderateScale(12), borderWidth: 1, borderColor: "#222", marginBottom: verticalScale(20), marginTop: verticalScale(15), width: "100%" },
   obsGeralText: { color: "#CCC", fontSize: moderateScale(13), fontStyle: "italic", textAlign: "center", lineHeight: moderateScale(18) },
   
-  macroStatsContainer: { flexDirection: "row", alignItems: "center", justifyContent: "space-around", width: "100%", backgroundColor: "rgba(255, 107, 0, 0.03)", paddingVertical: verticalScale(16), borderRadius: moderateScale(20), borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.4)", shadowColor: "#FF6B00", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 4 },
+  macroStatsContainer: { flexDirection: "row", alignItems: "center", justifyContent: "space-around", width: "100%", backgroundColor: "rgba(255, 107, 0, 0.03)", paddingVertical: verticalScale(16), borderRadius: moderateScale(20), borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.4)", shadowColor: "#FF6B00", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 4, marginTop: verticalScale(20) },
   macroStat: { alignItems: "center", flex: 1 },
   macroStatValue: { color: "#FFF", fontSize: moderateScale(20), fontWeight: "900" },
   macroStatLabel: { color: "#FF6B00", fontSize: moderateScale(11), textTransform: "uppercase", fontWeight: "bold", marginTop: verticalScale(4) },
@@ -60,8 +61,38 @@ export const styles = StyleSheet.create({
   trainerNoteTitle: { color: "#FF6B00", fontSize: moderateScale(11), fontWeight: "bold", textTransform: "uppercase", marginBottom: verticalScale(4) },
   trainerNoteText: { color: "#CCC", fontSize: moderateScale(13), lineHeight: moderateScale(18) },
   
-  footerFixo: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: scale(20), paddingBottom: Platform.OS === 'ios' ? verticalScale(35) : verticalScale(25), paddingTop: verticalScale(40) },
-  footerGradient: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-  btnIniciar: { backgroundColor: "#FF6B00", borderRadius: moderateScale(18), paddingVertical: verticalScale(18), flexDirection: "row", justifyContent: "center", alignItems: "center", shadowColor: "#FF6B00", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 8 },
-  btnIniciarText: { color: "#000", fontSize: moderateScale(16), fontWeight: "900", letterSpacing: 1.5 },
+footerFixo: { 
+    position: "absolute", 
+    bottom: 0, 
+    left: 0, 
+    right: 0, 
+    paddingHorizontal: scale(20), 
+    paddingBottom: Platform.OS === 'ios' ? verticalScale(35) : verticalScale(25), 
+    paddingTop: verticalScale(40) 
+  },  footerGradient: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+  
+  premiumBtnStartOutline: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    paddingVertical: verticalScale(16), 
+    borderRadius: moderateScale(16), 
+    backgroundColor: "rgba(255, 107, 0, 0.05)", 
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 107, 0, 0.4)", 
+    shadowColor: "#FF6B00", 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.15, 
+    shadowRadius: 4,    
+    elevation: 2 
+  },
+  premiumBtnStartTextOutline: { 
+    color: "#FF6B00", 
+    fontSize: moderateScale(15), 
+    fontWeight: "900", 
+    letterSpacing: 1,
+    textShadowColor: "rgba(255, 107, 0, 0.3)", 
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4
+  },
 });

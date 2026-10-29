@@ -158,10 +158,23 @@ export function PersonalSetup({ navigation }: any) {
       <View style={styles.glowBottomRight} />
 
       <BlurView intensity={Platform.OS === "ios" ? 80 : 100} tint="dark" experimentalBlurMethod="dimezisBlurView" style={styles.headerAbsolute}>
-        <View style={styles.stepperHeader}>
-          <Text style={styles.stepCounterText}>Passo {state.currentStep} de 4</Text>
-          <Text style={styles.stepTitleText}>{stepTitles[state.currentStep - 1]}</Text>
+        <View style={[styles.stepperHeader, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+          
+          <View style={{ flex: 1, alignItems: 'flex-start' }}>
+            <TouchableOpacity onPress={() => navigation.navigate('PersonalDashboard')} activeOpacity={0.7} style={{ paddingVertical: 4, paddingRight: 10 }}>
+              <Ionicons name="arrow-back" size={24} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={styles.stepCounterText}>Passo {state.currentStep} de 4</Text>
+          </View>
+
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <Text style={styles.stepTitleText}>{stepTitles[state.currentStep - 1]}</Text>
+          </View>
         </View>
+
         <View style={styles.stepperBarBackground}>
           <View style={[styles.stepperBarFill, { width: `${(state.currentStep / 4) * 100}%` }]} />
         </View>

@@ -38,14 +38,18 @@ export const getEspecialidadeInfo = (tag: string) => {
   return { icon: "bullseye", title: tag.charAt(0).toUpperCase() + tag.slice(1), desc: "Acompanhamento especializado com foco total nesta necessidade." };
 };
 
-export function usePerfilPublicoPersonal(route: any, navigation: any) {
-  const { personalId: pId, id, matchPreCalculado } = route.params || {};
+export function usePersonalPublicProfile(route: any, navigation: any) {
+  const { personalId: pId, id, matchPreCalculado, fromDashboard } = route.params || {};
   const personalId = id || pId;
   
   const [personal, setPersonal] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notaMedia, setNotaMedia] = useState<any>(null);
   const [avaliacoes, setAvaliacoes] = useState<any[]>([]);
+
+  const [statusConexao, setStatusConexao] = useState<string | null>(null);
+  const [modalPropostaVisivel, setModalPropostaVisivel] = useState(false);
+  const [propostaPendente, setPropostaPendente] = useState<any>(null);
   
   const [modalMatchVisivel, setModalMatchVisivel] = useState(false);
   const [propostaPendenteId, setPropostaPendenteId] = useState<string | null>(null);
@@ -55,7 +59,6 @@ export function usePerfilPublicoPersonal(route: any, navigation: any) {
 
   const carregarPerfilCompleto = useCallback(async () => {
     if (!personalId) {
-      console.error("Nenhum ID foi passado na navegação!");
       Alert.alert("Erro", "ID do profissional não encontrado.");
       navigation.goBack();
       return;
@@ -83,10 +86,25 @@ export function usePerfilPublicoPersonal(route: any, navigation: any) {
           .select("id, status")
           .eq("usuario_id", user.id)
           .eq("personal_id", personalId)
-          .eq("status", "aguardando_assinatura")
+          .order("atualizado_em", { ascending: false })
+          .limit(1)
           .maybeSingle();
           
-        setPropostaPendenteId(connData ? connData.id : null);
+        if (connData) {
+          setStatusConexao(connData.status);
+          setPropostaPendenteId(connData.id);
+
+          if (connData.status === "aguardando_aluno") {
+            const { data: plano } = await supabase
+              .from("planos")
+              .select("*")
+              .eq("conexao_id", connData.id)
+              .eq("status", "aguardando_assinatura")
+              .maybeSingle();
+            
+            if (plano) setPropostaPendente(plano);
+          }
+        }
 
         const { data: uData } = await supabase.from("usuarios").select("preferencias").eq("id", user.id).single();
         const alunoPrefs = typeof uData?.preferencias === "string" ? JSON.parse(uData.preferencias) : uData?.preferencias || {};
@@ -117,6 +135,28 @@ export function usePerfilPublicoPersonal(route: any, navigation: any) {
     });
     return unsubscribe;
   }, [navigation, carregarPerfilCompleto]);
+
+  const assinarContrato = async () => {
+    setLoading(true);
+    try {
+      if (!propostaPendente) throw new Error("Proposta não encontrada.");
+      
+      await supabase.from("planos").update({ status: "ativo" }).eq("id", propostaPendente.id);
+      
+      await supabase.from("conexoes").update({ status: "aluno_ativo" }).eq("id", propostaPendente.conexao_id);
+      
+      setModalPropostaVisivel(false);
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "AlunoDashboard", params: { conexaoId: propostaPendente.conexao_id } }]
+      });
+    } catch (error) {
+      Alert.alert("Erro", "Falha ao aceitar a proposta.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleContato = async (tipo: "whatsapp" | "chat") => {
     try {
@@ -199,7 +239,7 @@ export function usePerfilPublicoPersonal(route: any, navigation: any) {
 
   const abrirRedeSocial = (tipo: string, handle: string) => {
     let url = "";
-    if (tipo === "instagram") url = `https://instagram.com/${handle.replace("@", "")}`;
+    if (tipo === "instagram") url = `https://instagram.com/${handle?.replace("@", "") || handle.replace("@", "")}`;
     Linking.openURL(url).catch(() => Alert.alert("Erro", "Não foi possível abrir o link."));
   };
 
@@ -226,12 +266,15 @@ export function usePerfilPublicoPersonal(route: any, navigation: any) {
 
   return {
     state: {
+      fromDashboard,
       loading,
       personal,
       notaMedia,
       avaliacoes,
       modalMatchVisivel,
-      propostaPendenteId,
+      statusConexao,
+      propostaPendente,
+      modalPropostaVisivel,
       precoExibido,
       labelPrecoExibido,
       matchPreCalculado,
@@ -246,8 +289,10 @@ export function usePerfilPublicoPersonal(route: any, navigation: any) {
     },
     actions: {
       setModalMatchVisivel,
+      setModalPropostaVisivel,
       handleContato,
-      abrirRedeSocial
+      abrirRedeSocial,
+      assinarContrato
     }
   };
 }

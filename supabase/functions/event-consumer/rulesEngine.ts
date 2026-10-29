@@ -1,6 +1,4 @@
-// supabase/functions/event-consumer/rulesEngine.ts
-
-import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.33.1";
+import { createClient } from '@supabase/supabase-js';
 import { DomainEvent } from "../_shared/types.ts";
 import { createInsight, updateSessionStatus } from "./readModels.ts";
 import { dispatchAiJob } from "./aiJobDispatcher.ts";

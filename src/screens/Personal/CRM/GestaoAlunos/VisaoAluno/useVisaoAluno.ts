@@ -64,10 +64,9 @@ export function useVisaoAluno(route: any, navigation: any) {
         supabase
           .from("planos")
           .select("*")
-          .eq("aluno_id", aluno.id)
-          .eq("personal_id", session.user.id)
-          .eq("status", "ativo")
-          .single(),
+          .eq("conexao_id", conexaoId)
+          .in("status", ["ativo", "aguardando_assinatura", "pendente"])
+          .maybeSingle(),
         supabase
           .from("anamneses")
           .select("*")
@@ -75,7 +74,7 @@ export function useVisaoAluno(route: any, navigation: any) {
           .eq("personal_id", session.user.id)
           .order('criado_em', { ascending: false })
           .limit(1)
-          .single(),
+          .maybeSingle(), 
         supabase
           .from("mensagens")
           .select("conteudo")
@@ -86,7 +85,7 @@ export function useVisaoAluno(route: any, navigation: any) {
           .from("conexoes")
           .select("confirmado_em, atualizado_em, criado_em, status")
           .eq("id", conexaoId)
-          .single()
+          .maybeSingle()
       ]);
 
       if (planoRes.data) setPlanoAtivo(planoRes.data);

@@ -85,11 +85,13 @@ export function Recebimentos({ navigation }: any) {
       <View style={styles.stickyFilterContainer}>
         <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={styles.modalidadeWrapper}>
-          {MODALIDADES.map((mod) => (
-            <TouchableOpacity key={mod} style={[styles.modalidadeBtn, modalidadeAtiva === mod && styles.modalidadeBtnAtiva]} onPress={() => setModalidadeAtiva(mod)}>
-              <Text style={[styles.modalidadeText, modalidadeAtiva === mod && styles.modalidadeTextAtiva]}>{mod}</Text>
-            </TouchableOpacity>
-          ))}
+          {MODALIDADES.map((mod) => {          
+            return (
+              <TouchableOpacity key={mod} style={[styles.modalidadeBtn, modalidadeAtiva === mod && styles.modalidadeBtnAtiva]} onPress={() => setModalidadeAtiva(mod)}>
+                <Text style={[styles.modalidadeText, modalidadeAtiva === mod && styles.modalidadeTextAtiva]}>{mod}</Text>
+              </TouchableOpacity>
+            )
+          })}
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusFilterScroll}>

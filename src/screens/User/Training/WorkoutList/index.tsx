@@ -1,141 +1,213 @@
 import React from "react";
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, SafeAreaView, RefreshControl } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { styles } from "./styles";
+import { View, Text, ScrollView, TouchableOpacity, StatusBar,  ActivityIndicator, SafeAreaView, RefreshControl } from "react-native";
+import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
+import { styles, MATCH_COLORS } from "./styles";
 import { useWorkoutList } from "./useWorkoutList";
 
 export function WorkoutList({ route, navigation }: any) {
   const { conexaoId } = route.params || { conexaoId: "1" };
-  const { loading, refreshing, onRefresh, treinos, openWorkoutList, voltar } = useWorkoutList(navigation, conexaoId);
+  const { 
+    loading, refreshing, onRefresh, 
+    programName, programObjective, programLevel, semanas, totalTreinos, treinosConcluidosGeral, progressoPercentual,
+    selectedWeekId, setSelectedWeekId, activeWeek, currentAutoWeekId,
+    activeTab, setActiveTab,
+    openWorkoutList, voltar 
+  } = useWorkoutList(navigation, conexaoId);
 
-  const treinoDeHoje = treinos.find(t => t.is_hoje);
-  const outrosTreinos = treinos.filter(t => !t.is_hoje);
+  const dataDeHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  const renderHeader = () => (
+    <View style={styles.topNav}>
+      <TouchableOpacity style={styles.btnVoltar} onPress={voltar} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
+        <Ionicons name="chevron-back" size={22} color={MATCH_COLORS.textBase} />
+      </TouchableOpacity>
+      
+      <View style={styles.headerTitles}>
+        <Text style={styles.headerTitleCenter}>Meus treinos</Text>
+        <Text style={styles.headerSubtitleCenter}>Acompanhe e conquiste cada etapa</Text>
+      </View>
+      
+      <View style={styles.headerSpacer} />
+    </View>
+  );
+
+  const renderTabs = () => (
+    <View style={styles.tabsContainer}>
+      <TouchableOpacity style={[styles.tabBtn, activeTab === 'ROTINAS' && styles.tabBtnActive]} onPress={() => setActiveTab('ROTINAS')}>
+        <Text style={[styles.tabText, activeTab === 'ROTINAS' && styles.tabTextActive]}>Rotinas de treino</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.tabBtn, activeTab === 'AEROBICO' && styles.tabBtnActive]} onPress={() => setActiveTab('AEROBICO')}>
+        <Text style={[styles.tabText, activeTab === 'AEROBICO' && styles.tabTextActive]}>Aeróbico</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderHeroProgressCard = () => {
+    const isTradicional = semanas.length <= 1;
+
+    return (
+      <View style={styles.heroCard}>
+        <View style={styles.heroTopRow}>
+          <View style={{ flex: 1, paddingRight: 15 }}>
+            <Text style={styles.heroObjective} numberOfLines={1}>{programObjective}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <MaterialCommunityIcons name="stairs-up" size={16} color={MATCH_COLORS.primary} style={{ marginRight: 6 }} />
+              <Text style={styles.heroLevel}>{programLevel}</Text>
+            </View>
+          </View>
+          <View style={styles.heroBadge}>
+            <Ionicons name="calendar-outline" size={14} color={MATCH_COLORS.primary} />
+            <Text style={styles.heroBadgeText}>{dataDeHoje}</Text>
+          </View>
+        </View>
+
+        <View style={styles.statsRow}>
+          {!isTradicional && (
+            <View style={styles.statBlock}>
+              <Text style={styles.statValue}>{semanas.length}</Text>
+              <Text style={styles.statLabel}>Semanas</Text>
+            </View>
+          )}
+          <View style={styles.statBlock}>
+            <Text style={styles.statValue}>{treinosConcluidosGeral}</Text>
+            <Text style={styles.statLabel}>Treinos Feitos</Text>
+          </View>
+          <View style={[styles.statBlock, { alignItems: 'flex-end' }]}>
+            <Text style={styles.statValue}>{totalTreinos > 0 ? `${treinosConcluidosGeral}/${totalTreinos}` : '-'}</Text>
+            <Text style={styles.statLabel}>Meta Total</Text>
+          </View>
+        </View>
+
+        <View style={styles.progressBarContainer}>
+          <View style={[styles.progressBarFill, { width: `${progressoPercentual}%` }]} />
+        </View>
+        <Text style={styles.progressDisclaimer}>
+          {totalTreinos > 0 
+            ? `${Math.round(progressoPercentual)}% do programa concluído.` 
+            : 'Os dados do programa aparecerão aqui em breve.'}
+        </Text>
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="light-content" backgroundColor="#050505" translucent={false} />
+        {renderHeader()}
+        <View style={styles.center}><ActivityIndicator size="large" color={MATCH_COLORS.primary} /></View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#050505" translucent={false} />
-      
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.btnVoltar} onPress={voltar} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
-        </TouchableOpacity>
-        <View style={styles.headerTitleBox}>
-          <Text style={styles.headerTitle}>MEUS TREINOS</Text>
-          <Text style={styles.headerSubtitle}>Seu plano de treinamento</Text>
-        </View>
-        <View style={{ width: 40 }} /> 
-      </View>
+      {renderHeader()}
 
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#FF6B00" />
-        </View>
-      ) : (
-        <ScrollView 
-          showsVerticalScrollIndicator={false} 
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B00" />}
-        >
-          
-          {!treinoDeHoje && outrosTreinos.length === 0 ? (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 80 }}>
-              <MaterialCommunityIcons name="clipboard-text-off-outline" size={64} color="#333" />
-              <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold', marginTop: 16 }}>Nenhum treino prescrito</Text>
-              <Text style={{ color: '#888', fontSize: 14, textAlign: 'center', marginTop: 8, paddingHorizontal: 20, lineHeight: 20 }}>
-                Seu personal ainda não disponibilizou sua ficha de treinamentos.
-              </Text>
-            </View>
-          ) : null}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={MATCH_COLORS.primary} />}>
+        
+        {(!selectedWeekId || semanas.length <= 1) && (
+          <>
+            {renderHeroProgressCard()}
+            {renderTabs()}
+          </>
+        )}
 
-          {treinoDeHoje ? (
-            <View style={styles.sectionContainer}>
-              <TouchableOpacity style={[styles.cardHoje, treinoDeHoje.fez_hoje && { borderColor: '#00E676' }]} activeOpacity={0.9} onPress={() => openWorkoutList(treinoDeHoje.id)}>
+        {semanas.length === 0 ? (
+          <View style={styles.emptyState}>
+            <MaterialCommunityIcons name="clipboard-text-off-outline" size={56} color={MATCH_COLORS.textDim} />
+            <Text style={styles.emptyTitle}>Sua ficha está vazia</Text>
+            <Text style={styles.emptySubtitle}>Seu personal trainer ainda não adicionou treinos a este programa. Aguarde ou chame-o no chat.</Text>
+          </View>
+        ) : activeTab === 'AEROBICO' ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="bicycle-outline" size={56} color={MATCH_COLORS.textDim} />
+            <Text style={styles.emptyTitle}>Área Aeróbica</Text>
+            <Text style={styles.emptySubtitle}>Seu acompanhamento cardiovascular estará disponível em breve.</Text>
+          </View>
+        ) : (
+          <>
+            {!selectedWeekId && semanas.length > 1 && (
+              <View>
+                <Text style={styles.sectionTitle}>SEU PLANEJAMENTO</Text>
+                <View style={styles.listContainer}>
+                  {semanas.map((semana) => {
+                    const isCurrent = semana.id === currentAutoWeekId; 
+                    return (
+                      <TouchableOpacity key={semana.id} style={[styles.weekCard, isCurrent && styles.weekCardActive]} activeOpacity={0.8} onPress={() => setSelectedWeekId(semana.id)}>
+                        <View style={styles.weekCardContent}>
+                          <View style={[styles.weekIconBox, isCurrent && styles.weekIconBoxActive]}>
+                            <Ionicons name="calendar-clear-outline" size={24} color={isCurrent ? MATCH_COLORS.primary : MATCH_COLORS.textMuted} />
+                          </View>
+                          <View style={styles.weekInfoContainer}>
+                            <View style={styles.weekHeaderRow}>
+                              <Text style={styles.weekTitle}>{semana.nome}</Text>
+                              {semana.is_deload && <View style={styles.deloadBadge}><Text style={styles.deloadText}>DELOAD</Text></View>}
+                            </View>
+                            <Text style={styles.weekMetaText}>Treinos: {semana.qtd_concluidos} feitos de {semana.qtd_treinos}</Text>
+                          </View>
+                          <Feather name="chevron-right" size={24} color={MATCH_COLORS.textMuted} />
+                        </View>
+                        {semana.qtd_treinos > 0 && (
+                          <View style={[styles.progressBarContainer, { height: 4, marginTop: 18, marginBottom: 0 }]}>
+                            <View style={[styles.progressBarFill, { width: `${(semana.qtd_concluidos / semana.qtd_treinos) * 100}%` }]} />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {selectedWeekId && activeWeek && (
+              <View>
+                {semanas.length > 1 && <Text style={styles.sectionTitle}>TREINOS: {activeWeek.nome.toUpperCase()}</Text>}
                 
-                <LinearGradient colors={treinoDeHoje.fez_hoje ? ["rgba(0, 230, 118, 0.15)", "transparent"] : ["rgba(255, 107, 0, 0.15)", "transparent"]} style={styles.cardGradientBg} />
-                
-                <View style={styles.cardHojeTop}>
-                  <View style={[styles.badgeHoje, treinoDeHoje.fez_hoje && { backgroundColor: '#00E676' }]}>
-                    <Ionicons name="flame" size={12} color="#FFF" style={{ marginRight: 6 }} />
-                    <Text style={styles.badgeHojeText}>{treinoDeHoje.fez_hoje ? "TREINOU HOJE!" : "TREINO DE HOJE"}</Text>
-                  </View>
-                  <View style={styles.statusPill}>
-                    <View style={[styles.statusDotGreen, treinoDeHoje.fez_hoje && { backgroundColor: '#00E676' }]} />
-                    <Text style={[styles.statusPillText, treinoDeHoje.fez_hoje && { color: '#00E676' }]}>{treinoDeHoje.status}</Text>
-                  </View>
+                <View style={styles.listContainer}>
+                  {activeWeek.dias.map((treino) => {
+                    const isCompleted = treino.is_completed;
+                    return (
+                      <TouchableOpacity key={treino.id} style={[styles.dayCard, isCompleted && styles.dayCardCompleted]} activeOpacity={0.8} onPress={() => openWorkoutList(treino.id)}>
+                        
+                        <View style={[styles.dayIconBox, isCompleted && styles.dayIconBoxCompleted]}>
+                          {isCompleted ? (
+                            <Ionicons name="checkmark-sharp" size={26} color={MATCH_COLORS.success} />
+                          ) : (
+                            <Ionicons name="calendar-outline" size={24} color={MATCH_COLORS.primary} />
+                          )}
+                        </View>
+                        
+                        <View style={styles.weekInfoContainer}>
+                          <Text style={styles.dayTitle}>{treino.nome}</Text>
+                          <Text style={styles.dayObjective} numberOfLines={1}>{treino.objetivo}</Text>
+                          
+                          <View style={styles.dayMetricsRow}>
+                            <View style={styles.dayMetricItem}>
+                              <Ionicons name="list-outline" size={16} color={MATCH_COLORS.textDim} />
+                              <Text style={styles.dayMetricText}>{treino.qtd_exercicios} Exer.</Text>
+                            </View>
+                            <View style={styles.dayMetricItem}>
+                              <Ionicons name="layers-outline" size={14} color={MATCH_COLORS.textDim} />
+                              <Text style={styles.dayMetricText}>{treino.qtd_series} Séries</Text>
+                            </View>
+                            <View style={styles.dayMetricItem}>
+                              <Ionicons name="time-outline" size={14} color={MATCH_COLORS.textDim} />
+                              <Text style={styles.dayMetricText}>{treino.duracao_estimada}</Text>
+                            </View>
+                          </View>
+                        </View>
+                        <Feather name="chevron-right" size={24} color={MATCH_COLORS.textMuted} />
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
-
-                <Text style={styles.cardTitleHoje}>{treinoDeHoje.nome}</Text>
-                <Text style={styles.cardObjetivoHoje}>{treinoDeHoje.objetivo}</Text>
-
-                <View style={styles.infoGridHoje}>
-                  <View style={styles.infoRow}>
-                    <MaterialCommunityIcons name="dumbbell" size={16} color={treinoDeHoje.fez_hoje ? "#00E676" : "#FF6B00"} />
-                    <Text style={styles.infoText}>{treinoDeHoje.qtd_exercicios} exercícios</Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Ionicons name="layers-outline" size={16} color={treinoDeHoje.fez_hoje ? "#00E676" : "#FF6B00"} />
-                    <Text style={styles.infoText}>{treinoDeHoje.qtd_series} séries</Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Ionicons name="time-outline" size={16} color={treinoDeHoje.fez_hoje ? "#00E676" : "#FF6B00"} />
-                    <Text style={styles.infoText}>~ {treinoDeHoje.duracao_estimada}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.btnIniciarHoje}>
-                  <Text style={styles.btnIniciarHojeText}>{treinoDeHoje.fez_hoje ? "VER TREINO CONCLUÍDO" : "INICIAR TREINO"}</Text>
-                  <Ionicons name={treinoDeHoje.fez_hoje ? "checkmark" : "arrow-forward"} size={18} color="#000" style={{ marginLeft: 8 }} />
-                </View>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-
-          {outrosTreinos.length > 0 ? (
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Sua Rotina</Text>
-              
-              {outrosTreinos.map((treino) => (
-                <TouchableOpacity key={treino.id} style={styles.cardNormal} activeOpacity={0.8} onPress={() => openWorkoutList(treino.id)}>
-                  
-                  <View style={styles.cardNormalTop}>
-                    <Text style={styles.cardNormalTitle}>{treino.nome}</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#FF6B00" />
-                  </View>
-                  
-                  <Text style={styles.cardNormalObjetivo}>{treino.objetivo}</Text>
-                  
-                  <View style={styles.cardNormalStats}>
-                    <View style={styles.statBox}>
-                      <Text style={styles.statValue}>{treino.qtd_exercicios}</Text>
-                      <Text style={styles.statLabel}>Exer.</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statBox}>
-                      <Text style={styles.statValue}>{treino.qtd_series}</Text>
-                      <Text style={styles.statLabel}>Séries</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statBox}>
-                      <Text style={styles.statValue}>{treino.duracao_estimada}</Text>
-                      <Text style={styles.statLabel}>Tempo</Text>
-                    </View>
-                  </View>
-                  
-                  <View style={styles.cardNormalFooter}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Ionicons name="calendar-outline" size={14} color="#666" style={{ marginRight: 6 }} />
-                      <Text style={styles.footerLabel}>Última execução: <Text style={styles.footerValue}>{treino.ultima_execucao}</Text></Text>
-                    </View>
-                  </View>
-
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : null}
-
-        </ScrollView>
-      )}
+              </View>
+            )}
+          </>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 };

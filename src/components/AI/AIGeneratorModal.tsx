@@ -1,30 +1,23 @@
 import React, { useState } from 'react';
 import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  TextInput, 
-  Modal, 
-  Platform,
-  KeyboardAvoidingView,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-  Image
+  View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, 
+  Platform, KeyboardAvoidingView, ScrollView, ActivityIndicator, Alert, Image
 } from 'react-native';
-import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive'; 
 
 const MATCH_COLORS = {
   primary: '#FF5100',
-  primaryGlow: 'rgba(255, 81, 0, 0.15)',
-  surface: '#161619',
-  surfaceDark: '#0D0D0F',
-  border: '#2A2A32',
-  borderLight: '#3A3A42',
+  primaryDark: '#CC4100',
+  primaryGlow: 'rgba(255, 81, 0, 0.2)',
+  surface: '#0A0A0C', 
+  surfaceDark: '#111111',
+  border: '#1E1E24',
+  borderLight: '#2A2A32',
   text: '#FFFFFF',
   textMuted: '#A0A0A5',
   textDim: '#555555'
@@ -37,6 +30,8 @@ export interface AITrainingParams {
   frequencia?: number;
   restricoes?: string;
   base64Image?: string; 
+  pdfBase64?: string;
+  pdfName?: string;
   rawText?: string;     
 }
 
@@ -51,13 +46,8 @@ const NIVEIS = ['Iniciante', 'Intermediário', 'Avançado'];
 const OBJETIVOS = ['Hipertrofia', 'Emagrecimento', 'Força', 'Condicionamento'];
 const FREQUENCIAS = [2, 3, 4, 5, 6];
 
-export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({ 
-  visible, 
-  onClose, 
-  onGenerate, 
-  isLoading 
-}) => {
-  const [mode, setMode] = useState<'import' | 'manual'>('import');
+export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({ visible, onClose, onGenerate, isLoading }) => {
+  const [mode, setMode] = useState<'import' | 'manual'>('manual');
 
   const [nivel, setNivel] = useState('Iniciante');
   const [objetivo, setObjetivo] = useState('Hipertrofia');
@@ -66,19 +56,18 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
 
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [base64Image, setBase64Image] = useState<string | null>(null);
+  const [pdfName, setPdfName] = useState<string | null>(null);
+  const [pdfBase64, setPdfBase64] = useState<string | null>(null);
   const [rawText, setRawText] = useState('');
 
   const handleCloseModal = () => {
     setImageUri(null);
     setBase64Image(null);
+    setPdfName(null);
+    setPdfBase64(null);
     setRawText('');
     setRestricoes('');
-    
-    setMode('import');
-    setNivel('Iniciante');
-    setObjetivo('Hipertrofia');
-    setFrequencia(3);
-
+    setMode('manual');
     onClose();
   };
 
@@ -95,14 +84,14 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
       if (useCamera) {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert('Permissão negada', 'Precisamos de acesso à câmera para ler a ficha.');
+          Alert.alert('Permissão negada', 'Precisamos de acesso à câmera.');
           return;
         }
         result = await ImagePicker.launchCameraAsync(options);
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert('Permissão negada', 'Precisamos de acesso à galeria para buscar a ficha.');
+          Alert.alert('Permissão negada', 'Precisamos de acesso à galeria.');
           return;
         }
         result = await ImagePicker.launchImageLibraryAsync(options);
@@ -111,31 +100,49 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setImageUri(result.assets[0].uri);
         setBase64Image(result.assets[0].base64 || null);
+        setPdfName(null); 
+        setPdfBase64(null);
       }
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível carregar a imagem.');
     }
   };
 
+  const handlePickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const file = result.assets[0];
+        if (file.size && file.size > 5 * 1024 * 1024) {
+           Alert.alert("Arquivo muito grande", "Por favor, escolha um PDF de até 5MB.");
+           return;
+        }
+        const base64 = await FileSystem.readAsStringAsync(file.uri, { encoding: 'base64' });
+        setPdfName(file.name);
+        setPdfBase64(base64);
+        setImageUri(null);
+        setBase64Image(null);
+      }
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível carregar o arquivo PDF.');
+    }
+  };
+
   const handleGenerate = () => {
     if (mode === 'import') {
-      if (!base64Image && !rawText.trim()) {
-        Alert.alert("Atenção", "Tire uma foto, escolha da galeria ou cole um texto para a IA ler.");
+      if (!base64Image && !pdfBase64 && !rawText.trim()) {
+        Alert.alert("Atenção", "Tire uma foto, anexe um PDF ou cole um texto para a IA ler.");
         return;
       }
       onGenerate({ 
         isImport: true, 
         base64Image: base64Image || undefined, 
+        pdfBase64: pdfBase64 || undefined,
+        pdfName: pdfName || undefined,
         rawText: rawText.trim() 
       });
     } else {
-      onGenerate({ 
-        isImport: false, 
-        nivel, 
-        objetivo, 
-        frequencia, 
-        restricoes 
-      });
+      onGenerate({ isImport: false, nivel, objetivo, frequencia, restricoes });
     }
   };
 
@@ -143,148 +150,151 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={handleCloseModal}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <View style={styles.overlay}>
-          <BlurView intensity={Platform.OS === 'ios' ? 20 : 90} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={Platform.OS === 'ios' ? 30 : 90} tint="dark" style={StyleSheet.absoluteFill} />
           
           <View style={styles.container}>
+            {/* HEADER */}
             <View style={styles.header}>
               <View style={styles.headerTitleRow}>
                 <View style={styles.iconGlowBox}>
-                  <MaterialCommunityIcons name="auto-fix" size={22} color={MATCH_COLORS.primary} />
+                  <MaterialCommunityIcons name="auto-fix" size={24} color={MATCH_COLORS.primary} />
                 </View>
                 <View>
                   <Text style={styles.title}>Copiloto IA</Text>
-                  <Text style={styles.subtitle}>Geração inteligente de treino</Text>
+                  <Text style={styles.subtitle}>Geração mágica de periodização</Text>
                 </View>
               </View>
-              
               <TouchableOpacity onPress={handleCloseModal} style={styles.closeBtn} disabled={isLoading}>
                 <Feather name="x" size={24} color={MATCH_COLORS.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.tabContainer}>
+            {/* SEGMENTED CONTROL (TABS) */}
+            <View style={styles.segmentedControl}>
               <TouchableOpacity 
-                style={[styles.tabButton, mode === 'import' && styles.tabButtonActive]} 
-                onPress={() => setMode('import')}
+                style={[styles.segmentBtn, mode === 'manual' && styles.segmentBtnActive]} 
+                onPress={() => setMode('manual')}
               >
-                <Feather name="camera" size={16} color={mode === 'import' ? MATCH_COLORS.primary : MATCH_COLORS.textMuted} />
-                <Text style={[styles.tabText, mode === 'import' && styles.tabTextActive]}>Ler Ficha</Text>
+                <Feather name="sliders" size={16} color={mode === 'manual' ? MATCH_COLORS.text : MATCH_COLORS.textDim} />
+                <Text style={[styles.segmentText, mode === 'manual' && styles.segmentTextActive]}>Criar do Zero</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={[styles.tabButton, mode === 'manual' && styles.tabButtonActive]} 
-                onPress={() => setMode('manual')}
+                style={[styles.segmentBtn, mode === 'import' && styles.segmentBtnActive]} 
+                onPress={() => setMode('import')}
               >
-                <Feather name="sliders" size={16} color={mode === 'manual' ? MATCH_COLORS.primary : MATCH_COLORS.textMuted} />
-                <Text style={[styles.tabText, mode === 'manual' && styles.tabTextActive]}>Criar do Zero</Text>
+                <Feather name="file-text" size={16} color={mode === 'import' ? MATCH_COLORS.text : MATCH_COLORS.textDim} />
+                <Text style={[styles.segmentText, mode === 'import' && styles.segmentTextActive]}>Ler Ficha</Text>
               </TouchableOpacity>
             </View>
 
+            {/* CONTEÚDO */}
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
               
               {mode === 'import' ? (
                 <View style={styles.importSection}>
                   <Text style={styles.description}>
-                    Tire uma foto do papel, suba um print da planilha ou cole um texto. A IA vai ler e transformar tudo numa ficha estruturada do Match Trainer.
+                    Suba um PDF, tire foto do papel ou cole um texto. A IA estrutura a periodização automaticamente para você.
                   </Text>
 
                   {imageUri ? (
-                    <View style={styles.imagePreviewContainer}>
+                    <View style={styles.previewBox}>
                       <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-                      <TouchableOpacity style={styles.removeImageBtn} onPress={() => { setImageUri(null); setBase64Image(null); }}>
+                      <TouchableOpacity style={styles.removeBtn} onPress={() => { setImageUri(null); setBase64Image(null); }}>
                         <Feather name="trash-2" size={16} color="#FFF" />
-                        <Text style={styles.removeImageText}>Remover Foto</Text>
+                        <Text style={styles.removeBtnText}>Descartar Foto</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : pdfName ? (
+                    <View style={styles.previewBoxPdf}>
+                      <FontAwesome5 name="file-pdf" size={40} color="#FF5100" />
+                      <Text style={styles.pdfNameText} numberOfLines={1}>{pdfName}</Text>
+                      <TouchableOpacity style={styles.removeBtn} onPress={() => { setPdfName(null); setPdfBase64(null); }}>
+                        <Feather name="trash-2" size={16} color="#FFF" />
+                        <Text style={styles.removeBtnText}>Descartar PDF</Text>
                       </TouchableOpacity>
                     </View>
                   ) : (
-                    <View style={styles.uploadRow}>
-                      <TouchableOpacity style={styles.uploadBtn} onPress={() => handlePickImage(true)}>
-                        <Ionicons name="camera" size={32} color={MATCH_COLORS.primary} />
-                        <Text style={styles.uploadBtnText}>Tirar Foto</Text>
+                    <View style={styles.uploadOptionsGrid}>
+                      <TouchableOpacity style={styles.uploadSquare} onPress={() => handlePickImage(true)}>
+                        <View style={styles.uploadIconCircle}><Ionicons name="camera" size={24} color={MATCH_COLORS.primary} /></View>
+                        <Text style={styles.uploadSquareText}>Câmera</Text>
                       </TouchableOpacity>
 
-                      <TouchableOpacity style={styles.uploadBtn} onPress={() => handlePickImage(false)}>
-                        <Ionicons name="image" size={32} color={MATCH_COLORS.primary} />
-                        <Text style={styles.uploadBtnText}>Galeria</Text>
+                      <TouchableOpacity style={styles.uploadSquare} onPress={() => handlePickImage(false)}>
+                        <View style={styles.uploadIconCircle}><Ionicons name="image" size={24} color={MATCH_COLORS.primary} /></View>
+                        <Text style={styles.uploadSquareText}>Galeria</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity style={styles.uploadSquare} onPress={handlePickDocument}>
+                        <View style={styles.uploadIconCircle}><Ionicons name="document-text" size={24} color={MATCH_COLORS.primary} /></View>
+                        <Text style={styles.uploadSquareText}>PDF</Text>
                       </TouchableOpacity>
                     </View>
                   )}
 
-                  <View style={styles.dividerBox}>
+                  <View style={styles.dividerContainer}>
                     <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>OU</Text>
+                    <Text style={styles.dividerText}>OU COLE O TEXTO</Text>
                     <View style={styles.dividerLine} />
                   </View>
 
-                  <Text style={styles.sectionTitle}>Colar Treino em Texto</Text>
                   <TextInput
-                    style={[styles.input, { minHeight: verticalScale(140) }]}
+                    style={[styles.textInputArea, { minHeight: verticalScale(120) }]}
                     placeholder="Ex: Treino A: Supino 3x12, Voador 4x10..."
                     placeholderTextColor={MATCH_COLORS.textDim}
                     multiline
                     value={rawText}
                     onChangeText={setRawText}
                     textAlignVertical="top"
-                    editable={!imageUri} 
+                    editable={!imageUri && !pdfName} 
                   />
-                  {imageUri && <Text style={{ color: MATCH_COLORS.textDim, fontSize: 10, marginTop: 4 }}>*Remova a foto para usar o modo texto.</Text>}
+                  {(imageUri || pdfName) && <Text style={styles.hintText}>*Remova o arquivo para colar texto manual.</Text>}
                 </View>
               ) : (
                 <View>
                   <Text style={styles.description}>
-                    Defina os parâmetros do aluno e deixe a inteligência artificial do MatchTrainer estruturar a base perfeita.
+                    Defina os parâmetros do aluno e deixe a IA estruturar as semanas, dias e exercícios com precisão.
                   </Text>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Nível de Experiência</Text>
-                    <View style={styles.pillContainer}>
+                  <View style={styles.fieldSection}>
+                    <Text style={styles.fieldLabel}>NÍVEL DE EXPERIÊNCIA</Text>
+                    <View style={styles.pillGroup}>
                       {NIVEIS.map(n => (
-                        <TouchableOpacity 
-                          key={n} 
-                          style={[styles.pill, nivel === n && styles.pillActive]}
-                          onPress={() => setNivel(n)}
-                        >
+                        <TouchableOpacity key={n} style={[styles.pill, nivel === n && styles.pillActive]} onPress={() => setNivel(n)}>
                           <Text style={[styles.pillText, nivel === n && styles.pillTextActive]}>{n}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
                   </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Objetivo Principal</Text>
-                    <View style={styles.pillContainer}>
+                  <View style={styles.fieldSection}>
+                    <Text style={styles.fieldLabel}>OBJETIVO PRINCIPAL</Text>
+                    <View style={styles.pillGroup}>
                       {OBJETIVOS.map(obj => (
-                        <TouchableOpacity 
-                          key={obj} 
-                          style={[styles.pill, objetivo === obj && styles.pillActive]}
-                          onPress={() => setObjetivo(obj)}
-                        >
+                        <TouchableOpacity key={obj} style={[styles.pill, objetivo === obj && styles.pillActive]} onPress={() => setObjetivo(obj)}>
                           <Text style={[styles.pillText, objetivo === obj && styles.pillTextActive]}>{obj}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
                   </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Dias por Semana</Text>
-                    <View style={styles.pillContainer}>
+                  <View style={styles.fieldSection}>
+                    <Text style={styles.fieldLabel}>DIAS DE TREINO POR SEMANA</Text>
+                    <View style={styles.pillGroup}>
                       {FREQUENCIAS.map(freq => (
-                        <TouchableOpacity 
-                          key={freq} 
-                          style={[styles.pill, frequencia === freq && styles.pillActive, { minWidth: scale(45) }]}
-                          onPress={() => setFrequencia(freq)}
-                        >
+                        <TouchableOpacity key={freq} style={[styles.pill, frequencia === freq && styles.pillActive, { paddingHorizontal: 20 }]} onPress={() => setFrequencia(freq)}>
                           <Text style={[styles.pillText, frequencia === freq && styles.pillTextActive]}>{freq}x</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
                   </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Foco Específico ou Lesões (Opcional)</Text>
+                  <View style={styles.fieldSection}>
+                    <Text style={styles.fieldLabel}>FOCO ESPECÍFICO OU LESÕES (OPCIONAL)</Text>
                     <TextInput
-                      style={styles.input}
-                      placeholder="Ex: Dor no joelho direito, focar em ombros..."
+                      style={styles.textInputArea}
+                      placeholder="Ex: Condromalácia patelar, não pode forçar o joelho..."
                       placeholderTextColor={MATCH_COLORS.textDim}
                       multiline
                       value={restricoes}
@@ -297,22 +307,22 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
 
             </ScrollView>
 
+            {/* BOTÃO NEON TRANSPARENTE */}
             <View style={styles.footer}>
               <TouchableOpacity 
-                style={[styles.generateBtn, isLoading && styles.generateBtnDisabled]} 
-                onPress={handleGenerate}
-                disabled={isLoading}
+                onPress={handleGenerate} 
+                disabled={isLoading} 
+                style={[styles.generateBtnNeon, isLoading && { opacity: 0.6 }]}
               >
                 {isLoading ? (
-                  <ActivityIndicator size="small" color="#000" />
-                ) : (
-                  <MaterialCommunityIcons name="lightning-bolt" size={22} color="#000" />
-                )}
-                <Text style={styles.generateBtnText}>
-                  {isLoading ? "A IA ESTÁ PENSANDO..." : mode === 'import' ? "EXTRAIR E MONTAR FICHA" : "GERAR TREINO MÁGICO"}
+                  <ActivityIndicator size="small" color={MATCH_COLORS.primary} />
+                ) : null}
+                <Text style={styles.generateBtnTextNeon}>
+                  {isLoading ? "A IA ESTÁ TRABALHANDO..." : mode === 'import' ? "EXTRAIR E MONTAR FICHA" : "GERAR TREINO MÁGICO"}
                 </Text>
               </TouchableOpacity>
             </View>
+
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -321,219 +331,75 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  container: {
-    backgroundColor: MATCH_COLORS.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    height: '90%',
-    paddingTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconGlowBox: {
-    backgroundColor: MATCH_COLORS.primaryGlow,
-    padding: 10,
-    borderRadius: 12,
-    marginRight: 12,
-  },
-  title: {
-    color: MATCH_COLORS.text,
-    fontSize: moderateScale(18),
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    color: MATCH_COLORS.textMuted,
-    fontSize: moderateScale(12),
-    marginTop: 2,
-  },
-  closeBtn: {
-    padding: 8,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    marginHorizontal: 20,
-    backgroundColor: MATCH_COLORS.surfaceDark,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
-  },
-  tabButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 10,
-    gap: 8,
-  },
-  tabButtonActive: {
-    backgroundColor: MATCH_COLORS.border,
-  },
-  tabText: {
-    color: MATCH_COLORS.textMuted,
-    fontSize: moderateScale(14),
-    fontWeight: '600',
-  },
-  tabTextActive: {
-    color: MATCH_COLORS.primary,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-  importSection: {
-    gap: 16,
-  },
-  description: {
-    color: MATCH_COLORS.textMuted,
-    fontSize: moderateScale(14),
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  imagePreviewContainer: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  imagePreview: {
-    width: '100%',
-    height: verticalScale(200),
-    borderRadius: 12,
-    resizeMode: 'cover',
-  },
-  removeImageBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FF3B30',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 8,
-  },
-  removeImageText: {
-    color: '#FFF',
-    fontWeight: 'bold',
-    fontSize: moderateScale(14),
-  },
-  uploadRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  uploadBtn: {
-    flex: 1,
-    backgroundColor: MATCH_COLORS.border,
-    borderWidth: 1,
-    borderColor: MATCH_COLORS.borderLight,
-    borderRadius: 12,
-    paddingVertical: 24,
-    alignItems: 'center',
-    gap: 8,
-  },
-  uploadBtnText: {
-    color: MATCH_COLORS.text,
-    fontSize: moderateScale(14),
-    fontWeight: '600',
-  },
-  dividerBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: MATCH_COLORS.borderLight,
-  },
-  dividerText: {
-    color: MATCH_COLORS.textDim,
-    marginHorizontal: 10,
-    fontSize: moderateScale(12),
-    fontWeight: 'bold',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    color: MATCH_COLORS.text,
-    fontSize: moderateScale(16),
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  input: {
-    backgroundColor: MATCH_COLORS.surfaceDark,
-    borderWidth: 1,
-    borderColor: MATCH_COLORS.borderLight,
-    borderRadius: 12,
-    padding: 16,
-    color: MATCH_COLORS.text,
-    fontSize: moderateScale(14),
-  },
-  pillContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  pill: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: MATCH_COLORS.surfaceDark,
-    borderWidth: 1,
-    borderColor: MATCH_COLORS.borderLight,
-  },
-  pillActive: {
-    backgroundColor: MATCH_COLORS.primaryGlow,
+  overlay: { flex: 1, justifyContent: 'flex-end' },
+  container: { backgroundColor: MATCH_COLORS.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, height: '90%', paddingTop: 20, shadowColor: '#000', shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 15 },
+  
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, marginBottom: 20 },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center' },
+  iconGlowBox: { backgroundColor: MATCH_COLORS.primaryGlow, padding: 12, borderRadius: 14, marginRight: 14 },
+  title: { color: MATCH_COLORS.text, fontSize: moderateScale(20), fontWeight: '900', letterSpacing: 0.5 },
+  subtitle: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(13), marginTop: 2 },
+  closeBtn: { backgroundColor: MATCH_COLORS.border, padding: 8, borderRadius: 20 },
+  
+  segmentedControl: { flexDirection: 'row', marginHorizontal: 24, backgroundColor: MATCH_COLORS.surfaceDark, borderRadius: 16, padding: 4, marginBottom: 24, borderWidth: 1, borderColor: MATCH_COLORS.border },
+  segmentBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, gap: 8 },
+  segmentBtnActive: { backgroundColor: MATCH_COLORS.borderLight },
+  segmentText: { color: MATCH_COLORS.textDim, fontSize: moderateScale(14), fontWeight: 'bold' },
+  segmentTextActive: { color: MATCH_COLORS.text },
+  
+  scrollContent: { paddingHorizontal: 24, paddingBottom: 40 },
+  description: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(14), lineHeight: 22, marginBottom: 24 },
+  
+  fieldSection: { marginBottom: 26 },
+  fieldLabel: { color: MATCH_COLORS.textDim, fontSize: moderateScale(11), fontWeight: '900', letterSpacing: 1, marginBottom: 12 },
+  pillGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  pill: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 100, backgroundColor: MATCH_COLORS.surfaceDark, borderWidth: 1, borderColor: MATCH_COLORS.border },
+  pillActive: { backgroundColor: MATCH_COLORS.primaryGlow, borderColor: MATCH_COLORS.primary },
+  pillText: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(14), fontWeight: '600' },
+  pillTextActive: { color: MATCH_COLORS.primary, fontWeight: '900' },
+  
+  textInputArea: { backgroundColor: MATCH_COLORS.surfaceDark, borderWidth: 1, borderColor: MATCH_COLORS.border, borderRadius: 16, padding: 16, color: MATCH_COLORS.text, fontSize: moderateScale(14), minHeight: verticalScale(100) },
+  hintText: { color: MATCH_COLORS.textDim, fontSize: 11, marginTop: 8, fontStyle: 'italic' },
+  
+  importSection: { gap: 10 },
+  uploadOptionsGrid: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  uploadSquare: { flex: 1, backgroundColor: MATCH_COLORS.surfaceDark, borderWidth: 1, borderColor: MATCH_COLORS.border, borderRadius: 16, paddingVertical: 24, alignItems: 'center', gap: 10 },
+  uploadIconCircle: { backgroundColor: MATCH_COLORS.border, width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
+  uploadSquareText: { color: MATCH_COLORS.text, fontSize: moderateScale(13), fontWeight: 'bold' },
+  
+  previewBox: { backgroundColor: MATCH_COLORS.surfaceDark, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: MATCH_COLORS.border },
+  imagePreview: { width: '100%', height: verticalScale(220), resizeMode: 'cover' },
+  previewBoxPdf: { alignItems: 'center', backgroundColor: MATCH_COLORS.surfaceDark, padding: 30, borderRadius: 16, borderWidth: 1, borderColor: MATCH_COLORS.border },
+  pdfNameText: { color: MATCH_COLORS.text, fontSize: moderateScale(15), fontWeight: 'bold', marginTop: 12, marginBottom: 20 },
+  removeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#EF4444', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12, gap: 8, margin: 12 },
+  removeBtnText: { color: '#FFF', fontWeight: '900', fontSize: moderateScale(14) },
+  
+  dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: MATCH_COLORS.border },
+  dividerText: { color: MATCH_COLORS.textDim, marginHorizontal: 14, fontSize: moderateScale(11), fontWeight: '900', letterSpacing: 1 },
+  
+  footer: { padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, backgroundColor: MATCH_COLORS.surface, borderTopWidth: 1, borderTopColor: MATCH_COLORS.border },
+  
+  generateBtnNeon: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 18, 
+    borderRadius: 16, 
+    gap: 10,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
     borderColor: MATCH_COLORS.primary,
+    shadowColor: MATCH_COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 4
   },
-  pillText: {
-    color: MATCH_COLORS.textMuted,
-    fontSize: moderateScale(14),
-    fontWeight: '500',
-  },
-  pillTextActive: {
-    color: MATCH_COLORS.primary,
-    fontWeight: 'bold',
-  },
-  footer: {
-    padding: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-    backgroundColor: MATCH_COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: MATCH_COLORS.border,
-  },
-  generateBtn: {
-    backgroundColor: MATCH_COLORS.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  generateBtnDisabled: {
-    opacity: 0.6,
-  },
-  generateBtnText: {
-    color: '#000',
-    fontSize: moderateScale(16),
-    fontWeight: 'bold',
+  generateBtnTextNeon: { 
+    color: MATCH_COLORS.primary, 
+    fontSize: moderateScale(14), 
+    fontWeight: '900', 
+    letterSpacing: 0.5 
   }
 });

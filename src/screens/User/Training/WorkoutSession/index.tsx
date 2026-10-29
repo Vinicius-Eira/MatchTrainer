@@ -1,320 +1,291 @@
-import React, { useRef, useEffect } from "react";
-import { View, Text, TouchableOpacity, StatusBar, SafeAreaView, Image, TextInput, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity, SafeAreaView, Image, TextInput, KeyboardAvoidingView, Platform, ScrollView, Modal } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
 import { useWorkoutSession } from "./useWorkoutSession";
-import { PainModal } from '../../../../components/training/PainModal'; 
+
+import { PainModal } from '../../../../components/training/PainModal';
+import { RestTimer } from '../../../../components/training/RestTimer';
+import { FinishWorkoutModal } from '../../../../components/training/FinishWorkoutModal';
 
 export function WorkoutSession({ route, navigation }: any) {
   const {
-    treinoInfo, exercicios, indiceAtual, progressoBarra,
-    emDescanso, tempoDescansoRestante, tempoTotalTreino, observacaoTreinoGeral,
-    setObservacaoTreinoGeral, formatarTempo, atualizarExecucaoSerie, atualizarObservacaoAluno, 
-    focarExercicio, concluirSerie, pularDescanso, cancelarTreino, finalizarTreinoNoBanco,
-    mostrarFinalizacao, nivelEsforco, setNivelEsforco, sentiuDor, setSentiuDor,
-    modalDorVisivel, exercicioDorId, abrirModalDor, fecharModalDor, handleDorRegistradaSucesso 
+    conexaoId,
+    treinoInfo, exercicios, progressoBarra,
+    emDescanso, tempoDescansoRestante, tempoTotalTreino,
+    mostrarFinalizacao, setMostrarFinalizacao,
+    modalDorVisivel, exercicioDorId, exercicioDorNome, abrirModalDor, fecharModalDor, handleDorRegistradaSucesso,
+    formatarTempo, atualizarExecucaoSerie, atualizarObservacaoAluno,
+    concluirSerie, pularDescanso, cancelarTreino
   } = useWorkoutSession(navigation, route);
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const [expandedIndex, setExpandedIndex] = useState<number>(0);
+  const [fullScreenMedia, setFullScreenMedia] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (scrollViewRef.current && indiceAtual > 0 && !mostrarFinalizacao) {
-        setTimeout(() => scrollViewRef.current?.scrollTo({ y: indiceAtual * 110, animated: true }), 300);
-    }
-    if (mostrarFinalizacao) {
-        setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
-    }
-  }, [indiceAtual, mostrarFinalizacao]);
+  const toggleExpand = (index: number) => {
+    setExpandedIndex(prev => (prev === index ? -1 : index));
+  };
+
+  const getStats = () => {
+    let setsCompleted = 0;
+    let totalSets = 0;
+    exercicios.forEach(e => {
+      const seriesList = e.series || [];
+      totalSets += seriesList.length;
+      setsCompleted += seriesList.filter((s: any) => s.concluida).length;
+    });
+    return {
+      durationSeconds: tempoTotalTreino,
+      exercisesCompleted: exercicios.filter(e => (e.series || []).every((s: any) => s.concluida)).length,
+      totalExercises: exercicios.length,
+      setsCompleted,
+      totalSets
+    };
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#050505" translucent={false} />
-      
+      <StatusBar style="light" backgroundColor={"#050505" as any} translucent={false} />
+
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
-           <TouchableOpacity style={styles.btnClose} onPress={cancelarTreino} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
-              <Ionicons name="close" size={26} color="#FFF" />
-            </TouchableOpacity>
-            
-            <View style={styles.headerTitleBox}>
-                <Text style={styles.treinoTitleText}>{treinoInfo.nome}</Text>
-                <View style={styles.globalTimerBadge}>
-                    <Ionicons name="time-outline" size={14} color="#888" />
-                    <Text style={styles.globalTimerText}>{formatarTempo(tempoTotalTreino)}</Text>
-                </View>
-            </View>
-            <View style={{ width: 26 }} />
+          <TouchableOpacity style={styles.btnClose} onPress={cancelarTreino} hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
+            <Ionicons name="close" size={24} color="#888" />
+          </TouchableOpacity>
+
+          <View style={styles.dynamicIsland}>
+            <Ionicons name="time-outline" size={16} color="#FF6B00" />
+            <Text style={styles.globalTimerText}> {formatarTempo(tempoTotalTreino)}</Text>
+            <View style={{ width: 1, height: 12, backgroundColor: '#333', marginHorizontal: 10 }} />
+            <Text style={styles.treinoTitleText} numberOfLines={1}>{treinoInfo.nome}</Text>
+          </View>
+          <View style={{ width: 40 }} />
         </View>
-        
-        <View style={styles.progressTextRow}>
-            <Text style={styles.progressLabel}>{Math.floor(progressoBarra)}% Concluído</Text>
-        </View>
-        <View style={styles.progressBarContainer}>
-           <View style={[styles.progressBarFill, { width: `${progressoBarra}%`, backgroundColor: progressoBarra === 100 ? "#00E676" : "#FF6B00" }]} />
+
+        <View style={styles.progressContainer}>
+          <View style={styles.progressTextRow}>
+            <Text style={styles.progressLabel}>Progresso do Treino</Text>
+            <Text style={styles.progressValue}>{Math.floor(progressoBarra)}%</Text>
+          </View>
+          <View style={styles.progressBarTrack}>
+            <View style={[styles.progressBarFill, { width: `${progressoBarra}%`, backgroundColor: progressoBarra === 100 ? "#00E676" : "#FF6B00" }]} />
+          </View>
         </View>
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
-        <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           
-          {exercicios.map((ex: any, exIndex: number) => {
-            const isAtual = exIndex === indiceAtual && !mostrarFinalizacao;
-            const isConcluido = ex.series.every((s: any) => s.concluida) && !isAtual;
-
-            if (!isAtual) {
-                return (
-                    <TouchableOpacity key={ex.id} style={[styles.cardCompacto, isConcluido && styles.cardCompactoConcluido]} activeOpacity={0.8} onPress={() => focarExercicio(exIndex)}>
-                        <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
-                            {isConcluido ? (
-                                <Ionicons name="checkmark-circle" size={24} color="#00E676" style={{ marginRight: 12 }} />
-                            ) : (
-                                <View style={styles.dotPronto} />
-                            )}
-                            <View style={{ flex: 1 }}>
-                                <Text style={[styles.cardCompactoNome, isConcluido && { color: "#888", textDecorationLine: "line-through" }]}>{ex.nome}</Text>
-                                <Text style={styles.cardCompactoMets}>{ex.series.length} séries • {ex.descanso}s descanso</Text>
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                );
-            }
+          {exercicios.map((ex, index) => {
+            const isExpanded = expandedIndex === index;
+            const isCompleted = ex.series.length > 0 && ex.series.every((s: any) => s.concluida);
 
             return (
-              <View key={ex.id} style={styles.cardPlayer}>
+              <View key={ex.id} style={[styles.cardContainer, isExpanded && styles.cardContainerExpanded, isCompleted && !isExpanded && styles.cardContainerCompleted]}>
                 
-                <View style={styles.playerHeader}>
-                    <View style={styles.videoContainer}>
-                        {ex.imagem_url ? (
-                        <Image source={{ uri: ex.imagem_url }} style={styles.mediaImage} />
-                        ) : (
-                        <View style={styles.mediaPlaceholder}><MaterialCommunityIcons name="weight-lifter" size={32} color="#333" /></View>
-                        )}
-                        <View style={styles.playOverlay}><Ionicons name="play" size={20} color="#FFF" style={{marginLeft:2}} /></View>
-                    </View>
-
-                    <View style={styles.infoRightContainer}>
-                        <View>
-                            <Text style={styles.labelAtual}>EXERCÍCIO {exIndex + 1}</Text>
-                            <Text style={styles.nomeAtual}>{ex.nome}</Text>
-                            {ex.grupo_muscular && <Text style={styles.grupoAtual}>{ex.grupo_muscular}</Text>}
+                <TouchableOpacity style={styles.cardHeader} activeOpacity={0.7} onPress={() => toggleExpand(index)}>
+                  <View style={styles.thumbnailContainer}>
+                    {ex.imagem_url ? (
+                      <>
+                        <Image source={{ uri: ex.imagem_url }} style={styles.thumbnail} />
+                        <View style={styles.thumbnailPlayOverlay}>
+                          <Ionicons name="play" size={14} color="#FFF" style={{ marginLeft: 2 }} />
                         </View>
-                    </View>
-                </View>
+                      </>
+                    ) : (
+                      <MaterialCommunityIcons name="weight-lifter" size={28} color="#444" />
+                    )}
+                  </View>
+                  
+                  <View style={styles.cardInfo}>
+                    <Text style={[styles.cardTitle, isCompleted && !isExpanded && { textDecorationLine: "line-through", color: "#888" }]} numberOfLines={1}>
+                      {ex.nome}
+                    </Text>
+                    <Text style={styles.cardSubtitle}>{ex.series.length} séries • {ex.grupo_muscular}</Text>
+                  </View>
 
-                {ex.observacao_personal ? (
-                    <View style={styles.obsPersonalBox}>
-                        <Text style={styles.obsPersonalLabel}>Orientação do Personal</Text>
-                        <Text style={styles.obsPersonalText}>{ex.observacao_personal}</Text>
-                    </View>
-                ) : null}
+                  <View style={styles.cardIconBox}>
+                    {isCompleted && !isExpanded ? (
+                      <Ionicons name="checkmark-circle" size={26} color="#00E676" />
+                    ) : (
+                      <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={22} color="#888" />
+                    )}
+                  </View>
+                </TouchableOpacity>
 
-                <View style={styles.divider} />
-
-                <View style={styles.seriesContainer}>
-                    {ex.series.map((serie: any, sIndex: number) => {
-                        const isAtiva = !serie.concluida && (sIndex === 0 || ex.series[sIndex - 1].concluida);
-
-                        return (
-                            <View key={sIndex} style={[styles.serieCard, serie.concluida && styles.serieCardConcluido, isAtiva && styles.serieCardAtivo]}>
-                                
-                                <View style={styles.serieCardHeader}>
-                                    <Text style={[styles.serieTitle, serie.concluida && { color: "#00E676" }]}>SÉRIE {serie.numero.toString().padStart(2, '0')}</Text>
-                                    <View style={styles.descansoBadge}>
-                                        <Ionicons name="timer-outline" size={14} color="#888" />
-                                        <Text style={styles.descansoBadgeText}>{ex.descanso}s</Text>
-                                    </View>
-                                </View>
-
-                                <View style={styles.serieCardBody}>
-                                    <View style={styles.seriePrescricaoRow}>
-                                        <Text style={styles.dataLabel}>PRESCRITO:</Text>
-                                        <Text style={[styles.dataPrescrito, serie.concluida && styles.textoOpacity]}>
-                                            {serie.reps_alvo} reps  ·  {serie.carga_alvo} kg
-                                        </Text>
-                                    </View>
-
-                                    <View style={styles.serieRealizadoContainer}>
-                                        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4}}>
-                                            <Text style={styles.dataLabelHighlight}>MEU RESULTADO</Text>
-                                            {serie.carga_historico && (
-                                                <Text style={{color: "#888", fontSize: 10, fontStyle: 'italic'}}>Último: {serie.carga_historico}kg</Text>
-                                            )}
-                                        </View>
-                                        
-                                        <View style={styles.inputsBigRow}>
-                                            <View style={[styles.inputBigWrapper, isAtiva && styles.inputBigWrapperAtivo]}>
-                                                <TextInput 
-                                                    style={[styles.inputBigRealizado, serie.concluida && styles.inputBigRealizadoConcluido]} 
-                                                    keyboardType="numeric" 
-                                                    value={String(serie.reps_feitas)} 
-                                                    onChangeText={(v) => atualizarExecucaoSerie(exIndex, sIndex, 'reps_feitas', v)} 
-                                                    editable={isAtiva}
-                                                />
-                                                <Text style={[styles.inputBigSuffix, serie.concluida && styles.textoOpacity]}>reps</Text>
-                                            </View>
-                                            
-                                            <View style={[styles.inputBigWrapper, isAtiva && styles.inputBigWrapperAtivo]}>
-                                                <TextInput 
-                                                    style={[styles.inputBigRealizado, serie.concluida && styles.inputBigRealizadoConcluido]} 
-                                                    keyboardType="numeric" 
-                                                    value={String(serie.carga_feita)} 
-                                                    onChangeText={(v) => atualizarExecucaoSerie(exIndex, sIndex, 'carga_feita', v)} 
-                                                    editable={isAtiva}
-                                                />
-                                                <Text style={[styles.inputBigSuffix, serie.concluida && styles.textoOpacity]}>kg</Text>
-                                            </View>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                <TouchableOpacity 
-                                    style={[styles.btnAction, serie.concluida ? styles.btnActionConcluido : (isAtiva ? styles.btnActionAtivo : styles.btnActionInativo)]} 
-                                    onPress={() => isAtiva && concluirSerie(exIndex, sIndex)}
-                                    disabled={!isAtiva}
-                                >
-                                    {serie.concluida ? (
-                                        <>
-                                            <Ionicons name="checkmark-circle" size={20} color="#00E676" />
-                                            <Text style={styles.btnActionTextConcluido}>CONCLUÍDA</Text>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Ionicons name="ellipse-outline" size={20} color={isAtiva ? "#000" : "#555"} />
-                                            <Text style={[styles.btnActionText, !isAtiva && { color: "#555" }]}>CONCLUIR SÉRIE</Text>
-                                        </>
-                                    )}
-                                </TouchableOpacity>
-
-                            </View>
-                        );
-                    })}
-                </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.alunoObsContainer}>
-                    <View style={styles.alunoObsHeader}>
-                        <Text style={styles.alunoObsTitle}>📝 Observação do Exercício</Text>
-                    </View>
-                    <TextInput 
-                        style={styles.alunoObsInput} 
-                        placeholder="Ex: Última série foi até a falha..." 
-                        placeholderTextColor="#555" 
-                        value={ex.observacao_aluno} 
-                        onChangeText={(v) => atualizarObservacaoAluno(exIndex, v)} 
-                        multiline 
-                    />
-
+                {isExpanded && (
+                  <View style={styles.cardBody}>
+                    <View style={styles.divider} />
+                    
                     <TouchableOpacity 
-                        style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 12, backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                        onPress={() => abrirModalDor(ex.id)}
-                        activeOpacity={0.7}
+                      style={styles.expandedMediaContainer}
+                      activeOpacity={0.8}
+                      onPress={() => ex.imagem_url && setFullScreenMedia(ex.imagem_url)}
                     >
-                        <Ionicons name="warning" size={16} color="#EF4444" style={{ marginRight: 6 }} />
-                        <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase' }}>Senti dor neste movimento</Text>
+                      {ex.imagem_url ? (
+                        <Image source={{ uri: ex.imagem_url }} style={styles.expandedMedia} />
+                      ) : (
+                        <MaterialCommunityIcons name="weight-lifter" size={56} color="#333" />
+                      )}
+                      
+                      {ex.imagem_url && (
+                        <View style={styles.expandedPlayOverlay}>
+                          <Ionicons name="play" size={30} color="#FFF" style={{ marginLeft: 4 }} />
+                        </View>
+                      )}
                     </TouchableOpacity>
+                    
+                    {ex.observacao_personal ? (
+                      <View style={styles.obsPersonalBox}>
+                        <Ionicons name="chatbubble-ellipses" size={16} color="#FF6B00" style={{ marginTop: 2 }} />
+                        <View style={{ flex: 1, marginLeft: 8 }}>
+                          <Text style={styles.obsPersonalLabel}>Orientação do Personal</Text>
+                          <Text style={styles.obsPersonalText}>{ex.observacao_personal}</Text>
+                        </View>
+                      </View>
+                    ) : null}
 
-                </View>
+                    <View style={styles.seriesHeaderTitles}>
+                      <Text style={styles.seriesHeaderLabelTitle}>SÉRIE</Text>
+                      <Text style={styles.seriesHeaderLabelCenter}>TEMPO</Text>
+                      <Text style={styles.seriesHeaderLabelCenter}>REPS</Text>
+                      <Text style={styles.seriesHeaderLabelCenter}>CARGA (KG)</Text>
+                      <Text style={styles.seriesHeaderLabelCheck}>FEITO</Text>
+                    </View>
 
+                    {ex.series.map((serie: any, sIndex: number) => {
+                      const isAtiva = !serie.concluida && (sIndex === 0 || ex.series[sIndex - 1].concluida);
+                      return (
+                        <View key={serie.id} style={[styles.serieRow, serie.concluida && styles.serieRowConcluido, isAtiva && styles.serieRowAtiva]}>
+                          <View style={styles.serieColNumber}>
+                            <Text style={[styles.serieNumberText, serie.concluida && { color: "#00E676" }]}>{serie.numero}</Text>
+                          </View>
+                          
+                          <View style={styles.serieColTempo}>
+                            <Text style={[styles.serieTargetText, serie.concluida && styles.textDimmed]}>
+                              {serie.tempo_alvo} 
+                            </Text>
+                          </View>
+                          
+                          <View style={styles.serieColTarget}>
+                            <Text style={[styles.serieTargetText, serie.concluida && styles.textDimmed]}>{serie.reps_alvo}</Text>
+                          </View>
+                          
+                          <View style={styles.serieColInput}>
+                            <TextInput
+                              style={[styles.inputCarga, serie.concluida && styles.inputCargaConcluida]}
+                              keyboardType="numeric"
+                              value={String(serie.carga_feita)}
+                              onChangeText={(v) => atualizarExecucaoSerie(index, sIndex, 'carga_feita', v)}
+                              editable={isAtiva}
+                              placeholder="0"
+                              placeholderTextColor="#444"
+                            />
+                          </View>
+                          
+                          <View style={styles.serieColCheck}>
+                            <TouchableOpacity
+                              style={[styles.btnCheckSerie, serie.concluida ? styles.btnCheckSerieConcluido : (isAtiva ? styles.btnCheckSerieAtivo : styles.btnCheckSerieInativo)]}
+                              onPress={() => isAtiva && concluirSerie(index, sIndex)}
+                              disabled={!isAtiva}
+                            >
+                              <Ionicons name="checkmark" size={18} color={serie.concluida ? "#000" : (isAtiva ? "#FFF" : "#444")} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    })}
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.alunoAcoesContainer}>
+                      <Text style={styles.alunoAcoesTitle}>Detalhes da Execução (Opcional)</Text>
+                      <TextInput
+                        style={styles.alunoObsInput}
+                        placeholder="Ex: Tive dificuldade na última série..."
+                        placeholderTextColor="#555"
+                        value={ex.observacao_aluno}
+                        onChangeText={(v) => atualizarObservacaoAluno(index, v)}
+                        multiline
+                      />
+                      
+                      <TouchableOpacity
+                        style={styles.btnRelatarDor}
+                        onPress={() => abrirModalDor(ex.id, ex.nome)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.btnRelatarDorIconBox}>
+                          <Ionicons name="warning" size={16} color="#EF4444" />
+                        </View>
+                        <Text style={styles.btnRelatarDorText}>Relatar Dor ou Desconforto</Text>
+                        <Ionicons name="chevron-forward" size={18} color="rgba(239, 68, 68, 0.5)" />
+                      </TouchableOpacity>
+                    </View>
+
+                  </View>
+                )}
               </View>
             );
           })}
 
-          {mostrarFinalizacao && (
-            <View style={[styles.cardPlayer, { borderColor: "#00E676", backgroundColor: "#111" }]}>
-                <View style={{alignItems: 'center', marginBottom: 20}}>
-                    <Ionicons name="trophy" size={40} color="#00E676" />
-                    <Text style={[styles.nomeAtual, { color: "#00E676", marginTop: 10, textAlign: 'center' }]}>Treino Finalizado!</Text>
-                    <Text style={{color: '#888', textAlign: 'center', fontSize: 13, marginTop: 5}}>Quase lá. Precisamos apenas do seu feedback para o professor ajustar sua próxima carga.</Text>
-                </View>
-
-                <View style={styles.divider} />
-
-                <Text style={[styles.alunoObsTitle, {marginBottom: 15}]}>⚡ Qual foi o Nível de Esforço (RPE)?</Text>
-                <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30}}>
-                    {[
-                        {v: 5, t: 'Leve', c: '#4ADE80'},
-                        {v: 7, t: 'Ideal', c: '#FFB020'},
-                        {v: 9, t: 'Pesado', c: '#F87171'}
-                    ].map(rpe => (
-                        <TouchableOpacity 
-                            key={rpe.v} 
-                            style={{ flex: 1, alignItems: 'center', padding: 10, borderWidth: 1, borderColor: nivelEsforco === rpe.v ? rpe.c : '#333', borderRadius: 8, marginHorizontal: 4, backgroundColor: nivelEsforco === rpe.v ? `${rpe.c}15` : 'transparent'}}
-                            onPress={() => setNivelEsforco(rpe.v)}
-                        >
-                            <Text style={{color: nivelEsforco === rpe.v ? rpe.c : '#888', fontWeight: 'bold'}}>{rpe.t}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                <Text style={[styles.alunoObsTitle, {marginBottom: 15}]}>🏥 Sentiu alguma dor ou desconforto articular?</Text>
-                <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30}}>
-                    <TouchableOpacity 
-                        style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 12, borderWidth: 1, borderColor: sentiuDor === false ? '#00E676' : '#333', borderRadius: 8, marginRight: 5, backgroundColor: sentiuDor === false ? 'rgba(0,230,118,0.1)' : 'transparent'}}
-                        onPress={() => setSentiuDor(false)}
-                    >
-                        <Ionicons name="thumbs-up" size={16} color={sentiuDor === false ? "#00E676" : "#888"} style={{marginRight: 6}}/>
-                        <Text style={{color: sentiuDor === false ? '#00E676' : '#888', fontWeight: 'bold'}}>Não, 100%</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                        style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 12, borderWidth: 1, borderColor: sentiuDor === true ? '#F87171' : '#333', borderRadius: 8, marginLeft: 5, backgroundColor: sentiuDor === true ? 'rgba(248,113,113,0.1)' : 'transparent'}}
-                        onPress={() => setSentiuDor(true)}
-                    >
-                        <Ionicons name="warning" size={16} color={sentiuDor === true ? "#F87171" : "#888"} style={{marginRight: 6}}/>
-                        <Text style={{color: sentiuDor === true ? '#F87171' : '#888', fontWeight: 'bold'}}>Sim, senti</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.alunoObsHeader}>
-                    <Text style={styles.alunoObsTitle}>📝 Algo mais a relatar?</Text>
-                </View>
-                <TextInput 
-                    style={styles.alunoObsInput} 
-                    placeholder="Ex: A academia estava muito cheia, não fiz esteira..." 
-                    placeholderTextColor="#555" 
-                    value={observacaoTreinoGeral} 
-                    onChangeText={setObservacaoTreinoGeral} 
-                    multiline 
-                />
-
-                <TouchableOpacity 
-                    style={[styles.btnAction, {backgroundColor: '#00E676', marginTop: 20, height: 55}]} 
-                    onPress={finalizarTreinoNoBanco}
-                >
-                    <Text style={[styles.btnActionText, {color: '#000', fontSize: 16}]}>FINALIZAR E ENVIAR</Text>
-                </TouchableOpacity>
-
-            </View>
-          )}
+          <TouchableOpacity 
+            style={styles.btnFinalizarOutline} 
+            onPress={() => {
+              navigation.replace("WorkoutCompletion", { 
+                tempoTotal: tempoTotalTreino, 
+                conexaoId: conexaoId, 
+                treinoId: treinoInfo.id, 
+                exercicios: exercicios 
+              });
+            }} 
+            activeOpacity={0.7}
+          >
+            <Text style={styles.btnFinalizarOutlineText}>FINALIZAR TREINO</Text>
+            <Ionicons name="flag" size={18} color="#FF6B00" />
+          </TouchableOpacity>
 
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {emDescanso && (
-        <View style={styles.floatingRestBar}>
-          <LinearGradient colors={["rgba(5,5,5,0.95)", "#050505"]} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} />
-          <View style={styles.restInfo}>
-             <Ionicons name="timer" size={32} color="#00E676" />
-             <View style={{ marginLeft: 15 }}>
-                <Text style={styles.restTitle}>TEMPO DE DESCANSO</Text>
-                <Text style={styles.restTimer}>{formatarTempo(tempoDescansoRestante)}</Text>
-             </View>
+      <Modal visible={emDescanso} transparent={true} animationType="fade">
+        <View style={styles.restModalContainer}>
+          <View style={styles.restModalBox}>
+            <MaterialCommunityIcons name="timer-sand" size={48} color="#004d27" style={{ marginBottom: 10 }} />
+            <Text style={styles.restModalTitle}>Tempo de Descanso</Text>
+            <Text style={styles.restModalTime}>{formatarTempo(tempoDescansoRestante)}</Text>
+            
+            <TouchableOpacity style={styles.restModalBtn} onPress={pularDescanso} activeOpacity={0.8}>
+              <Text style={styles.restModalBtnText}>PULAR DESCANSO</Text>
+              <Ionicons name="play-skip-forward" size={18} color="#FFF" style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.btnPularDescanso} onPress={pularDescanso}>
-             <Text style={styles.btnPularText}>PULAR</Text>
-          </TouchableOpacity>
         </View>
-      )}
+      </Modal>
 
-      <PainModal 
-        isVisible={modalDorVisivel} 
-        onClose={fecharModalDor}
-        session_id={treinoInfo.id}
-        session_exercise_id={exercicioDorId}
-        onSaveSuccess={handleDorRegistradaSucesso}
+      <Modal visible={!!fullScreenMedia} transparent={true} animationType="fade" onRequestClose={() => setFullScreenMedia(null)}>
+        <View style={styles.fullScreenModalContainer}>
+          <TouchableOpacity style={styles.btnCloseFullScreen} onPress={() => setFullScreenMedia(null)}>
+            <Ionicons name="close" size={26} color="#FFF" />
+          </TouchableOpacity>
+          {fullScreenMedia && ( <Image source={{ uri: fullScreenMedia }} style={styles.fullScreenMedia} /> )}
+        </View>
+      </Modal>
+
+      <PainModal
+        isVisible={modalDorVisivel} onClose={fecharModalDor} session_id={treinoInfo.id}
+        session_exercise_id={exercicioDorId} exercicioNome={exercicioDorNome} onSaveSuccess={handleDorRegistradaSucesso}
+      />
+
+      <FinishWorkoutModal
+        isVisible={mostrarFinalizacao}
+        onClose={() => {
+          setMostrarFinalizacao(false);
+          setTimeout(() => { navigation.replace("WorkoutCompletion", { tempoTotal: tempoTotalTreino, conexaoId, treinoId: treinoInfo.id, exercicios }); }, 400);
+        }}
+        session_id={treinoInfo.id} stats={getStats()}
       />
 
     </SafeAreaView>
   );
-};
+}

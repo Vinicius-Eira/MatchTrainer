@@ -1,98 +1,174 @@
 import { Platform, StyleSheet } from "react-native";
 import { moderateScale, scale, verticalScale } from "../../../../utils/responsive";
 
+const MATCH_COLORS = {
+  background: "#050505",       
+  surface: "#0A0A0C",          
+  surfaceLight: "#15151A",     
+  primary: "#FF6B00",          
+  primaryDim: "rgba(255, 107, 0, 0.15)", 
+  success: "#00E676",          
+  successDim: "rgba(0, 230, 118, 0.1)",  
+  danger: "#EF4444",           
+  dangerDim: "rgba(239, 68, 68, 0.05)",
+  border: "#1A1A20",           
+  borderActive: "rgba(255, 107, 0, 0.4)", 
+  text: "#FFFFFF",             
+  textMuted: "#888888",        
+  textDim: "#555555"           
+};
+
 export const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#050505" },
+  safeArea: { flex: 1, backgroundColor: MATCH_COLORS.background },
   container: { flex: 1 },
   
-  header: { backgroundColor: "#0A0A0A", paddingTop: verticalScale(15), borderBottomWidth: 1, borderBottomColor: "#151515" },
-  headerTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: scale(15), marginBottom: verticalScale(10) },
-  btnClose: { width: scale(30), height: scale(30), justifyContent: "center" },
-  headerTitleBox: { alignItems: "center", flex: 1 },
-  treinoTitleText: { color: "#FFF", fontSize: moderateScale(16), fontWeight: "900", textTransform: "uppercase", letterSpacing: 1 },
+  header: { 
+    backgroundColor: MATCH_COLORS.background, 
+    paddingTop: verticalScale(10), 
+    paddingBottom: verticalScale(15), 
+    paddingHorizontal: scale(16),
+  },
+  headerTopRow: { 
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: verticalScale(12)
+  },
+  btnClose: { 
+    width: scale(40), height: scale(40), borderRadius: 20, 
+    backgroundColor: MATCH_COLORS.surface, justifyContent: "center", alignItems: "center",
+    borderWidth: 1, borderColor: MATCH_COLORS.border
+  },
+  dynamicIsland: {
+    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
+    backgroundColor: MATCH_COLORS.surface, marginHorizontal: scale(12),
+    paddingVertical: verticalScale(8), borderRadius: 20,
+    borderWidth: 1, borderColor: MATCH_COLORS.border
+  },
+  treinoTitleText: { 
+    color: MATCH_COLORS.text, fontSize: moderateScale(14), fontWeight: "800", textTransform: "uppercase", letterSpacing: 1 
+  },
+  globalTimerText: { 
+    color: MATCH_COLORS.primary, fontSize: moderateScale(13), fontWeight: "bold", fontVariant: ['tabular-nums'], marginTop: verticalScale(2)
+  },
   
-  globalTimerBadge: { flexDirection: "row", alignItems: "center", marginTop: verticalScale(4) },
-  globalTimerText: { color: "#888", fontSize: moderateScale(12), fontWeight: "bold", marginLeft: scale(4), fontVariant: ['tabular-nums'] },
+  progressContainer: { width: "100%", paddingHorizontal: scale(4) },
+  progressTextRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: verticalScale(6) },
+  progressLabel: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(11), fontWeight: "700", textTransform: "uppercase" },
+  progressValue: { color: MATCH_COLORS.primary, fontSize: moderateScale(11), fontWeight: "900" },
+  progressBarTrack: { width: "100%", height: verticalScale(4), backgroundColor: MATCH_COLORS.border, borderRadius: 2, overflow: "hidden" },
+  progressBarFill: { height: "100%", borderRadius: 2 },
   
-  progressTextRow: { paddingHorizontal: scale(20), marginBottom: verticalScale(8) },
-  progressLabel: { color: "#666", fontSize: moderateScale(10), fontWeight: "bold", textTransform: "uppercase" },
-  progressBarContainer: { width: "100%", height: verticalScale(3), backgroundColor: "#222" },
-  progressBarFill: { height: "100%", backgroundColor: "#FF6B00" },
+  scrollContent: { padding: scale(16), paddingBottom: verticalScale(160) },
   
-  scrollContent: { padding: scale(16), paddingBottom: verticalScale(120) },
-  exerciseBlock: { marginBottom: verticalScale(16) },
-  divider: { height: 1, backgroundColor: "#151515", marginVertical: verticalScale(20), width: "100%" },
+  cardContainer: {
+    backgroundColor: MATCH_COLORS.surface, borderRadius: 16, marginBottom: verticalScale(12),
+    borderWidth: 1, borderColor: MATCH_COLORS.border, overflow: "hidden"
+  },
+  cardContainerExpanded: {
+    borderColor: MATCH_COLORS.borderActive, shadowColor: MATCH_COLORS.primary,
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 4
+  },
+  cardContainerCompleted: { opacity: 0.7, borderColor: MATCH_COLORS.successDim },
   
-  cardCompacto: { backgroundColor: "#0C0C0C", padding: scale(16), borderRadius: moderateScale(16), borderWidth: 1, borderColor: "#1A1A1A" },
-  cardCompactoConcluido: { backgroundColor: "rgba(0, 230, 118, 0.05)", borderColor: "rgba(0, 230, 118, 0.15)" },
-  dotPronto: { width: scale(12), height: scale(12), borderRadius: scale(6), backgroundColor: "#222", marginRight: scale(12), borderWidth: 2, borderColor: "#333" },
-  cardCompactoNome: { color: "#FFF", fontSize: moderateScale(15), fontWeight: "bold" },
-  cardCompactoMets: { color: "#666", fontSize: moderateScale(12), marginTop: verticalScale(4) },
+  cardHeader: { flexDirection: "row", alignItems: "center", padding: scale(12) },
   
-  cardPlayer: { backgroundColor: "#050505", borderRadius: moderateScale(20), padding: scale(16), borderWidth: 1, borderColor: "#1A1A1A" },
-  playerHeader: { flexDirection: "row", alignItems: "stretch", marginBottom: verticalScale(20) },
-  videoContainer: { width: scale(90), height: verticalScale(120), backgroundColor: "#151515", borderRadius: moderateScale(12), overflow: "hidden", position: "relative", borderWidth: 1, borderColor: "#222" },
-  mediaImage: { width: "100%", height: "100%", resizeMode: "cover" },
-  mediaPlaceholder: { flex: 1, justifyContent: "center", alignItems: "center" },
-  playOverlay: { position: "absolute", top: "50%", left: "50%", marginTop: -16, marginLeft: -16, width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" },
+  thumbnailContainer: {
+    width: scale(64), height: scale(64), borderRadius: 12, backgroundColor: "#111",
+    justifyContent: "center", alignItems: "center", overflow: "hidden",
+    marginRight: scale(12), borderWidth: 1, borderColor: MATCH_COLORS.border
+  },
+  thumbnail: { width: "100%", height: "100%", resizeMode: "cover", opacity: 0.7 },
+  thumbnailPlayOverlay: {
+    position: "absolute", width: 28, height: 28, borderRadius: 14,
+    backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.2)"
+  },
   
-  infoRightContainer: { flex: 1, marginLeft: scale(16), justifyContent: "center" },
-  labelAtual: { color: "#FF6B00", fontSize: moderateScale(10), fontWeight: "900", letterSpacing: 1, marginBottom: verticalScale(4) },
-  nomeAtual: { color: "#FFF", fontSize: moderateScale(20), fontWeight: "900", lineHeight: moderateScale(24) },
-  grupoAtual: { color: "#666", fontSize: moderateScale(11), fontWeight: "bold", textTransform: "uppercase", marginTop: verticalScale(4) },
+  cardInfo: { flex: 1, justifyContent: "center" },
+  cardTitle: { color: MATCH_COLORS.text, fontSize: moderateScale(15), fontWeight: "900", marginBottom: verticalScale(4) },
+  cardSubtitle: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(12), fontWeight: "600" },
+  cardIconBox: { width: scale(32), alignItems: "flex-end", justifyContent: "center" },
+
+  cardBody: { paddingHorizontal: scale(12), paddingBottom: verticalScale(16) },
+  divider: { height: 1, backgroundColor: MATCH_COLORS.border, marginVertical: verticalScale(12), width: "100%" },
+
+  expandedMediaContainer: {
+    width: "100%", height: verticalScale(280), backgroundColor: "#111", borderRadius: 16,
+    overflow: "hidden", marginBottom: verticalScale(16), borderWidth: 1, borderColor: MATCH_COLORS.border,
+    justifyContent: "center", alignItems: "center"
+  },
+  expandedMedia: { width: "100%", height: "100%", resizeMode: "cover", opacity: 0.8 },
+  expandedPlayOverlay: {
+    position: "absolute", width: 64, height: 64, borderRadius: 32, backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.3)"
+  },
+
+  fullScreenModalContainer: { flex: 1, backgroundColor: "rgba(0,0,0,0.95)", justifyContent: "center", alignItems: "center" },
+  fullScreenMedia: { width: "100%", height: "80%", resizeMode: "contain" },
+  btnCloseFullScreen: {
+    position: "absolute", top: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(30), right: scale(20),
+    width: scale(44), height: scale(44), borderRadius: 22, backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center", alignItems: "center", zIndex: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)"
+  },
+
+  obsPersonalBox: { flexDirection: "row", backgroundColor: MATCH_COLORS.primaryDim, padding: scale(12), borderRadius: 12, marginBottom: verticalScale(16) },
+  obsPersonalLabel: { color: MATCH_COLORS.primary, fontSize: moderateScale(10), fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
+  obsPersonalText: { color: MATCH_COLORS.text, fontSize: moderateScale(13), fontStyle: "italic" },
+
+  seriesHeaderTitles: { flexDirection: "row", paddingHorizontal: scale(4), marginBottom: verticalScale(8) },
+  seriesHeaderLabelTitle: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(9), fontWeight: "bold", width: scale(35) },
+  seriesHeaderLabelCenter: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(9), fontWeight: "bold", flex: 1, textAlign: "center" },
+  seriesHeaderLabelCheck: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(9), fontWeight: "bold", width: scale(45), textAlign: "center" },
   
-  obsPersonalBox: { marginTop: verticalScale(4), marginBottom: verticalScale(4) },
-  obsPersonalLabel: { color: "#AAA", fontSize: moderateScale(10), fontWeight: "bold", textTransform: "uppercase", marginBottom: verticalScale(4) },
-  obsPersonalText: { color: "#FFF", fontSize: moderateScale(14), fontStyle: "italic", lineHeight: moderateScale(20) },
+  serieRow: { flexDirection: "row", alignItems: "center", backgroundColor: MATCH_COLORS.background, paddingVertical: verticalScale(10), paddingHorizontal: scale(8), borderRadius: 12, marginBottom: verticalScale(6), borderWidth: 1, borderColor: MATCH_COLORS.border },
+  serieRowAtiva: { borderColor: MATCH_COLORS.borderActive, backgroundColor: MATCH_COLORS.surfaceLight },
+  serieRowConcluido: { opacity: 0.5, borderColor: MATCH_COLORS.background },
   
-  seriesContainer: { gap: verticalScale(20) },
-  serieCard: { backgroundColor: "#0C0C0C", padding: scale(16), borderRadius: moderateScale(16), borderWidth: 1, borderColor: "#1A1A1A" },
-  serieCardAtivo: { backgroundColor: "#111", borderColor: "#333", elevation: 6 },
-  serieCardConcluido: { opacity: 0.6, backgroundColor: "#050505" },
+  serieColNumber: { width: scale(35), justifyContent: "center" },
+  serieNumberText: { color: MATCH_COLORS.text, fontSize: moderateScale(14), fontWeight: "900" },
   
-  serieCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: verticalScale(16) },
-  serieTitle: { color: "#FFF", fontSize: moderateScale(15), fontWeight: "900", letterSpacing: 1 },
-  descansoBadge: { flexDirection: "row", alignItems: "center", backgroundColor: "#000", paddingHorizontal: scale(10), paddingVertical: verticalScale(6), borderRadius: moderateScale(8), borderWidth: 1, borderColor: "#222" },
-  descansoBadgeText: { color: "#AAA", fontSize: moderateScale(12), marginLeft: scale(4), fontWeight: "bold" },
+  serieColTempo: { flex: 1, alignItems: "center", justifyContent: "center" },
+  serieColTarget: { flex: 1, alignItems: "center", justifyContent: "center" },
+  serieTargetText: { color: MATCH_COLORS.text, fontSize: moderateScale(15), fontWeight: "bold" },
+  textDimmed: { color: MATCH_COLORS.textMuted },
   
-  serieCardBody: { marginBottom: verticalScale(16) },
+  serieColInput: { flex: 1, alignItems: "center", justifyContent: "center" },
+  inputCarga: { width: scale(55), backgroundColor: MATCH_COLORS.surface, color: MATCH_COLORS.primary, fontSize: moderateScale(15), fontWeight: "900", textAlign: "center", paddingVertical: verticalScale(8), borderRadius: 8, borderWidth: 1, borderColor: MATCH_COLORS.border },
+  inputCargaConcluida: { color: MATCH_COLORS.textMuted, borderColor: MATCH_COLORS.surface },
   
-  seriePrescricaoRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#151515", padding: scale(12), borderRadius: moderateScale(10), marginBottom: verticalScale(16) },
-  dataLabel: { color: "#888", fontSize: moderateScale(11), fontWeight: "bold", textTransform: "uppercase", marginRight: scale(10) },
-  dataPrescrito: { color: "#FFF", fontSize: moderateScale(15), fontWeight: "bold" },
-  textoOpacity: { opacity: 0.5 },
+  serieColCheck: { width: scale(45), alignItems: "flex-end", justifyContent: "center" },
+  btnCheckSerie: { width: scale(36), height: scale(36), borderRadius: 18, justifyContent: "center", alignItems: "center", borderWidth: 2 },
+  btnCheckSerieAtivo: { backgroundColor: MATCH_COLORS.primary, borderColor: MATCH_COLORS.primary },
+  btnCheckSerieInativo: { backgroundColor: "transparent", borderColor: MATCH_COLORS.border },
+  btnCheckSerieConcluido: { backgroundColor: MATCH_COLORS.success, borderColor: MATCH_COLORS.success },
+
+  alunoAcoesContainer: { marginTop: verticalScale(8) },
+  alunoAcoesTitle: { color: MATCH_COLORS.textMuted, fontSize: moderateScale(11), fontWeight: "800", textTransform: "uppercase", marginBottom: verticalScale(8) },
+  alunoObsInput: { backgroundColor: MATCH_COLORS.background, borderRadius: 12, padding: scale(12), color: MATCH_COLORS.text, fontSize: moderateScale(13), minHeight: verticalScale(60), textAlignVertical: "top", borderWidth: 1, borderColor: MATCH_COLORS.border, marginBottom: verticalScale(16) },
   
-  serieRealizadoContainer: { width: "100%" },
-  dataLabelHighlight: { color: "#FF6B00", fontSize: moderateScale(11), fontWeight: "bold", textTransform: "uppercase", marginBottom: verticalScale(10) },
-  
-  inputsBigRow: { flexDirection: "row", gap: scale(12), width: "100%" },
-  inputBigWrapper: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#000", paddingVertical: verticalScale(14), borderRadius: moderateScale(12), borderWidth: 1, borderColor: "#222" },
-  inputBigWrapperAtivo: { borderColor: "#444", backgroundColor: "#050505" },
-  inputBigRealizado: { color: "#FFF", fontSize: moderateScale(26), fontWeight: "900", textAlign: "center", minWidth: scale(45), padding: 0 },
-  inputBigRealizadoConcluido: { color: "#00E676" },
-  inputBigSuffix: { color: "#888", fontSize: moderateScale(12), marginLeft: scale(6), marginBottom: -verticalScale(4) },
-  
-  btnAction: { width: "100%", flexDirection: "row", justifyContent: "center", alignItems: "center", paddingVertical: verticalScale(16), borderRadius: moderateScale(12), borderWidth: 1 },
-  btnActionAtivo: { backgroundColor: "#FF6B00", borderColor: "#FF6B00" },
-  btnActionInativo: { backgroundColor: "#000", borderColor: "#222" },
-  btnActionConcluido: { backgroundColor: "rgba(0, 230, 118, 0.1)", borderColor: "rgba(0, 230, 118, 0.3)" },
-  btnActionText: { color: "#000", fontSize: moderateScale(15), fontWeight: "900", letterSpacing: 1, marginLeft: scale(8) },
-  btnActionTextConcluido: { color: "#00E676", fontSize: moderateScale(15), fontWeight: "900", letterSpacing: 1, marginLeft: scale(8) },
-  
-  alunoObsContainer: { marginTop: verticalScale(10) },
-  alunoObsHeader: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginBottom: verticalScale(12) },
-  alunoObsTitle: { color: "#FFF", fontSize: moderateScale(15), fontWeight: "bold" },
-  alunoObsHint: { color: "#FF6B00", fontSize: moderateScale(11), fontStyle: "italic", fontWeight: "bold" },
-  alunoObsInput: { backgroundColor: "#111", borderRadius: moderateScale(12), padding: scale(16), color: "#FFF", fontSize: moderateScale(15), minHeight: verticalScale(120), textAlignVertical: "top", borderWidth: 1, borderColor: "#222" },
-  
-  feedbackGeralContainer: { marginTop: verticalScale(20), paddingHorizontal: scale(10) },
-  feedbackGeralTitle: { color: "#FF6B00", fontSize: moderateScale(16), fontWeight: "900" },
-  feedbackGeralSub: { color: "#AAA", fontSize: moderateScale(13), marginBottom: verticalScale(12), lineHeight: moderateScale(18) },
-  
-  floatingRestBar: { position: "absolute", bottom: 0, left: 0, right: 0, height: verticalScale(100), flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: scale(20), paddingBottom: Platform.OS === 'ios' ? verticalScale(20) : 0, borderTopWidth: 1, borderTopColor: "#00E676", elevation: 20 },
-  restInfo: { flexDirection: "row", alignItems: "center" },
-  restTitle: { color: "#00E676", fontSize: moderateScale(10), fontWeight: "900", letterSpacing: 1, marginBottom: verticalScale(2) },
-  restTimer: { color: "#FFF", fontSize: moderateScale(32), fontWeight: "bold", fontVariant: ['tabular-nums'], letterSpacing: -1 },
-  btnPularDescanso: { backgroundColor: "rgba(255,255,255,0.1)", paddingHorizontal: scale(16), paddingVertical: verticalScale(12), borderRadius: moderateScale(20), borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
-  btnPularText: { color: "#FFF", fontSize: moderateScale(11), fontWeight: "bold", textTransform: "uppercase" },
+  btnRelatarDor: { 
+    flexDirection: "row", alignItems: "center", paddingVertical: verticalScale(14), paddingHorizontal: scale(16),
+    backgroundColor: "rgba(239, 68, 68, 0.08)", borderRadius: 14, borderWidth: 1, borderColor: "rgba(239, 68, 68, 0.4)",
+    shadowColor: MATCH_COLORS.danger, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8
+  },
+  btnRelatarDorIconBox: {
+    width: scale(32), height: scale(32), borderRadius: 16, backgroundColor: "rgba(239, 68, 68, 0.2)",
+    justifyContent: "center", alignItems: "center", marginRight: scale(12)
+  },
+  btnRelatarDorText: { color: MATCH_COLORS.danger, fontSize: moderateScale(13), fontWeight: "900", flex: 1, letterSpacing: 0.5 },
+
+  btnFinalizarOutline: { 
+    width: "100%", backgroundColor: "rgba(255, 107, 0, 0.05)", borderWidth: 1,
+    borderColor: "rgba(255, 107, 0, 0.4)", paddingVertical: verticalScale(16), 
+    borderRadius: 16, flexDirection: "row", justifyContent: "center", 
+    alignItems: "center", marginTop: verticalScale(10), marginBottom: verticalScale(20)
+  },
+  btnFinalizarOutlineText: { color: MATCH_COLORS.primary, fontSize: moderateScale(14), fontWeight: "900", textTransform: "uppercase", letterSpacing: 1.5, marginRight: scale(8) },
+
+  floatingRestContainer: { position: "absolute", bottom: Platform.OS === 'ios' ? verticalScale(30) : verticalScale(16), left: scale(16), right: scale(16), zIndex: 999 },
+
+  restModalContainer: { flex: 1, backgroundColor: "rgba(0, 38, 19, 0.95)", justifyContent: "center", alignItems: "center", padding: scale(20) },
+  restModalBox: { width: "100%", backgroundColor: "#00E676", borderRadius: 24, padding: scale(30), alignItems: "center", shadowColor: "#00E676", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
+  restModalTitle: { color: "#004d27", fontSize: moderateScale(14), fontWeight: "900", textTransform: "uppercase", letterSpacing: 2, marginBottom: verticalScale(10) },
+  restModalTime: { color: "#050505", fontSize: moderateScale(64), fontWeight: "900", fontVariant: ['tabular-nums'], letterSpacing: -2, marginBottom: verticalScale(20) },
+  restModalBtn: { backgroundColor: "#050505", paddingVertical: verticalScale(14), paddingHorizontal: scale(30), borderRadius: 100, flexDirection: "row", alignItems: "center" },
+  restModalBtnText: { color: "#FFF", fontSize: moderateScale(14), fontWeight: "900", textTransform: "uppercase", letterSpacing: 1 }
 });

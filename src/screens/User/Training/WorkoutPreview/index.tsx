@@ -46,11 +46,11 @@ export function WorkoutPreview({ route, navigation }: any) {
           <Text style={styles.treinoTitle}>{treino.nome}</Text>
           
           <View style={styles.treinoObjetivoBox}>
-            <MaterialCommunityIcons name="target" size={16} color="#AAA" />
+            <MaterialCommunityIcons name="target" size={18} color="#FF6B00" />
             <Text style={styles.treinoObjetivo}>{treino.objetivo}</Text>
           </View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 107, 0, 0.1)', padding: 12, borderRadius: 8, marginTop: 15, borderWidth: 1, borderColor: 'rgba(255, 107, 0, 0.3)' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 107, 0, 0.1)', padding: 12, borderRadius: 8, marginTop: 5, borderWidth: 1, borderColor: 'rgba(255, 107, 0, 0.3)' }}>
              <Ionicons name="analytics-outline" size={20} color="#FF6B00" style={{ marginRight: 10 }} />
              <Text style={{ color: '#FFF', fontSize: 13, flex: 1, lineHeight: 18 }}>{treino.mensagem_hype}</Text>
           </View>
@@ -86,7 +86,7 @@ export function WorkoutPreview({ route, navigation }: any) {
             <View key={ex.id} style={styles.exercicioCard}>
               
               <View style={styles.exercicioRow}>
-                <View style={styles.videoContainer}>
+                <View style={[styles.videoContainer, { width: 100, height: 80 }]}>
                   {ex.imagem_url ? (
                     <Image source={{ uri: ex.imagem_url }} style={styles.videoThumbnail} />
                   ) : (
@@ -145,10 +145,12 @@ export function WorkoutPreview({ route, navigation }: any) {
 
       <View style={styles.footerFixo}>
         <LinearGradient colors={["transparent", "rgba(5,5,5,0.9)", "#050505"]} style={styles.footerGradient} />
-        <TouchableOpacity style={styles.btnIniciar} activeOpacity={0.9} onPress={iniciarTreino}>
-          <Text style={styles.btnIniciarText}>COMEÇAR A SUAR</Text>
+        
+        <TouchableOpacity style={styles.premiumBtnStartOutline} activeOpacity={0.8} onPress={iniciarTreino}>
+          <Text style={styles.premiumBtnStartTextOutline}>COMEÇAR A SUAR</Text>
+          <Ionicons name="arrow-forward" size={18} color="#FF6B00" style={{ marginLeft: 8 }} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
-};
+}

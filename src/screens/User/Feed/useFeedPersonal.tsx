@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { supabase } from "../../../services/supabase";
+import { useFocusEffect } from "@react-navigation/native";
 
 const calcularDistancia = (lat1: number, lon1: number, lat2: number, lon2: number) => {
   if (!lat1 || !lon1 || !lat2 || !lon2) return 9999;
@@ -27,8 +28,13 @@ export function useFeedPersonal(navigation: any) {
   const [allPersonals, setAllPersonals] = useState<any[]>([]);
   const [personalsExibidos, setPersonalsExibidos] = useState<any[]>([]);
   const [distanciaMaxima, setDistanciaMaxima] = useState(20);
+  
   const [modalVisible, setModalVisible] = useState(false);
   const [matchSelecionado, setMatchSelecionado] = useState<any>(null);
+  
+  const [modalNovaPropostaVisivel, setModalNovaPropostaVisivel] = useState(false);
+  const [dadosNovaProposta, setDadosNovaProposta] = useState<any>(null);
+
   const [isAlunoConsultoria, setIsAlunoConsultoria] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -55,7 +61,7 @@ export function useFeedPersonal(navigation: any) {
 
       const { data: conexaoAtiva } = await supabase.from("conexoes").select("id").eq("usuario_id", user.id).eq("status", "aluno_ativo").maybeSingle();
       if (conexaoAtiva) {
-        navigation.reset({ index: 0, routes: [{ name: "PainelMeuTreinador", params: { conexaoId: conexaoAtiva.id } }] });
+        navigation.reset({ index: 0, routes: [{ name: "AlunoDashboard", params: { conexaoId: conexaoAtiva.id } }] });
         return;
       }
 
@@ -170,8 +176,33 @@ export function useFeedPersonal(navigation: any) {
     return unsubscribe;
   }, [navigation, carregarFeed]);
 
+  useFocusEffect(
+    useCallback(() => {
+      const checarPropostasPendentes = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: conexao } = await supabase
+          .from("conexoes")
+          .select("id, personal_id, personals(nome, foto_url)")
+          .eq("usuario_id", user.id)
+          .eq("status", "aguardando_aluno")
+          .maybeSingle();
+
+        if (conexao && conexao.personals) {
+          setDadosNovaProposta(conexao);
+          setModalNovaPropostaVisivel(true);
+        }
+      };
+      checarPropostasPendentes();
+    }, [])
+  );
+
   return {
-    state: { loading, refreshing, personalsExibidos, distanciaMaxima, modalVisible, matchSelecionado, isAlunoConsultoria, currentIndex },
+    state: { 
+      loading, refreshing, personalsExibidos, distanciaMaxima, modalVisible, matchSelecionado, 
+      isAlunoConsultoria, currentIndex, modalNovaPropostaVisivel, dadosNovaProposta 
+    },
     actions: { 
       onRefresh: () => { setRefreshing(true); carregarFeed(); },
       handleSliderChange: (valor: number) => {
@@ -198,7 +229,21 @@ export function useFeedPersonal(navigation: any) {
       abrirDetalhesMatch: (p: any) => { setMatchSelecionado(p); setModalVisible(true); },
       fecharDetalhesMatch: () => setModalVisible(false),
       verPerfilCompleto: (personalId: string) => {
-        navigation.navigate("PerfilPublicoPersonal", { id: personalId });
+        navigation.navigate("PersonalPublicProfile", { id: personalId });
+      },
+      fecharModalNovaProposta: () => setModalNovaPropostaVisivel(false),
+      irParaProposta: () => {
+        setModalNovaPropostaVisivel(false);
+        navigation.navigate("PersonalPublicProfile", { id: dadosNovaProposta?.personal_id });
+      },
+      irParaChatNovaProposta: () => {
+        setModalNovaPropostaVisivel(false);
+        navigation.navigate("Chat", {
+          conexaoId: dadosNovaProposta?.id,
+          nomeOutro: dadosNovaProposta?.personals?.nome,
+          fotoOutro: dadosNovaProposta?.personals?.foto_url,
+          tipoUsuarioLogado: "aluno",
+        });
       }
     }
   };

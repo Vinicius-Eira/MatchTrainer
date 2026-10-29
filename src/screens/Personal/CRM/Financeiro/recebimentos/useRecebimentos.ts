@@ -95,11 +95,24 @@ export function useRecebimentos(navigation: any) {
 
       const { data: perfilData } = await supabase
         .from("personals")
-        .select("nome")
+        .select("nome, servicos_oferecidos")
         .eq("id", session.user.id)
         .single();
         
-      if (perfilData) setNomePersonal(perfilData.nome);
+      let modalidadesDoPersonal: string[] = ["Consultoria", "Presencial"]; 
+      
+      if (perfilData) {
+        setNomePersonal(perfilData.nome);
+        if (perfilData.servicos_oferecidos) {
+          try {
+            modalidadesDoPersonal = typeof perfilData.servicos_oferecidos === 'string' 
+              ? JSON.parse(perfilData.servicos_oferecidos) 
+              : perfilData.servicos_oferecidos;
+          } catch (e) {
+             modalidadesDoPersonal = ["Consultoria", "Presencial"];
+          }
+        }
+      }
 
       const formatYYYYMMDD = (date: Date) => {
         const y = date.getFullYear();
@@ -145,8 +158,7 @@ export function useRecebimentos(navigation: any) {
         }
 
         const dateObj = new Date(`${fat.data_vencimento}T12:00:00Z`);
-        const dataFormatada = `${String(dateObj.getUTCDate()).padStart(2, '0')}
-        ${String(dateObj.getUTCMonth() + 1).padStart(2, '0')}`;
+        const dataFormatada = `${String(dateObj.getUTCDate()).padStart(2, '0')}/${String(dateObj.getUTCMonth() + 1).padStart(2, '0')}`;
 
         const servicos = plano.servicos_inclusos || [];
         let categoriaUi = "Sem Contrato";
@@ -205,20 +217,37 @@ export function useRecebimentos(navigation: any) {
         };
       });
 
-      setMensalidades(dadosMapeados);
+      const mensalidadesFiltradasPeloPerfil = dadosMapeados.filter((fat) => {
+        if (fat.isExtra) return true;
+
+        const personalAtendeConsultoria = modalidadesDoPersonal.includes("Consultoria");
+        const personalAtendePresencial = modalidadesDoPersonal.includes("Presencial");
+
+        if (personalAtendeConsultoria && personalAtendePresencial) return true;
+
+        if (personalAtendeConsultoria && !personalAtendePresencial) {
+          return fat.servicos_array.includes("Consultoria");
+        }
+
+        if (!personalAtendeConsultoria && personalAtendePresencial) {
+          return fat.servicos_array.includes("Presencial");
+        }
+
+        return true;
+      });
+
+      setMensalidades(mensalidadesFiltradasPeloPerfil);
+      
       const alunosArray = Array.from(mapAlunos.values());
       alunosArray.sort((a, b) => a.nome.localeCompare(b.nome));
       setAlunosAtivos(alunosArray);
+      
     } catch (error) {
       Alert.alert("Erro", "Falha ao carregar os dados financeiros.");
     } finally {
       setLoading(false);
     }
-  }, [
-    viewInicio, 
-    viewFim, 
-    setNomePersonal
-  ]);
+  }, [viewInicio, viewFim, setNomePersonal]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -245,9 +274,17 @@ export function useRecebimentos(navigation: any) {
 
   const alunosFiltrados = mensalidades.filter((item) => {
     let passModalidade = true;
-    if (modalidadeAtiva === "Consultoria") passModalidade = !item.isHibrido && item.servicos_array?.includes("Consultoria");
-    if (modalidadeAtiva === "Presencial") passModalidade = !item.isHibrido && item.servicos_array?.includes("Presencial");
-    if (modalidadeAtiva === "Híbrido") passModalidade = item.isHibrido;
+    const isHibridoNoContrato = item.servicos_array?.length > 1;
+    const isConsultoria = item.servicos_array?.some(s => s.toLowerCase().includes("consultoria"));
+    const isPresencial = item.servicos_array?.some(s => s.toLowerCase().includes("presencial"));
+
+    if (modalidadeAtiva === "Consultoria") {
+      passModalidade = isConsultoria && !isHibridoNoContrato;
+    } else if (modalidadeAtiva === "Presencial") {
+      passModalidade = isPresencial && !isHibridoNoContrato;
+    } else if (modalidadeAtiva === "Híbrido") {
+      passModalidade = isHibridoNoContrato;
+    }
 
     let passStatus = true;
     if (statusAtivo === "Pagos") passStatus = item.status === "pago";

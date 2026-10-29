@@ -1,53 +1,28 @@
 import React, { useState, useEffect } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Modal,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput,
+  Alert, KeyboardAvoidingView, Platform, Modal
 } from "react-native";
 import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../../../../services/supabase";
-import { theme } from "../../../../theme/theme"; 
+import { theme } from "../../../../theme/theme";
 
-export function AnamneseBuilder ({ navigation }: any) {
+export function AnamneseBuilder({ route, navigation }: any) {
+  const conexaoIdTarget = route?.params?.conexaoIdTarget;
+
   const [title, setTitle] = useState("Questionário Inicial VIP");
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [templateId, setTemplateId] = useState<string | null>(null);
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalSucessoVisivel, setModalSucessoVisivel] = useState(false);
+
   const [newQuestionText, setNewQuestionText] = useState("");
-  const [newQuestionType, setNewQuestionType] = useState("texto"); 
-  const [newQuestionOptions, setNewQuestionOptions] = useState(""); 
+  const [newQuestionType, setNewQuestionType] = useState("texto");
+  const [newQuestionOptions, setNewQuestionOptions] = useState("");
   const [isRequired, setIsRequired] = useState(true);
-
-  const carregarTemplate = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const { data, error } = await supabase
-        .from("anamnesis_templates")
-        .select("*")
-        .eq("personal_id", session.user.id)
-        .single();
-
-      if (data) {
-        setTemplateId(data.id);
-        setTitle(data.title);
-        setQuestions(data.questions || []);
-      }
-    } catch (err) {
-      console.log("Nenhum template encontrado, criará um novo.");
-    }
-  };
 
   useEffect(() => {
     const carregarTemplate = async () => {
@@ -55,7 +30,7 @@ export function AnamneseBuilder ({ navigation }: any) {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("anamnesis_templates")
           .select("*")
           .eq("personal_id", session.user.id)
@@ -63,14 +38,13 @@ export function AnamneseBuilder ({ navigation }: any) {
 
         if (data) {
           setTemplateId(data.id);
-          setTitle(data.title);
+          setTitle(data.title || "Questionário Inicial VIP");
           setQuestions(data.questions || []);
         }
       } catch (err) {
         console.log("Nenhum template encontrado, criará um novo.");
       }
     };
-
     carregarTemplate();
   }, []);
 
@@ -79,7 +53,6 @@ export function AnamneseBuilder ({ navigation }: any) {
       Alert.alert("Atenção", "Digite a pergunta antes de adicionar.");
       return;
     }
-
     const newQ = {
       id: Date.now().toString(),
       pergunta: newQuestionText,
@@ -87,13 +60,8 @@ export function AnamneseBuilder ({ navigation }: any) {
       obrigatorio: isRequired,
       opcoes: newQuestionType === "multipla" ? newQuestionOptions.split(",").map(o => o.trim()) : [],
     };
-
     setQuestions([...questions, newQ]);
-    
-    setNewQuestionText("");
-    setNewQuestionType("texto");
-    setNewQuestionOptions("");
-    setIsRequired(true);
+    setNewQuestionText(""); setNewQuestionType("texto"); setNewQuestionOptions(""); setIsRequired(true);
     setModalVisible(false);
   };
 
@@ -101,30 +69,64 @@ export function AnamneseBuilder ({ navigation }: any) {
     setQuestions(questions.filter((q) => q.id !== id));
   };
 
-  const salvarTemplate = async () => {
+  const enviarParaOAluno = async () => {
+    if (questions.length === 0) return Alert.alert("Atenção", "Adicione pelo menos uma pergunta.");
+    
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
       if (templateId) {
-        await supabase
-          .from("anamnesis_templates")
-          .update({ title, questions })
-          .eq("id", templateId);
+        await supabase.from("anamnesis_templates").update({ title, questions }).eq("id", templateId);
       } else {
-        const { data } = await supabase
-          .from("anamnesis_templates")
-          .insert([{ personal_id: session.user.id, title, questions }])
-          .select()
-          .single();
-        if (data) setTemplateId(data.id);
+        await supabase.from("anamnesis_templates").insert([{ personal_id: session.user.id, title, questions }]);
       }
 
-      Alert.alert("Sucesso!", "Questionário atualizado e pronto para ser enviado aos alunos.");
-      navigation.goBack();
+      if (conexaoIdTarget) {
+        
+        const payloadQuestionario = {
+          conexao_id: conexaoIdTarget,
+          titulo: title,
+          descricao: "Seu treinador enviou um questionário. Por favor, responda para alinhar seu planejamento.",
+          perguntas: questions,
+          status: "pendente"
+        };
+
+        const { data: existente } = await supabase
+          .from("questionarios")
+          .select("id")
+          .eq("conexao_id", conexaoIdTarget)
+          .eq("status", "pendente")
+          .maybeSingle();
+
+        let erroNoEnvio = null;
+
+        if (existente) {
+          const { error } = await supabase
+            .from("questionarios")
+            .update(payloadQuestionario)
+            .eq("id", existente.id);
+          erroNoEnvio = error;
+        } else {
+          const { error } = await supabase
+            .from("questionarios")
+            .insert([payloadQuestionario]);
+          erroNoEnvio = error;
+        }
+
+        if (erroNoEnvio) {
+          console.log("Erro ao salvar no banco:", erroNoEnvio);
+          throw erroNoEnvio;
+        }
+        
+        setModalSucessoVisivel(true);
+      } else {
+        Alert.alert("Aviso", "O modelo foi salvo, mas não conseguimos identificar o aluno. Volte à ficha e tente novamente.");
+      }
     } catch (error) {
-      Alert.alert("Erro", "Falha ao salvar o modelo.");
+      console.log("CATCH ERRO:", error);
+      Alert.alert("Erro", "Falha ao enviar anamnese. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -150,7 +152,7 @@ export function AnamneseBuilder ({ navigation }: any) {
             placeholder="Ex: Avaliação Inicial"
             placeholderTextColor={theme.colors.textMuted}
           />
-          <Text style={styles.subtitleDesc}>Este será o formulário que novos alunos precisarão preencher ao entrar na sua consultoria.</Text>
+          <Text style={styles.subtitleDesc}>Este será o formulário que o aluno precisará preencher.</Text>
         </View>
 
         <View style={styles.questionsHeader}>
@@ -161,7 +163,7 @@ export function AnamneseBuilder ({ navigation }: any) {
           <View style={styles.emptyState}>
             <MaterialCommunityIcons name="clipboard-text-outline" size={48} color={theme.colors.borderLight} />
             <Text style={styles.emptyStateTitle}>Nenhuma pergunta criada</Text>
-            <Text style={styles.emptyStateDesc}>Monte seu questionário para que a IA e você entendam as restrições do seu aluno.</Text>
+            <Text style={styles.emptyStateDesc}>Monte seu questionário para entender as restrições do seu aluno.</Text>
           </View>
         ) : (
           questions.map((q, index) => (
@@ -172,11 +174,9 @@ export function AnamneseBuilder ({ navigation }: any) {
                     {q.tipo === "texto" ? "Texto Livre" : q.tipo === "booleano" ? "Sim / Não" : "Múltipla Escolha"}
                   </Text>
                 </View>
-                {q.obrigatorio && <Text style={styles.requiredTag}>* Obrigatório</Text>}
+                {q.obrigatorio && <Text style={styles.requiredTag}>Obrigatório</Text>}
               </View>
-              
               <Text style={styles.questionText}>{index + 1}. {q.pergunta}</Text>
-              
               {q.tipo === "multipla" && q.opcoes && (
                 <View style={styles.optionsPreviewRow}>
                   {q.opcoes.map((op: string, idx: number) => (
@@ -184,7 +184,6 @@ export function AnamneseBuilder ({ navigation }: any) {
                   ))}
                 </View>
               )}
-
               <TouchableOpacity style={styles.deleteBtn} onPress={() => removeQuestion(q.id)}>
                 <Feather name="trash-2" size={18} color={theme.colors.danger} />
               </TouchableOpacity>
@@ -199,17 +198,33 @@ export function AnamneseBuilder ({ navigation }: any) {
           <Text style={styles.btnAddQuestionText}>Nova Pergunta</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.btnSave} onPress={salvarTemplate} disabled={loading}>
+        <TouchableOpacity style={styles.btnSave} onPress={enviarParaOAluno} disabled={loading}>
           <LinearGradient colors={["#00E676", "#00B259"]} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
-          <Text style={styles.btnSaveText}>{loading ? "Salvando..." : "Salvar Molde"}</Text>
+          <Text style={styles.btnSaveText}>{loading ? "ENVIANDO..." : "ENVIAR ANAMNESE"}</Text>
         </TouchableOpacity>
       </View>
 
+      {/* NOVO MODAL PREMIUM DE SUCESSO */}
+      <Modal visible={modalSucessoVisivel} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", padding: 20 }}>
+          <View style={{ backgroundColor: "#0A0A0C", borderRadius: 24, padding: 30, alignItems: "center", borderWidth: 1, borderColor: "#00E676" }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "rgba(0, 230, 118, 0.1)", justifyContent: "center", alignItems: "center", marginBottom: 20, borderWidth: 1, borderColor: "#00E676" }}>
+              <Ionicons name="checkmark-done" size={40} color="#00E676" />
+            </View>
+            <Text style={{ fontSize: 22, fontWeight: "900", color: "#FFF", textAlign: "center", marginBottom: 10 }}>Anamnese Enviada!</Text>
+            <Text style={{ fontSize: 14, color: "#AAA", textAlign: "center", marginBottom: 25, lineHeight: 22 }}>
+              O questionário foi disponibilizado com sucesso na tela inicial do seu aluno.
+            </Text>
+            <TouchableOpacity style={{ backgroundColor: "#00E676", width: "100%", paddingVertical: 16, borderRadius: 16, alignItems: "center" }} onPress={() => { setModalSucessoVisivel(false); navigation.goBack(); }} activeOpacity={0.8}>
+              <Text style={{ color: "#000", fontSize: 15, fontWeight: "900", textTransform: "uppercase" }}>Voltar à Ficha</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Nova Pergunta Original */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
-        <KeyboardAvoidingView 
-          style={styles.modalOverlay} 
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Adicionar Pergunta</Text>
@@ -217,17 +232,9 @@ export function AnamneseBuilder ({ navigation }: any) {
                 <Feather name="x" size={24} color={theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
-
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <Text style={styles.inputLabel}>Escreva a pergunta</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={newQuestionText}
-                onChangeText={setNewQuestionText}
-                placeholder="Ex: Você possui alguma lesão crônica?"
-                placeholderTextColor={theme.colors.textMuted}
-              />
-
+              <TextInput style={styles.modalInput} value={newQuestionText} onChangeText={setNewQuestionText} placeholder="Ex: Você possui alguma lesão?" placeholderTextColor={theme.colors.textMuted} />
               <Text style={styles.inputLabel}>Tipo de Resposta</Text>
               <View style={styles.typeSelectorRow}>
                 <TouchableOpacity style={[styles.typeBtn, newQuestionType === "texto" && styles.typeBtnActive]} onPress={() => setNewQuestionType("texto")}>
@@ -240,31 +247,21 @@ export function AnamneseBuilder ({ navigation }: any) {
                   <Text style={[styles.typeBtnText, newQuestionType === "multipla" && styles.typeBtnTextActive]}>Opções</Text>
                 </TouchableOpacity>
               </View>
-
               {newQuestionType === "multipla" && (
                 <View style={{ marginTop: 15 }}>
                   <Text style={styles.inputLabel}>Opções (separe por vírgula)</Text>
-                  <TextInput
-                    style={styles.modalInput}
-                    value={newQuestionOptions}
-                    onChangeText={setNewQuestionOptions}
-                    placeholder="Ex: Iniciante, Intermediário, Avançado"
-                    placeholderTextColor={theme.colors.textMuted}
-                  />
+                  <TextInput style={styles.modalInput} value={newQuestionOptions} onChangeText={setNewQuestionOptions} placeholder="Ex: Iniciante, Intermediário" placeholderTextColor={theme.colors.textMuted} />
                 </View>
               )}
-
               <View style={styles.switchRow}>
                 <Text style={styles.switchLabel}>Resposta Obrigatória?</Text>
                 <TouchableOpacity style={[styles.checkbox, isRequired && styles.checkboxActive]} onPress={() => setIsRequired(!isRequired)}>
                   {isRequired && <Feather name="check" size={14} color="#000" />}
                 </TouchableOpacity>
               </View>
-
               <TouchableOpacity style={styles.btnConfirmAdd} onPress={handleAddQuestion}>
                 <Text style={styles.btnConfirmAddText}>Adicionar ao Formulário</Text>
               </TouchableOpacity>
-              
               <View style={{ height: 20 }} />
             </ScrollView>
           </View>
@@ -280,18 +277,14 @@ const styles = StyleSheet.create({
   backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.surfaceLight, justifyContent: "center", alignItems: "center" },
   headerTitle: { color: theme.colors.text, fontSize: 16, fontFamily: theme.fonts.title, textTransform: "uppercase" },
   scrollContent: { padding: 20, paddingBottom: 120 },
-  
   titleSection: { marginBottom: 30 },
   sectionLabel: { color: theme.colors.text, fontSize: 15, fontWeight: "900", marginBottom: 12 },
   titleInput: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.borderLight, color: theme.colors.text, fontSize: 16, borderRadius: 12, padding: 15, fontWeight: "bold" },
   subtitleDesc: { color: theme.colors.textMuted, fontSize: 12, marginTop: 8 },
-
   questionsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  
   emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 40, backgroundColor: theme.colors.surface, borderRadius: 16, borderStyle: "dashed", borderWidth: 1, borderColor: theme.colors.border },
   emptyStateTitle: { color: theme.colors.textSecondary, fontSize: 16, fontWeight: "bold", marginTop: 12 },
   emptyStateDesc: { color: theme.colors.textMuted, fontSize: 12, textAlign: "center", paddingHorizontal: 40, marginTop: 6 },
-
   questionCard: { backgroundColor: theme.colors.surface, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.borderLight, position: "relative" },
   questionHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
   questionTypePill: { backgroundColor: "rgba(255,107,0,0.1)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
@@ -302,31 +295,26 @@ const styles = StyleSheet.create({
   optionPill: { backgroundColor: theme.colors.surfaceLight, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: theme.colors.borderLight },
   optionPillText: { color: theme.colors.textSecondary, fontSize: 11 },
   deleteBtn: { position: "absolute", bottom: 16, right: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,59,48,0.1)", justifyContent: "center", alignItems: "center" },
-
   footer: { position: "absolute", bottom: 0, left: 0, right: 0, flexDirection: "row", padding: 20, paddingTop: 15, backgroundColor: theme.colors.background, borderTopWidth: 1, borderColor: theme.colors.borderLight, gap: 12 },
   btnAddQuestion: { flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.surfaceLight, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.primary, gap: 8 },
   btnAddQuestionText: { color: theme.colors.primary, fontSize: 14, fontWeight: "bold" },
   btnSave: { flex: 1, height: 55, justifyContent: "center", alignItems: "center", borderRadius: 16 },
   btnSaveText: { color: "#000", fontSize: 15, fontWeight: "900", textTransform: "uppercase" },
-
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
   modalContent: { backgroundColor: theme.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: Platform.OS === "ios" ? 40 : 24, maxHeight: "90%" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   modalTitle: { color: theme.colors.text, fontSize: 18, fontWeight: "900" },
   inputLabel: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: "bold", marginBottom: 8 },
   modalInput: { backgroundColor: theme.colors.surfaceLight, color: theme.colors.text, fontSize: 15, borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: theme.colors.borderLight },
-  
   typeSelectorRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
   typeBtn: { flex: 1, paddingVertical: 12, alignItems: "center", borderRadius: 10, backgroundColor: theme.colors.surfaceLight, borderWidth: 1, borderColor: theme.colors.borderLight },
   typeBtnActive: { backgroundColor: "rgba(255,107,0,0.1)", borderColor: theme.colors.primary },
   typeBtnText: { color: theme.colors.textMuted, fontSize: 12, fontWeight: "bold" },
   typeBtnTextActive: { color: theme.colors.primary },
-
   switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 15, borderTopWidth: 1, borderColor: theme.colors.borderLight, marginBottom: 20 },
   switchLabel: { color: theme.colors.text, fontSize: 14, fontWeight: "600" },
   checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: theme.colors.textMuted, justifyContent: "center", alignItems: "center" },
   checkboxActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-
   btnConfirmAdd: { backgroundColor: theme.colors.primary, paddingVertical: 16, borderRadius: 12, alignItems: "center" },
   btnConfirmAddText: { color: "#000", fontSize: 15, fontWeight: "900", textTransform: "uppercase" },
 });
