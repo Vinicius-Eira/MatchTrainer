@@ -150,7 +150,7 @@ export function useChat(route: any, navigation: any) {
   };
 
   const irParaContrato = () => {
-    navigation.navigate("AdicionarAluno", {
+    navigation.navigate("ContratoMatch", {
       conexaoId: conexaoId,
       nomeAluno: nomeOutro
     });

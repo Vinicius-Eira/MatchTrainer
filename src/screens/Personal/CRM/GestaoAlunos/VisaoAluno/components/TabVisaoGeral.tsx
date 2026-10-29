@@ -71,7 +71,7 @@ export function TabVisaoGeral({
         </View>
       ) : null}
 
-      {status === "aluno_ativo" ? (
+     {status === "aluno_ativo" ? (
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeaderRow}>
             <Ionicons name="clipboard" size={20} color={theme.colors.primary} />
@@ -90,13 +90,26 @@ export function TabVisaoGeral({
             </View>
 
             <TouchableOpacity 
-              style={[styles.btnCriarTreino, { marginBottom: 0, backgroundColor: theme.colors.surfaceLight, borderWidth: 1, borderColor: theme.colors.primary }]} 
-              onPress={() => navigation.navigate("AnamneseBuilder")}
+              style={[styles.btnCriarTreino, { marginBottom: 10, backgroundColor: theme.colors.surfaceLight, borderWidth: 1, borderColor: theme.colors.primary }]} 
+              onPress={() => navigation.navigate("AnamneseBuilder", { conexaoIdTarget: planoAtivo?.conexao_id })}
               activeOpacity={0.8}
             >
               <Ionicons name="settings-outline" size={20} color={theme.colors.primary} />
               <Text style={[styles.btnCriarTreinoText, { color: theme.colors.primary }]}>Configurar Anamnese</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.btnCriarTreino, { marginBottom: 0, backgroundColor: theme.colors.primary }]} 
+              onPress={() => navigation.navigate("QuestionnaireForm", { 
+                 conexaoId: planoAtivo?.conexao_id,
+                 leituraModoPersonal: true 
+              })}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="eye" size={20} color="#000" />
+              <Text style={[styles.btnCriarTreinoText, { color: "#000" }]}>Ver Respostas do Aluno</Text>
+            </TouchableOpacity>
+
           </View>
         </View>
       ) : null}

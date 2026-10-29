@@ -1,20 +1,20 @@
 import { create } from 'zustand';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
-import { Exercise } from '../domain/entities/Exercise';
 
 export interface DraftExercise {
   id: string; 
-  exercise_id: string; 
+  exercise_id?: string | null;             
+  global_exercise_id?: string | null; 
   exercise_name: string; 
   thumbnail_url?: string;
   gif_url?: string;
   video_url?: string;
   group_code: string;
-  sets: number;
+  sets: number | string; 
   reps_target: string;
   weight_target: string;
-  rest_seconds: number;
+  rest_seconds: number | string; 
   technique: string;
   public_note?: string;      
   private_note?: string;     
@@ -28,85 +28,116 @@ export interface DraftDay {
   exercises: DraftExercise[];
 }
 
+export interface DraftWeek {
+  id: string;
+  name: string;
+  generalObservation: string;
+  days: DraftDay[];
+}
+
 interface WorkoutCreatorState {
   programId: string | null; 
   programName: string;
   objective: string;
-  generalObservation: string;
-  days: DraftDay[];
+  weeks: DraftWeek[];
+  activeWeekId: string | null;
   activeDayId: string | null;
   
   setProgramName: (name: string) => void;
   setObjective: (objective: string) => void;
   setProgramInfo: (name: string, objective: string) => void;
-  setGeneralObservation: (obs: string) => void; 
+  setActiveWeek: (weekId: string) => void;
+  addWeek: (nameArg?: string) => void;
+  removeWeek: (weekId: string) => void;
+  setGeneralObservation: (weekId: string, obs: string) => void; 
   setActiveDay: (dayId: string) => void;
-  
-  addDay: (nameArg?: any) => void; 
-  removeDay: (dayId: string) => void;
-  
-  addExerciseToActiveDay: (exerciseFromLibrary: Exercise) => void;
-  
-  addExercise: (dayId: string, exercise: DraftExercise) => void;
-  
-  updateExercise: (dayId: string, draftExerciseId: string, updates: Partial<DraftExercise>) => void;
-  removeExercise: (dayId: string, draftExerciseId: string) => void;
-  
-  moveExerciseUp: (dayId: string, draftExerciseId: string) => void;
-  moveExerciseDown: (dayId: string, draftExerciseId: string) => void;
-  
-  reorderExercises: (dayId: string, newExercises: DraftExercise[]) => void;
-  
-  hydrateWorkout: (name: string, objective: string, days: DraftDay[], programId?: string | null, generalObservation?: string) => void; 
+  addDay: (weekId: string, nameArg?: string) => void; 
+  removeDay: (weekId: string, dayId: string) => void;
+  addExerciseToActiveDay: (exerciseFromLibrary: any) => void;
+  addExercise: (weekId: string, dayId: string, exercise: DraftExercise) => void;
+  updateExercise: (weekId: string, dayId: string, draftExerciseId: string, field: string, value: string | number) => void;
+  removeExercise: (weekId: string, dayId: string, draftExerciseId: string) => void;
+  reorderExercises: (weekId: string, dayId: string, newExercises: DraftExercise[]) => void;
+  hydrateWorkout: (name: string, objective: string, weeks: DraftWeek[], programId?: string | null) => void; 
   reset: () => void; 
 }
+
+const createInitialDay = () => ({ id: uuidv4(), name: 'Treino A', exercises: [] });
+const createInitialWeek = () => ({ id: uuidv4(), name: 'Semana 1', generalObservation: '', days: [createInitialDay()] });
 
 export const useWorkoutCreatorStore = create<WorkoutCreatorState>((set, get) => ({
   programId: null,
   programName: '',
   objective: '',
-  generalObservation: '', 
-  days: [
-    { id: uuidv4(), name: 'Treino A', exercises: [] } 
-  ],
+  weeks: [createInitialWeek()],
+  activeWeekId: null, 
   activeDayId: null,
 
   setProgramName: (name) => set({ programName: name }),
   setObjective: (objective) => set({ objective }),
   setProgramInfo: (name, objective) => set({ programName: name, objective }),
-  setGeneralObservation: (obs) => set({ generalObservation: obs }), 
-  setActiveDay: (dayId) => set({ activeDayId: dayId }),
   
-  addDay: (nameArg) => set((state) => {
-    const nextLetter = String.fromCharCode(65 + state.days.length); 
-    const finalName = typeof nameArg === 'string' ? nameArg : `Treino ${nextLetter}`;
-    
-    return {
-      days: [...state.days, { id: uuidv4(), name: finalName, exercises: [] }]
-    };
+  setActiveWeek: (weekId) => set((state) => {
+    const week = state.weeks.find(w => w.id === weekId);
+    return { activeWeekId: weekId, activeDayId: week && week.days.length > 0 ? week.days[0].id : null };
   }),
 
-  removeDay: (dayId) => set((state) => ({
-    days: state.days.filter((day) => day.id !== dayId),
-    activeDayId: state.activeDayId === dayId ? null : state.activeDayId
+  addWeek: (nameArg) => set((state) => {
+    const nextNumber = state.weeks.length + 1; 
+    const finalName = nameArg || `Semana ${nextNumber}`;
+    const newWeek = { id: uuidv4(), name: finalName, generalObservation: '', days: [createInitialDay()] };
+    return { weeks: [...state.weeks, newWeek], activeWeekId: newWeek.id, activeDayId: newWeek.days[0].id };
+  }),
+
+  removeWeek: (weekId) => set((state) => {
+    const newWeeks = state.weeks.filter((week) => week.id !== weekId);
+    if (newWeeks.length === 0) newWeeks.push(createInitialWeek());
+    return { weeks: newWeeks, activeWeekId: state.activeWeekId === weekId ? newWeeks[0].id : state.activeWeekId, activeDayId: state.activeWeekId === weekId ? newWeeks[0].days[0].id : state.activeDayId };
+  }),
+
+  setGeneralObservation: (weekId, obs) => set((state) => ({
+    weeks: state.weeks.map(w => w.id === weekId ? { ...w, generalObservation: obs } : w)
   })),
 
+  setActiveDay: (dayId) => set({ activeDayId: dayId }),
+  
+  addDay: (weekId, nameArg) => set((state) => {
+    const week = state.weeks.find(w => w.id === weekId);
+    if (!week) return state;
+    const nextLetter = String.fromCharCode(65 + week.days.length); 
+    const finalName = nameArg || `Treino ${nextLetter}`;
+    const newDay = { id: uuidv4(), name: finalName, exercises: [] };
+    return { weeks: state.weeks.map(w => w.id === weekId ? { ...w, days: [...w.days, newDay] } : w), activeDayId: newDay.id };
+  }),
+
+  removeDay: (weekId, dayId) => set((state) => {
+      const week = state.weeks.find(w => w.id === weekId);
+      if (!week) return state;
+      const newDays = week.days.filter((day) => day.id !== dayId);
+      return { weeks: state.weeks.map(w => w.id === weekId ? { ...w, days: newDays } : w), activeDayId: state.activeDayId === dayId ? (newDays[0]?.id || null) : state.activeDayId };
+  }),
+
   addExerciseToActiveDay: (exerciseFromLibrary) => set((state) => {
-    const { activeDayId, days } = state;
-    const targetDayId = activeDayId || days[0]?.id;
-    if (!targetDayId) return state;
+    const { activeWeekId, activeDayId, weeks } = state;
+    if (!activeWeekId || !activeDayId) return state;
+
+    const isGlobal = !exerciseFromLibrary.personal_id;
+    const realId = exerciseFromLibrary.id;
 
     const newDraftExercise: DraftExercise = {
       id: uuidv4(),
-      exercise_id: exerciseFromLibrary.id,
-      exercise_name: exerciseFromLibrary.name,
-      thumbnail_url: exerciseFromLibrary.gif_url || exerciseFromLibrary.thumbnail_url || (exerciseFromLibrary as any).thumbnailUrl, 
-      gif_url: exerciseFromLibrary.gif_url || (exerciseFromLibrary as any).gifUrl,
-      group_code: exerciseFromLibrary.muscle_group || '',
-      sets: 3,
+      exercise_id: isGlobal ? null : exerciseFromLibrary.id,
+      global_exercise_id: isGlobal ? exerciseFromLibrary.id : null,
+      
+      exercise_name: exerciseFromLibrary.name || exerciseFromLibrary.exercise_name,
+      thumbnail_url: exerciseFromLibrary.thumbnail_url || exerciseFromLibrary.gif_url || exerciseFromLibrary.video_url || '', 
+      gif_url: exerciseFromLibrary.gif_url || '',
+      video_url: exerciseFromLibrary.video_url || '',
+      group_code: exerciseFromLibrary.primaryMuscle || exerciseFromLibrary.muscle_group || exerciseFromLibrary.group_code || 'Geral',
+      sets: '3',
       reps_target: '10-12',
       weight_target: '',
-      rest_seconds: 60,
+      rest_seconds: '60',
       technique: 'Normal',
       public_note: '',
       private_note: '',
@@ -115,93 +146,24 @@ export const useWorkoutCreatorStore = create<WorkoutCreatorState>((set, get) => 
     };
 
     return {
-      days: days.map(day => 
-        day.id === targetDayId 
-          ? { ...day, exercises: [...day.exercises, newDraftExercise] }
-          : day
-      )
+      weeks: weeks.map(week => week.id === activeWeekId ? { ...week, days: week.days.map(day => day.id === activeDayId ? { ...day, exercises: [...day.exercises, newDraftExercise] } : day) } : week)
     };
   }),
 
+  addExercise: (weekId, dayId, exercise) => set((state) => ({ weeks: state.weeks.map(week => week.id === weekId ? { ...week, days: week.days.map(day => day.id === dayId ? { ...day, exercises: [...day.exercises, exercise] } : day) } : week) })),
+  updateExercise: (weekId, dayId, draftExerciseId, field, value) => set((state) => ({ weeks: state.weeks.map(week => week.id === weekId ? { ...week, days: week.days.map(day => day.id === dayId ? { ...day, exercises: day.exercises.map(ex => ex.id === draftExerciseId ? { ...ex, [field]: value } : ex) } : day) } : week) })),
+  removeExercise: (weekId, dayId, draftExerciseId) => set((state) => ({ weeks: state.weeks.map(week => week.id === weekId ? { ...week, days: week.days.map(day => day.id === dayId ? { ...day, exercises: day.exercises.filter(ex => ex.id !== draftExerciseId) } : day) } : week) })),
+  reorderExercises: (weekId, dayId, newExercises) => set((state) => ({ weeks: state.weeks.map(week => week.id === weekId ? { ...week, days: week.days.map(day => day.id === dayId ? { ...day, exercises: newExercises } : day) } : week) })),
 
-  addExercise: (dayId, exercise) => set((state) => ({
-    days: state.days.map((day) => 
-      day.id === dayId 
-        ? { ...day, exercises: [...day.exercises, exercise] } 
-        : day
-    )
-  })),
+  hydrateWorkout: (name, objective, weeks, programId) => {
+    const finalWeeks = weeks.length > 0 ? weeks : [createInitialWeek()];
+    const firstWeek = finalWeeks[0];
+    const firstDay = firstWeek.days.length > 0 ? firstWeek.days[0] : null;
+    set({ programId: programId || null, programName: name, objective, weeks: finalWeeks, activeWeekId: firstWeek.id, activeDayId: firstDay?.id || null });
+  },
 
-  updateExercise: (dayId, draftExerciseId, updates) => set((state) => ({
-    days: state.days.map(day => 
-      day.id === dayId
-        ? {
-            ...day,
-            exercises: day.exercises.map(ex => 
-              ex.id === draftExerciseId ? { ...ex, ...updates } : ex
-            )
-          }
-        : day
-    )
-  })),
-
-  removeExercise: (dayId, draftExerciseId) => set((state) => ({
-    days: state.days.map(day => 
-      day.id === dayId
-        ? { ...day, exercises: day.exercises.filter(ex => ex.id !== draftExerciseId) }
-        : day
-    )
-  })),
-
-  moveExerciseUp: (dayId, draftExerciseId) => set((state) => {
-    const day = state.days.find(d => d.id === dayId);
-    if (!day) return state;
-    const index = day.exercises.findIndex(e => e.id === draftExerciseId);
-    if (index <= 0) return state; 
-
-    const newExercises = [...day.exercises];
-    [newExercises[index - 1], newExercises[index]] = [newExercises[index], newExercises[index - 1]];
-
-    return {
-      days: state.days.map(d => d.id === dayId ? { ...d, exercises: newExercises } : d)
-    };
-  }),
-
-  moveExerciseDown: (dayId, draftExerciseId) => set((state) => {
-    const day = state.days.find(d => d.id === dayId);
-    if (!day) return state;
-    const index = day.exercises.findIndex(e => e.id === draftExerciseId);
-    if (index === -1 || index >= day.exercises.length - 1) return state; 
-
-    const newExercises = [...day.exercises];
-    [newExercises[index], newExercises[index + 1]] = [newExercises[index + 1], newExercises[index]];
-
-    return {
-      days: state.days.map(d => d.id === dayId ? { ...d, exercises: newExercises } : d)
-    };
-  }),
-
-  reorderExercises: (dayId, newExercises) => set((state) => ({
-    days: state.days.map((day) => 
-      day.id === dayId ? { ...day, exercises: newExercises } : day
-    )
-  })),
-
-  hydrateWorkout: (name, objective, days, programId, generalObservation) => set({
-    programId: programId || null,
-    programName: name,
-    objective,
-    generalObservation: generalObservation || '', 
-    days: days.length > 0 ? days : [{ id: uuidv4(), name: 'Treino A', exercises: [] }],
-    activeDayId: days.length > 0 ? days[0].id : null
-  }),
-
-  reset: () => set({
-    programId: null, 
-    programName: '',
-    objective: '',
-    generalObservation: '', 
-    days: [{ id: uuidv4(), name: 'Treino A', exercises: [] }],
-    activeDayId: null
-  })
+  reset: () => {
+    const initWeek = createInitialWeek();
+    set({ programId: null, programName: '', objective: '', weeks: [initWeek], activeWeekId: initWeek.id, activeDayId: initWeek.days[0].id });
+  }
 }));

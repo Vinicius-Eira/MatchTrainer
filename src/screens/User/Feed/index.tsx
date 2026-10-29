@@ -1,13 +1,13 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, ActivityIndicator, Dimensions, Modal, StyleSheet, StatusBar, ScrollView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, Modal, StatusBar, ScrollView } from 'react-native';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFeedPersonal } from "./useFeedPersonal";
+import { styles } from "./styles";
 
-const { width } = Dimensions.get('window');
-
-const ORANGE_NEON = "#FF6B00";
+const ORANGE_NEON = "#FF5100";
+const DARK_BG = "#050505";
 
 const formatarBairroCidade = (cidade?: string, bairro?: string) => {
   if (!cidade && !bairro) return "Local não informado";
@@ -31,7 +31,7 @@ export function FeedPersonal({ navigation }: any) {
   if (state.loading) {
     return (
       <View style={styles.centerContainer}>
-        <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
+        <StatusBar barStyle="light-content" backgroundColor={DARK_BG} />
         <ActivityIndicator size="large" color={ORANGE_NEON} />
       </View>
     );
@@ -43,14 +43,14 @@ export function FeedPersonal({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
+      <StatusBar barStyle="light-content" backgroundColor={DARK_BG} />
 
       <View style={styles.headerFeed}>
         <View style={styles.logoRow}>
           <Text style={styles.headerTitle}>MATCH<Text style={{ color: ORANGE_NEON }}>TRAINER</Text></Text>
         </View>
         <TouchableOpacity style={styles.btnLogout} onPress={actions.handleLogout} activeOpacity={0.7}>
-          <Ionicons name="log-out-outline" size={28} color="#EF4444" />
+          <Ionicons name="log-out-outline" size={26} color="#EF4444" />
         </TouchableOpacity>
       </View>
 
@@ -60,7 +60,7 @@ export function FeedPersonal({ navigation }: any) {
           <View style={styles.radarContainer}>
             <View style={styles.radarHeader}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons name="radar" size={18} color={ORANGE_NEON} />
+                <MaterialCommunityIcons name="radar" size={20} color={ORANGE_NEON} />
                 <Text style={styles.radarTitle}>Radar Presencial</Text>
               </View>
               <View style={styles.radarBadge}>
@@ -84,26 +84,14 @@ export function FeedPersonal({ navigation }: any) {
         {currentItem ? (
           <View style={styles.cardWrapper}>
             
-            <View style={styles.navigationRow}>
-              <TouchableOpacity onPress={actions.prevPersonal} disabled={!hasPrev} style={[styles.navButton, !hasPrev && styles.navButtonDisabled]}>
-                <Ionicons name="chevron-back" size={24} color={hasPrev ? ORANGE_NEON : "#444"} />
-              </TouchableOpacity>
-
-              <Text style={styles.navCounter}>{state.currentIndex + 1} DE {state.personalsExibidos.length}</Text>
-
-              <TouchableOpacity onPress={actions.nextPersonal} disabled={!hasNext} style={[styles.navButton, !hasNext && styles.navButtonDisabled]}>
-                <Ionicons name="chevron-forward" size={24} color={hasNext ? ORANGE_NEON : "#444"} />
-              </TouchableOpacity>
-            </View>
-
             <View style={styles.premiumCard}>
               
               <View style={styles.imageContainer}>
                 <Image source={{ uri: currentItem.foto_url || "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=600" }} style={styles.image} />
-                <LinearGradient colors={["transparent", "rgba(0,0,0,0.95)"]} style={styles.imageOverlay} />
+                <LinearGradient colors={["transparent", "rgba(5,5,5,0.7)", "#050505"]} style={styles.imageOverlay} />
 
-                <TouchableOpacity onPress={() => actions.abrirDetalhesMatch(currentItem)} style={styles.badgeMatch}>
-                  <Ionicons name="flash" size={12} color={ORANGE_NEON} style={styles.neonGlow} />
+                <TouchableOpacity onPress={() => actions.abrirDetalhesMatch(currentItem)} style={styles.badgeMatch} activeOpacity={0.8}>
+                  <Ionicons name="flash" size={14} color={ORANGE_NEON} style={styles.neonGlow} />
                   <Text style={styles.badgeMatchText}>{currentItem.matchPercentual}% MATCH</Text>
                 </TouchableOpacity>
 
@@ -117,20 +105,20 @@ export function FeedPersonal({ navigation }: any) {
                 <View style={styles.imageBottomText}>
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <Text style={styles.cardName}>{currentItem.nome} {calcularIdade(currentItem.data_nascimento) ? `, ${calcularIdade(currentItem.data_nascimento)}` : ''}</Text>
-                    {currentItem.cref_verificado ? <MaterialCommunityIcons name="check-decagram" size={22} color="#10B981" style={{ marginLeft: 6 }} /> : null}
+                    {currentItem.cref_verificado ? <MaterialCommunityIcons name="check-decagram" size={24} color="#00E676" style={{ marginLeft: 8 }} /> : null}
                   </View>
                   
                   <View style={styles.locationRow}>
                     {currentItem.badgeUi === "CONSULTORIA" ? (
                       <View style={styles.digitalLocation}>
-                        <Ionicons name="phone-portrait-outline" size={15} color={ORANGE_NEON} />
+                        <Ionicons name="phone-portrait-outline" size={14} color={ORANGE_NEON} />
                         <Text style={styles.cardLocationDigital}> Treino 100% pelo Celular</Text>
                       </View>
                     ) : (
                       <View style={styles.digitalLocation}>
-                        <Ionicons name="location-outline" size={15} color={ORANGE_NEON} />
+                        <Ionicons name="location-outline" size={14} color={ORANGE_NEON} />
                         <Text style={styles.cardLocation}>
-                             {formatarBairroCidade(currentItem.cidade, currentItem.bairro)} • {currentItem.distanciaReal?.toFixed(1)}km
+                          {formatarBairroCidade(currentItem.cidade, currentItem.bairro)} {currentItem.distanciaReal ? `- ${currentItem.distanciaReal.toFixed(1)}km` : ""}
                         </Text>
                       </View>
                     )}
@@ -139,8 +127,8 @@ export function FeedPersonal({ navigation }: any) {
               </View>
 
               <View style={styles.cardBody}>
-                <Text style={styles.cardBio} numberOfLines={2}>
-                  {currentItem.descricao || "Profissional focado em resultados, pronto para te ajudar a alcançar sua melhor versão."}
+                <Text style={styles.cardBio} numberOfLines={3}>
+                  {currentItem.descricao || "Profissional focado em resultados, pronto para te ajudar a alcançar sua melhor versão de forma eficiente."}
                 </Text>
 
                 <View style={styles.specialtiesContainer}>
@@ -171,22 +159,39 @@ export function FeedPersonal({ navigation }: any) {
 
                 <TouchableOpacity 
                   style={styles.btnActionOutlined} 
-                  activeOpacity={0.6} 
-                  onPress={() => navigation.navigate("PerfilPublicoPersonal", { id: currentItem.id })}
+                  activeOpacity={0.8} 
+                  onPress={() => actions.verPerfilCompleto(currentItem.id)}
                 >
                   <Text style={styles.btnActionTextNeon}>Ver perfil completo</Text>
                   <Ionicons name="arrow-forward" size={18} color={ORANGE_NEON} style={styles.neonGlow} />
                 </TouchableOpacity>
               </View>
             </View>
+
+            <View style={styles.navigationRow}>
+              <TouchableOpacity onPress={actions.prevPersonal} disabled={!hasPrev} style={[styles.navButton, !hasPrev && styles.navButtonDisabled]} activeOpacity={0.7}>
+                <Ionicons name="close" size={30} color={hasPrev ? "#A0A0A5" : "#333"} />
+              </TouchableOpacity>
+
+              <View style={styles.navCounterPill}>
+                <Text style={styles.navCounterText}>{state.currentIndex + 1} DE {state.personalsExibidos.length}</Text>
+              </View>
+
+              <TouchableOpacity onPress={actions.nextPersonal} disabled={!hasNext} style={[styles.navButton, !hasNext && styles.navButtonDisabled]} activeOpacity={0.7}>
+                <Ionicons name="heart" size={28} color={hasNext ? ORANGE_NEON : "#333"} style={hasNext && styles.neonGlow} />
+              </TouchableOpacity>
+            </View>
+
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="scan-outline" size={60} color={ORANGE_NEON} />
+            <View style={styles.emptyIconGlow}>
+              <MaterialCommunityIcons name="radar" size={50} color={ORANGE_NEON} />
+            </View>
             <Text style={styles.emptyTitle}>Buscando a Elite...</Text>
             <Text style={styles.emptyText}>Exibimos apenas profissionais com alta taxa de compatibilidade comportamental e logística com você.</Text>
             {!state.isAlunoConsultoria ? (
-              <Text style={styles.emptyHint}>Dica: Aumente o raio do radar para expandir as buscas presenciais.</Text>
+              <Text style={styles.emptyHint}>Dica: Aumente o raio do radar para expandir suas buscas presenciais.</Text>
             ) : null}
           </View>
         )}
@@ -197,9 +202,9 @@ export function FeedPersonal({ navigation }: any) {
           <View style={styles.modalContent}>
             
             <View style={styles.modalHeader}>
-              <Ionicons name="analytics-outline" size={32} color={ORANGE_NEON} style={[styles.neonGlow, { marginBottom: 10 }]} />
+              <Ionicons name="analytics" size={36} color={ORANGE_NEON} style={[styles.neonGlow, { marginBottom: 12 }]} />
               <Text style={styles.modalTitle}>Análise de Compatibilidade</Text>
-              <Text style={styles.modalSubtitle}>Por que {state.matchSelecionado?.nome?.split(" ")[0]} é o seu Treinador ideal?</Text>
+              <Text style={styles.modalSubtitle}>Por que {state.matchSelecionado?.nome?.split(" ")[0]} é ideal para você?</Text>
             </View>
 
             <View style={styles.scoreRingContainer}>
@@ -220,9 +225,57 @@ export function FeedPersonal({ navigation }: any) {
               ))}
             </View>
 
-            <TouchableOpacity style={styles.btnActionOutlined} onPress={actions.fecharDetalhesMatch} activeOpacity={0.6}>
-              <Text style={styles.btnActionTextNeon}>ENTENDI</Text>
+            <TouchableOpacity style={styles.btnModalOutlined} onPress={actions.fecharDetalhesMatch} activeOpacity={0.8}>
+              <Text style={styles.btnModalTextNeon}>FECHAR ANÁLISE</Text>
             </TouchableOpacity>
+
+          </View>
+        </View>
+      </Modal>
+
+=      <Modal visible={state.modalNovaPropostaVisivel} transparent={true} animationType="slide">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: '#0A0A0C', borderRadius: 24, padding: 25, alignItems: 'center', borderWidth: 1, borderColor: ORANGE_NEON, shadowColor: ORANGE_NEON, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 10 }}>
+            
+            <View style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: ORANGE_NEON, marginBottom: 15, overflow: 'hidden' }}>
+              <Image source={{ uri: state.dadosNovaProposta?.personals?.foto_url || "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=600" }} style={{ width: '100%', height: '100%' }} />
+            </View>
+
+            <Ionicons name="mail-unread" size={32} color={ORANGE_NEON} style={{ marginBottom: 10, textShadowColor: ORANGE_NEON, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 }} />
+            
+            <Text style={{ fontSize: 20, fontWeight: "900", color: "#FFF", textAlign: "center", marginBottom: 6 }}>
+              Você recebeu uma proposta!
+            </Text>
+            
+            <Text style={{ fontSize: 14, color: "#AAA", textAlign: "center", marginBottom: 25, lineHeight: 22 }}>
+              {state.dadosNovaProposta?.personals?.nome?.split(" ")[0] || "O treinador"} enviou as condições da consultoria. Confira os detalhes ou converse para alinhar expectativas antes de aceitar.
+            </Text>
+
+            <View style={{ width: '100%', gap: 12 }}>
+              <TouchableOpacity 
+                style={{ width: "100%", backgroundColor: ORANGE_NEON, paddingVertical: 14, borderRadius: 12, alignItems: "center" }} 
+                onPress={actions.irParaProposta} 
+                activeOpacity={0.8}
+              >
+                <Text style={{ color: "#000", fontSize: 15, fontWeight: "bold", textTransform: "uppercase" }}>Ver Proposta Completa</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={{ width: "100%", backgroundColor: "transparent", paddingVertical: 14, borderRadius: 12, alignItems: "center", borderWidth: 1, borderColor: ORANGE_NEON }} 
+                onPress={actions.irParaChatNovaProposta} 
+                activeOpacity={0.8}
+              >
+                <Text style={{ color: ORANGE_NEON, fontSize: 15, fontWeight: "bold", textTransform: "uppercase" }}>Conversar com o Personal</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={{ paddingVertical: 12, alignItems: "center", marginTop: 5 }} 
+                onPress={actions.fecharModalNovaProposta} 
+                activeOpacity={0.6}
+              >
+                <Text style={{ color: "#666", fontSize: 14, fontWeight: "bold" }}>Decidir Depois</Text>
+              </TouchableOpacity>
+            </View>
 
           </View>
         </View>
@@ -231,89 +284,3 @@ export function FeedPersonal({ navigation }: any) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0D0D0D" },
-  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0D0D0D" },
-  
-  headerFeed: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingTop: 50, paddingBottom: 15, backgroundColor: "transparent" },
-  logoRow: { flexDirection: "row", alignItems: "center" },
-  headerTitle: { fontSize: 26, fontWeight: "900", color: "#FFF", letterSpacing: 2 },
-  btnLogout: { position: "absolute", right: 20, top: 50 },
-
-  scrollContent: { padding: 20, paddingBottom: 50, paddingTop: 10 },
-
-  radarContainer: { backgroundColor: "#1A1A1A", padding: 15, borderRadius: 16, marginBottom: 20, borderWidth: 1, borderColor: "#2A2A2A" },
-  radarHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  radarTitle: { fontSize: 14, fontWeight: "bold", color: "#FFF", marginLeft: 5 },
-  radarBadge: { backgroundColor: "rgba(255, 107, 0, 0.15)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.3)" },
-  radarBadgeText: { color: ORANGE_NEON, fontSize: 12, fontWeight: "bold" },
-
-  cardWrapper: { alignItems: "center", marginTop: 10 },
-  
-  navigationRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: 15, paddingHorizontal: 10 },
-  navButton: { padding: 10, backgroundColor: "#1A1A1A", borderRadius: 20, borderWidth: 1, borderColor: "#333" },
-  navButtonDisabled: { opacity: 0.3 },
-  navCounter: { fontSize: 13, fontWeight: "900", color: "#888", letterSpacing: 1 },
-
-  premiumCard: { width: "100%", backgroundColor: "#1A1A1A", borderRadius: 24, overflow: "hidden", borderWidth: 1, borderColor: "#333" },
-  
-  imageContainer: { width: "100%", height: 340, position: "relative" },
-  image: { width: "100%", height: "100%", backgroundColor: "#222" },
-  imageOverlay: { position: "absolute", bottom: 0, width: "100%", height: "60%" },
-  
-  badgeMatch: { position: "absolute", top: 15, right: 15, backgroundColor: "rgba(0,0,0,0.8)", flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15, borderWidth: 1, borderColor: ORANGE_NEON, shadowColor: ORANGE_NEON, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3 },
-  badgeMatchText: { color: ORANGE_NEON, fontSize: 11, fontWeight: "900", marginLeft: 6, textShadowColor: ORANGE_NEON, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 2 },
-  neonGlow: { textShadowColor: ORANGE_NEON, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 2 },
-
-  badgeService: { position: "absolute", top: 15, left: 15, backgroundColor: "rgba(0,0,0,0.7)", flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 15, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
-  badgeServiceText: { color: "#FFF", fontSize: 10, fontWeight: "bold", marginLeft: 5, textTransform: "uppercase" },
-
-  badgeConsultoriaNeon: { backgroundColor: "rgba(0,0,0,0.8)", borderColor: ORANGE_NEON, shadowColor: ORANGE_NEON, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3 },
-  badgeConsultoriaTextNeon: { color: ORANGE_NEON, textShadowColor: ORANGE_NEON, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 2 },
-
-  imageBottomText: { position: "absolute", bottom: 15, left: 15, right: 15 },
-  cardName: { color: "#FFF", fontSize: 28, fontWeight: "900", textShadowColor: "rgba(0,0,0,1)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 5 },
-  
-  locationRow: { marginTop: 6 },
-  digitalLocation: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  cardLocation: { color: "#D1D5DB", fontSize: 13, fontWeight: "600", marginLeft: 4 },
-  cardLocationDigital: { color: ORANGE_NEON, fontSize: 13, fontWeight: "bold" },
-
-  cardBody: { padding: 20 },
-  cardBio: { color: "#A0A0A0", fontSize: 14, fontStyle: "italic", marginBottom: 15, lineHeight: 20 },
-  
-  specialtiesContainer: { flexDirection: "row", flexWrap: "wrap", marginBottom: 15 },
-  tagPrimary: { backgroundColor: "rgba(255, 107, 0, 0.15)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: "rgba(255, 107, 0, 0.4)", marginRight: 8, marginBottom: 8 },
-  tagPrimaryText: { color: ORANGE_NEON, fontSize: 11, fontWeight: "bold", textTransform: "uppercase" },
-
-  statsContainer: { flexDirection: "row", justifyContent: "space-between", backgroundColor: "#080808", padding: 15, borderRadius: 12, borderWidth: 1, borderColor: "#222", marginBottom: 20 },
-  statBox: { alignItems: "center", flex: 1 },
-  statValue: { fontSize: 16, fontWeight: "900", color: "#FFF", marginTop: 6 },
-  statLabel: { fontSize: 10, color: "#888", fontWeight: "bold", textTransform: "uppercase", marginTop: 3 },
-  statDivider: { width: 1, backgroundColor: "#222", height: "100%" },
-
-  btnActionOutlined: { width: "100%", backgroundColor: "transparent", flexDirection: "row", justifyContent: "center", alignItems: "center", paddingVertical: 15, borderRadius: 12, borderWidth: 1, borderColor: ORANGE_NEON, shadowColor: ORANGE_NEON, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 4 },
-  btnActionTextNeon: { color: ORANGE_NEON, fontSize: 16, fontWeight: "900", marginRight: 8, textTransform: "uppercase", letterSpacing: 1, textShadowColor: ORANGE_NEON, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 2 },
-
-  emptyState: { alignItems: "center", marginTop: 50 },
-  emptyTitle: { fontSize: 20, fontWeight: "bold", color: "#FFF", marginTop: 15 },
-  emptyText: { fontSize: 14, color: "#AAA", textAlign: "center", marginTop: 10, lineHeight: 22 },
-  emptyHint: { fontSize: 12, color: "#666", textAlign: "center", marginTop: 15 },
-
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.92)", justifyContent: "center", padding: 20 },
-  modalContent: { backgroundColor: "#111", borderRadius: 24, padding: 25, alignItems: "center", borderWidth: 1, borderColor: "#333" },
-  modalHeader: { alignItems: "center", marginBottom: 25 },
-  modalTitle: { fontSize: 22, fontWeight: "900", color: "#FFF", textAlign: "center" },
-  modalSubtitle: { fontSize: 14, color: "#888", textAlign: "center", marginTop: 8, lineHeight: 20 },
-  
-  scoreRingContainer: { alignItems: "center", marginBottom: 25 },
-  scoreRing: { width: 130, height: 130, borderRadius: 65, borderWidth: 2, borderColor: ORANGE_NEON, justifyContent: "center", alignItems: "center", shadowColor: ORANGE_NEON, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 5 },
-  scoreRingValue: { fontSize: 36, fontWeight: "900", color: ORANGE_NEON, textShadowColor: ORANGE_NEON, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 3 },
-  scoreRingLabel: { fontSize: 11, color: "#FFF", fontWeight: "bold", marginTop: 2, letterSpacing: 1 },
-
-  modalBody: { width: "100%", backgroundColor: "#1A1A1A", borderRadius: 15, padding: 15, borderWidth: 1, borderColor: "#2A2A2A", marginBottom: 25 },
-  motivoRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-  motivoIconBg: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,107,0,0.1)", justifyContent: "center", alignItems: "center", marginRight: 12 },
-  motivoText: { fontSize: 14, color: "#DDD", flex: 1, lineHeight: 20 },
-});

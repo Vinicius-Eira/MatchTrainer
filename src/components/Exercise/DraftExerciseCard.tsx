@@ -1,24 +1,30 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, LayoutAnimation, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, LayoutAnimation, Alert, ActivityIndicator } from 'react-native';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image'; 
 import { useVideoPlayer, VideoView } from 'expo-video'; 
 import { scale, verticalScale } from '../../utils/responsive';
-import { DraftExercise, useWorkoutCreatorStore } from '../../store/useWorkoutCreatorStore';
+import { useWorkoutCreatorStore } from '../../store/useWorkoutCreatorStore';
 import { ExerciseService } from '../../services/ExerciseService'; 
 
-interface Props {
-  dayId: string;
-  exercise: DraftExercise;
-  drag?: () => void; 
-  isActive?: boolean;
-}
-
-export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) => {
-  const { updateExercise, removeExercise } = useWorkoutCreatorStore();
+export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: any) => {
+  const store = useWorkoutCreatorStore((state: any) => state);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const videoViewRef = useRef(null);
+
+  const handleUpdate = (field: string, value: string | number) => {
+    if (store.activeWeekId && dayId) {
+      store.updateExercise(store.activeWeekId, dayId, exercise.id, field, value);
+    }
+  };
+
+  const handleRemove = () => {
+    if (store.activeWeekId && dayId) {
+      store.removeExercise(store.activeWeekId, dayId, exercise.id);
+    }
+  };
 
   const displayMedia = exercise.custom_media_url || exercise.video_url || exercise.gif_url || exercise.thumbnail_url;
   const isVideo = displayMedia ? displayMedia.toLowerCase().includes('.mp4') || displayMedia.toLowerCase().includes('.mov') : false;
@@ -45,20 +51,20 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['videos'], 
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos, 
         allowsEditing: true,
         quality: 0.5,
-        videoMaxDuration: 15,
       });
 
-      if (!result.canceled) {
+      if (!result.canceled && result.assets && result.assets.length > 0) {
         setIsUploading(true);
         const uri = result.assets[0].uri;
         
         const uploadResult = await ExerciseService.uploadExerciseMedia(uri, true);
         
         if (uploadResult.success && uploadResult.url) {
-          updateExercise(dayId, exercise.id, { custom_media_url: uploadResult.url });
+          handleUpdate('custom_media_url', uploadResult.url);
+          Alert.alert("Sucesso", "Vídeo exclusivo adicionado para este aluno!");
         } else {
           throw new Error('Falha ao subir o vídeo.');
         }
@@ -100,7 +106,7 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
           </View>
         </View>
 
-        <TouchableOpacity onPress={() => removeExercise(dayId, exercise.id)} style={styles.deleteBtn}>
+        <TouchableOpacity onPress={handleRemove} style={styles.deleteBtn}>
           <Feather name="trash-2" size={16} color="#FF3B30" />
         </TouchableOpacity>
       </View>
@@ -121,7 +127,7 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
                   nativeControls={true}
                 />
               ) : (
-                <Image source={{ uri: displayMedia }} style={styles.image} resizeMode="cover" />
+                <Image source={{ uri: displayMedia }} style={styles.image} contentFit="cover" transition={200} />
               )}
               
               {isVideo && (
@@ -146,22 +152,42 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
           <View style={styles.inputRow}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Séries</Text>
-              <TextInput style={styles.input} value={String(exercise.sets)} keyboardType="numeric" onChangeText={(text) => updateExercise(dayId, exercise.id, { sets: Number(text) || 0 })} />
+              <TextInput 
+                style={styles.input} 
+                value={exercise.sets?.toString() || ''} 
+                keyboardType="numeric" 
+                onChangeText={(text) => handleUpdate('sets', text)} 
+              />
             </View>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Reps</Text>
-              <TextInput style={styles.input} value={exercise.reps_target} onChangeText={(text) => updateExercise(dayId, exercise.id, { reps_target: text })} />
+              <TextInput 
+                style={styles.input} 
+                value={exercise.reps_target?.toString() || ''} 
+                onChangeText={(text) => handleUpdate('reps_target', text)} 
+              />
             </View>
           </View>
           
           <View style={styles.inputRow}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Carga (kg)</Text>
-              <TextInput style={styles.input} placeholder="Ex: 20" placeholderTextColor="#444" value={exercise.weight_target} onChangeText={(text) => updateExercise(dayId, exercise.id, { weight_target: text })} />
+              <TextInput 
+                style={styles.input} 
+                placeholder="Ex: 20" 
+                placeholderTextColor="#444" 
+                value={exercise.weight_target?.toString() || ''} 
+                onChangeText={(text) => handleUpdate('weight_target', text)} 
+              />
             </View>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Pausa (s)</Text>
-              <TextInput style={styles.input} value={String(exercise.rest_seconds)} keyboardType="numeric" onChangeText={(text) => updateExercise(dayId, exercise.id, { rest_seconds: Number(text) || 0 })} />
+              <TextInput 
+                style={styles.input} 
+                value={exercise.rest_seconds?.toString() || ''} 
+                keyboardType="numeric" 
+                onChangeText={(text) => handleUpdate('rest_seconds', text)} 
+              />
             </View>
           </View>
         </View>
@@ -186,7 +212,7 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
                multiline
                textAlignVertical="top"
                value={exercise.public_note} 
-               onChangeText={(text) => updateExercise(dayId, exercise.id, { public_note: text })} 
+               onChangeText={(text) => handleUpdate('public_note', text)} 
              />
           </View>
           
@@ -202,7 +228,7 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: Props) =>
                multiline
                textAlignVertical="top"
                value={exercise.private_note} 
-               onChangeText={(text) => updateExercise(dayId, exercise.id, { private_note: text })} 
+               onChangeText={(text) => handleUpdate('private_note', text)} 
              />
           </View>
         </View>

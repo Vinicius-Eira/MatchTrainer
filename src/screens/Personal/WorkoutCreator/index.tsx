@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, SafeAreaView, Platform, Modal, FlatList, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, SafeAreaView, Platform, Modal, FlatList, KeyboardAvoidingView, Alert } from 'react-native';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
@@ -13,7 +13,9 @@ const QUICK_OBJECTIVES = ["Hipertrofia", "Emagrecimento", "Força", "Resistênci
 
 export function WorkoutCreator({ navigation, route }: any) {
   const v = useWorkoutCreator(navigation, route);
-  const activeDayData = v.store.days.find(d => d.id === v.store.activeDayId);
+  
+  const activeWeekData = v.store.weeks?.find((w: any) => w.id === v.store.activeWeekId);
+  const activeDayData = activeWeekData?.days?.find((d: any) => d.id === v.store.activeDayId);
 
   const renderExerciseItem = ({ item, drag, isActive }: RenderItemParams<any>) => (
     <DraftExerciseCard
@@ -54,7 +56,7 @@ export function WorkoutCreator({ navigation, route }: any) {
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity style={styles.publishBtn} onPress={v.handleSaveAndPublish} disabled={v.isPublishing || (activeDayData?.exercises.length === 0)}>
+              <TouchableOpacity style={styles.publishBtn} onPress={v.handleSaveAndPublish} disabled={v.isPublishing || (activeDayData?.exercises?.length === 0)}>
                 {v.isPublishing ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.publishText}>{v.isPresetMode ? 'Salvar' : 'Publicar'}</Text>}
               </TouchableOpacity>
             </View>
@@ -65,7 +67,9 @@ export function WorkoutCreator({ navigation, route }: any) {
               data={activeDayData?.exercises || []}
               keyExtractor={(item) => item.id}
               onDragEnd={({ data }) => {
-                if (v.store.activeDayId) v.store.reorderExercises(v.store.activeDayId, data);
+                if (v.store.activeWeekId && v.store.activeDayId) {
+                    v.store.reorderExercises(v.store.activeWeekId, v.store.activeDayId, data);
+                }
               }}
               renderItem={renderExerciseItem}
               automaticallyAdjustKeyboardInsets={true} 
@@ -89,12 +93,12 @@ export function WorkoutCreator({ navigation, route }: any) {
 
                     <View style={styles.formContainer}>
                       <View style={styles.inputWrapper}>
-                        <Text style={styles.inputLabel}>NOME DA FICHA</Text>
+                        <Text style={styles.inputLabel}>NOME DO PROGRAMA</Text>
                         <View style={styles.inputBox}>
                           <MaterialCommunityIcons name="format-title" size={20} color="#FF5100" style={styles.inputIcon} />
                           <TextInput 
                             style={styles.inputTitleLarge} 
-                            placeholder={v.isPresetMode ? "Ex: Hipertrofia Iniciante" : "Ex: Treino A - Costas"} 
+                            placeholder={v.isPresetMode ? "Ex: Hipertrofia Iniciante" : "Ex: Projeto Verão"} 
                             placeholderTextColor="#555" 
                             value={v.store.programName} 
                             onChangeText={v.store.setProgramName} 
@@ -130,20 +134,95 @@ export function WorkoutCreator({ navigation, route }: any) {
                     </View>
                   </View>
 
-                  <View style={styles.daysWrapper}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.daysScroll}>
-                      {v.store.days.map((day) => (
-                        <TouchableOpacity key={day.id} style={[styles.dayPill, v.store.activeDayId === day.id && styles.dayPillActive]} onPress={() => v.store.setActiveDay(day.id)}>
-                          <MaterialCommunityIcons name="calendar-today" size={16} color={v.store.activeDayId === day.id ? "#FF5100" : "#A0A0A5"} style={{ marginRight: 6 }} />
-                          <Text style={[styles.dayPillText, v.store.activeDayId === day.id && styles.dayPillTextActive]}>{day.name}</Text>
-                        </TouchableOpacity>
+                  <View style={{ marginTop: 10, paddingHorizontal: 20 }}>
+                    <Text style={{ color: "#888", fontSize: 10, fontWeight: "bold", textTransform: "uppercase", marginBottom: 8, letterSpacing: 1 }}>Semanas de Treino</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 10 }}>
+                      {v.store.weeks?.map((week: any) => (
+                        <View 
+                          key={week.id} 
+                          style={{
+                            flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, 
+                            borderRadius: 12, borderWidth: 1, 
+                            backgroundColor: v.store.activeWeekId === week.id ? "#FF5100" : "#111",
+                            borderColor: v.store.activeWeekId === week.id ? "#FF5100" : "#222"
+                          }}
+                        >
+                          <TouchableOpacity 
+                            style={{ flexDirection: "row", alignItems: "center" }}
+                            onPress={() => v.store.setActiveWeek(week.id)}
+                          >
+                            <Feather name="calendar" size={14} color={v.store.activeWeekId === week.id ? "#000" : "#A0A0A5"} style={{ marginRight: 6 }} />
+                            <Text style={{ color: v.store.activeWeekId === week.id ? "#000" : "#FFF", fontSize: 13, fontWeight: "bold" }}>{week.name}</Text>
+                          </TouchableOpacity>
+                          
+                          {/* Lixeira visível se for a semana ativa e houver mais de uma semana */}
+                          {(v.store.activeWeekId === week.id && v.store.weeks.length > 1) && (
+                            <TouchableOpacity 
+                              style={{ marginLeft: 12, backgroundColor: 'rgba(0,0,0,0.2)', padding: 4, borderRadius: 10 }}
+                              onPress={() => {
+                                Alert.alert("Atenção", `Excluir a ${week.name} e todos os treinos nela?`, [
+                                  { text: "Cancelar", style: "cancel" },
+                                  { text: "Excluir", onPress: () => v.store.removeWeek(week.id), style: 'destructive' }
+                                ]);
+                              }}
+                            >
+                              <Feather name="x" size={14} color="#000" />
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       ))}
-                      <TouchableOpacity style={styles.addDayPill} onPress={v.store.addDay}>
-                        <Feather name="plus" size={16} color="#A0A0A5" />
-                        <Text style={styles.addDayText}>Novo Treino</Text>
+                      
+                      <TouchableOpacity 
+                        style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, backgroundColor: "transparent", borderColor: "#333" }} 
+                        onPress={() => v.store.addWeek()}
+                      >
+                        <Feather name="plus" size={16} color="#A0A0A5" style={{ marginRight: 4 }}/>
+                        <Text style={{ color: "#A0A0A5", fontSize: 13, fontWeight: "bold" }}>Nova Semana</Text>
                       </TouchableOpacity>
                     </ScrollView>
                   </View>
+
+                  {/* 🔥 ABAS DOS DIAS COM BOTÃO DE EXCLUIR */}
+                  {activeWeekData && (
+                    <View style={{ marginTop: 15, paddingHorizontal: 20, marginBottom: 10 }}>
+                        <Text style={{ color: "#888", fontSize: 10, fontWeight: "bold", textTransform: "uppercase", marginBottom: 8, letterSpacing: 1 }}>Treinos da {activeWeekData.name}</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                        {activeWeekData.days.map((day: any) => (
+                            <View 
+                              key={day.id} 
+                              style={[styles.dayPill, v.store.activeDayId === day.id && styles.dayPillActive, { flexDirection: 'row', alignItems: 'center' }]}
+                            >
+                              <TouchableOpacity 
+                                style={{ flexDirection: 'row', alignItems: 'center' }}
+                                onPress={() => v.store.setActiveDay(day.id)}
+                              >
+                                <MaterialCommunityIcons name="dumbbell" size={16} color={v.store.activeDayId === day.id ? "#FF5100" : "#A0A0A5"} style={{ marginRight: 6 }} />
+                                <Text style={[styles.dayPillText, v.store.activeDayId === day.id && styles.dayPillTextActive]}>{day.name}</Text>
+                              </TouchableOpacity>
+
+                              {(v.store.activeDayId === day.id && activeWeekData.days.length > 1) && (
+                                <TouchableOpacity 
+                                  style={{ marginLeft: 8, backgroundColor: 'rgba(0,0,0,0.2)', padding: 4, borderRadius: 10 }}
+                                  onPress={() => {
+                                    Alert.alert("Atenção", `Excluir o ${day.name}?`, [
+                                      { text: "Cancelar", style: "cancel" },
+                                      { text: "Excluir", onPress: () => v.store.removeDay(activeWeekData.id, day.id), style: 'destructive' }
+                                    ]);
+                                  }}
+                                >
+                                  <Feather name="x" size={14} color={v.store.activeDayId === day.id ? "#FF5100" : "#A0A0A5"} />
+                                </TouchableOpacity>
+                              )}
+                            </View>
+                        ))}
+                        <TouchableOpacity style={styles.addDayPill} onPress={() => v.store.addDay(activeWeekData.id)}>
+                            <Feather name="plus" size={16} color="#A0A0A5" />
+                            <Text style={styles.addDayText}>Novo Treino</Text>
+                        </TouchableOpacity>
+                        </ScrollView>
+                    </View>
+                  )}
+
                 </View>
               }
               ListFooterComponent={
@@ -154,21 +233,24 @@ export function WorkoutCreator({ navigation, route }: any) {
                     <Text style={styles.addExerciseText}>ADICIONAR EXERCÍCIO</Text>
                   </TouchableOpacity>
 
-                  <View style={styles.generalObsSection}>
-                    <View style={styles.generalObsHeader}>
-                      <Ionicons name="document-text-outline" size={18} color="#FF5100" />
-                      <Text style={styles.generalObsTitle}>Observações Gerais da Ficha</Text>
+                  {activeWeekData && (
+                    <View style={styles.generalObsSection}>
+                        <View style={styles.generalObsHeader}>
+                        <Ionicons name="document-text-outline" size={18} color="#FF5100" />
+                        <Text style={styles.generalObsTitle}>Orientação para a {activeWeekData.name}</Text>
+                        </View>
+                        <TextInput 
+                        style={styles.generalObsInput} 
+                        placeholder="Ex: Foco em sobrecarga progressiva nesta semana..." 
+                        placeholderTextColor="#555" 
+                        multiline 
+                        textAlignVertical="top" 
+                        value={activeWeekData.generalObservation} 
+                        onChangeText={(obs) => v.store.setGeneralObservation(activeWeekData.id, obs)} 
+                        />
                     </View>
-                    <TextInput 
-                      style={styles.generalObsInput} 
-                      placeholder="Dicas globais (Ex: Aquecer 10min na esteira)..." 
-                      placeholderTextColor="#555" 
-                      multiline 
-                      textAlignVertical="top" 
-                      value={v.store.generalObservation} 
-                      onChangeText={v.store.setGeneralObservation} 
-                    />
-                  </View>
+                  )}
+
                 </View>
               }
               contentContainerStyle={styles.scrollContent}
@@ -187,7 +269,6 @@ export function WorkoutCreator({ navigation, route }: any) {
                     <Feather name="x" size={24} color="#FFF" />
                   </TouchableOpacity>
                 </View>
-
                 {v.isFetchingPresets ? (
                   <View style={styles.modalLoading}>
                     <ActivityIndicator size="large" color="#FF5100" />
@@ -219,8 +300,52 @@ export function WorkoutCreator({ navigation, route }: any) {
             </View>
           </Modal>
 
+          <Modal visible={v.showSuccessModal} transparent animationType="fade">
+            <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", padding: 20 }}>
+              <View style={{ backgroundColor: "#0A0A0C", borderRadius: 24, padding: 30, alignItems: "center", borderWidth: 1, borderColor: "#00E676", shadowColor: "#00E676", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 20 }}>
+                <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "rgba(0, 230, 118, 0.1)", justifyContent: "center", alignItems: "center", marginBottom: 20, borderWidth: 1, borderColor: "#00E676" }}>
+                  <Ionicons name="checkmark-done" size={40} color="#00E676" />
+                </View>
+                <Text style={{ fontSize: 22, fontWeight: "900", color: "#FFF", textAlign: "center", marginBottom: 10 }}>Treino Publicado!</Text>
+                <Text style={{ fontSize: 14, color: "#AAA", textAlign: "center", marginBottom: 25, lineHeight: 22 }}>
+                  A ficha foi salva com sucesso e já está disponível para o aluno no aplicativo.
+                </Text>
+                <TouchableOpacity 
+                  style={{ backgroundColor: "#00E676", width: "100%", paddingVertical: 16, borderRadius: 16, alignItems: "center" }} 
+                  onPress={() => { v.setShowSuccessModal(false); navigation.goBack(); }} 
+                  activeOpacity={0.8}
+                >
+                  <Text style={{ color: "#000", fontSize: 15, fontWeight: "900", textTransform: "uppercase" }}>Voltar ao Painel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
+          <Modal visible={v.showAISuccessModal} transparent animationType="fade">
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+              <View style={{ backgroundColor: '#161619', padding: 32, borderRadius: 24, alignItems: 'center', borderWidth: 1, borderColor: '#00E676', width: '100%', shadowColor: '#00E676', shadowOpacity: 0.4, shadowRadius: 20 }}>
+                
+                <View style={{ backgroundColor: 'rgba(0, 230, 118, 0.1)', padding: 16, borderRadius: 50, marginBottom: 16 }}>
+                  <MaterialCommunityIcons name="robot-excited-outline" size={48} color="#00E676" />
+                </View>
+                
+                <Text style={{ color: '#FFF', fontSize: 22, fontWeight: '900', marginBottom: 8, textAlign: 'center' }}>Magia Concluída!</Text>
+                <Text style={{ color: '#A0A0A5', fontSize: 14, textAlign: 'center', marginBottom: 24 }}>
+                  A periodização de elite foi gerada com sucesso. Revise as cargas e anotações antes de publicar para o aluno.
+                </Text>
+                
+                <TouchableOpacity 
+                  style={{ backgroundColor: '#00E676', width: '100%', paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
+                  onPress={() => v.setShowAISuccessModal(false)}
+                >
+                  <Text style={{ color: '#000', fontSize: 16, fontWeight: '900' }}>Incrível, revisar treino!</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
         </KeyboardAvoidingView>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
-}
+};

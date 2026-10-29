@@ -3,7 +3,7 @@
     "name": "MatchTrainer",
     "slug": "PersonalMatch",
     "version": "1.0.0",
-    "sdkVersion": "57.0.0",
+    "sdkVersion": "58.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/images/icon.png",
     "scheme": "matchtrainer",
@@ -56,7 +56,8 @@
       "expo-image",
       "expo-sharing",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,

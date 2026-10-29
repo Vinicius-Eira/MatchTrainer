@@ -27,6 +27,7 @@ import { ListaTreinosAluno } from "../screens/Personal/CRM/GestaoAlunos/ListaTre
 import { MeusAlunos } from "../screens/Personal/CRM/GestaoAlunos/MeusAlunos";
 import { VisaoAluno } from "../screens/Personal/CRM/GestaoAlunos/VisaoAluno";
 import { AdicionarAluno } from "../screens/Personal/CRM/NovoContrato/AdicionarAluno";
+import { ContratoMatch } from '../screens/Personal/CRM/NovoContrato/ContratoMatch';
 import { PropostaAluno } from "../screens/Personal/CRM/NovoContrato/PropostaAluno";
 import { ExerciseLibraryScreen } from "../screens/Personal/ExerciseLibrary";
 import { Avaliacoes } from "../screens/Personal/Feedback";
@@ -70,7 +71,7 @@ function FeedStackNavigator() {
   return (
     <FeedStack.Navigator screenOptions={{ headerShown: false }}>
       <FeedStack.Screen name="FeedPersonalHome" component={FeedPersonal} />
-      <FeedStack.Screen name="PersonalPublicProfile" component={PersonalPublicProfile} />
+      {/* <FeedStack.Screen name="PersonalPublicProfile" component={PersonalPublicProfile} /> */}
     </FeedStack.Navigator>
   );
 }
@@ -112,6 +113,7 @@ export function AppRoutes() {
       
       <RootStack.Screen name="MiniOnboarding" component={MiniOnboarding} options={{ gestureEnabled: false }} />
       <RootStack.Screen name="AdicionarAluno" component={AdicionarAluno} />
+      <RootStack.Screen name="ContratoMatch" component={ContratoMatch} />
       <RootStack.Screen name="VisaoAluno" component={VisaoAluno} />
       <RootStack.Screen name="Chat" component={Chat} />
       <RootStack.Screen name="Messages" component={Messages} />
@@ -135,6 +137,7 @@ export function AppRoutes() {
       <RootStack.Screen name="AlunoCadastro" component={AlunoCadastro} />
       <RootStack.Screen name="AlunoSetup" component={AlunoSetup} />
       <RootStack.Screen name="AlunoDashboard" component={AlunoDashboard} />
+      <RootStack.Screen name="PersonalPublicProfile" component={PersonalPublicProfile} />
       <RootStack.Screen name="RaioXTreino" component={RaioXTreino} />
       <RootStack.Screen name="PerfilAluno" component={PerfilAluno} />
       <RootStack.Screen name="AvaliarPersonal" component={AvaliarPersonal} />

@@ -15,7 +15,7 @@ type Frequencia = "Avulso" | "Mensal" | "Trimestral" | "Semestral" | "Anual" | s
 
 export function useAdicionarAluno(route: any, navigation: any) {
   const { completarMissao } = useOnboarding();
-  const { leadInjetado, planoAtivo, conexaoId } = route?.params || {};
+  const { leadInjetado, planoAtivo } = route?.params || {};
 
   let prefs: any = {};
   try {
@@ -116,7 +116,7 @@ export function useAdicionarAluno(route: any, navigation: any) {
       try {
         const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
         if (!result.canceled && result.assets && result.assets.length > 0) {
-           Alert.alert("PDF Anexado", `O arquivo PDF será vinculado à ficha do aluno. (Nota: Para extrair o texto de um contrato impresso e jogar no campo de texto, use a opção Câmera).`);
+           Alert.alert("PDF Anexado", `O arquivo PDF será vinculado à ficha do aluno.`);
         }
       } catch (err: any) {
         Alert.alert("Erro no Documento", err.message);
@@ -173,8 +173,8 @@ export function useAdicionarAluno(route: any, navigation: any) {
   };
 
   const handleAdicionarAluno = async () => {
-    if (!nome || (!email && !leadInjetado) || !mensalidade) {
-      return Alert.alert("Atenção", "Nome, e-mail e valor são obrigatórios.");
+    if (!nome || !email || !mensalidade) {
+      return Alert.alert("Atenção", "Nome, e-mail e valor são obrigatórios para gerar o convite.");
     }
 
     let diaFinal = vencimento === "Outro" ? vencimentoOutro : vencimento;
@@ -189,51 +189,19 @@ export function useAdicionarAluno(route: any, navigation: any) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Sessão do profissional não encontrada.");
 
-      const valorFloat = mensalidade ? parseFloat(mensalidade.replace(",", ".")) : 0;
+      const valorFloat = parseFloat(mensalidade.replace(",", "."));
       
-      if (leadInjetado && conexaoId) {
-        if (planoAtivo) {
-          await supabase.from("planos").update({
-            servicos_inclusos: [modalidade],
-            frequencia: frequencia,
-            valor_mensal: valorFloat,
-            dia_vencimento: diaInt,
-            observacoes: observacoes.trim(),
-          }).eq("id", planoAtivo.id);
-          
-          await supabase.from("historico_financeiro_logs").insert([{
-            personal_id: user.id, aluno_id: leadInjetado.id, referencia_id: planoAtivo.id,
-            tipo_evento: "CONTRATO_ATUALIZADO", descricao: `O contrato foi reajustado para R$ ${valorFloat}.`, metadados: { valor: valorFloat }
-          }]);
+      if (leadInjetado && planoAtivo) {
+        await supabase.from("planos").update({
+          servicos_inclusos: [modalidade],
+          frequencia: frequencia,
+          valor_mensal: valorFloat,
+          dia_vencimento: diaInt,
+          observacoes: observacoes.trim(),
+        }).eq("id", planoAtivo.id);
 
-          Alert.alert("Sucesso!", "O contrato do aluno foi atualizado.");
-          navigation.goBack();
-        } else {
-          const { data: novoPlano, error: erroPlano } = await supabase.from("planos").insert([{
-            aluno_id: leadInjetado.id,
-            personal_id: user.id,
-            conexao_id: conexaoId,
-            servicos_inclusos: [modalidade],
-            frequencia: frequencia,
-            valor_mensal: valorFloat,
-            dia_vencimento: diaInt,
-            observacoes: observacoes.trim(),
-            status: "aguardando_assinatura" 
-          }]).select().single();
-          
-          if (erroPlano) throw erroPlano;
-          
-          await supabase.from("historico_financeiro_logs").insert([{
-            personal_id: user.id, aluno_id: leadInjetado.id, referencia_id: novoPlano.id,
-            tipo_evento: "NOVO_CONTRATO", descricao: `Nova proposta de R$ ${valorFloat} enviada ao aluno.`, metadados: { valor: valorFloat }
-          }]);
-          
-          await supabase.from("conexoes").update({ status: "aguardando_aluno" }).eq("id", conexaoId);
-          
-          Alert.alert("Proposta Enviada!", "O aluno receberá a proposta para assinar.");
-          navigation.goBack(); 
-        }
-
+        Alert.alert("Sucesso!", "O contrato do aluno foi atualizado.");
+        navigation.goBack();
       } else {
         const codigoGerado = Math.floor(100000 + Math.random() * 900000).toString();
 

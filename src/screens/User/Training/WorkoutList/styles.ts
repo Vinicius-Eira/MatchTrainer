@@ -1,75 +1,111 @@
-import { Platform, StatusBar, StyleSheet } from "react-native";
-import { moderateScale, scale, verticalScale } from "../../../../utils/responsive";
+import { StyleSheet, Platform } from "react-native";
 
-const STATUSBAR_HEIGHT = Platform.OS === 'android' ? StatusBar.currentHeight : 0;
+export const MATCH_COLORS = {
+  bg: '#050505',
+  cardTransparent: 'rgba(18, 18, 20, 0.7)', 
+  cardBorder: 'rgba(255, 255, 255, 0.06)',
+  
+  primary: '#FF5100',
+  primaryNeon: 'rgba(255, 81, 0, 0.4)', 
+  primaryDim: 'rgba(255, 81, 0, 0.12)',  
+  
+  textBase: '#FAFAFA',
+  textMuted: '#A1A1AA',
+  textDim: '#71717A',
+  
+  success: '#00E676',
+  successNeon: 'rgba(0, 230, 118, 0.4)',
+  successDim: 'rgba(0, 230, 118, 0.15)',
+};
 
 export const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#050505" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  safeArea: { flex: 1, backgroundColor: MATCH_COLORS.bg },
+  scrollContent: { paddingBottom: 50 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: MATCH_COLORS.bg },
   
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: STATUSBAR_HEIGHT ? STATUSBAR_HEIGHT + 10 : 20,
-    paddingBottom: verticalScale(15),
-    paddingHorizontal: scale(20),
-    backgroundColor: "#050505",
-    borderBottomWidth: 1,
-    borderBottomColor: "#1A1A1A",
+  topNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 10 : 20, paddingBottom: 24 },
+  btnVoltar: { width: 44, height: 44, borderRadius: 22, backgroundColor: MATCH_COLORS.cardTransparent, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: MATCH_COLORS.cardBorder },
+  headerTitles: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  headerTitleCenter: { fontSize: 20, fontWeight: '900', color: MATCH_COLORS.textBase, letterSpacing: -0.5 },
+  headerSubtitleCenter: { fontSize: 11, color: MATCH_COLORS.primary, fontWeight: '700', marginTop: 4, letterSpacing: 0.5, textTransform: 'uppercase' },
+  headerSpacer: { width: 44 },
+
+  heroCard: { 
+    marginHorizontal: 20, backgroundColor: MATCH_COLORS.cardTransparent, 
+    borderRadius: 24, padding: 24, 
+    borderWidth: 1.5, borderColor: MATCH_COLORS.primaryNeon,
+    marginBottom: 24,
+    shadowColor: MATCH_COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 15, elevation: 5
   },
-  btnVoltar: { width: scale(40), height: scale(40), borderRadius: moderateScale(20), backgroundColor: "rgba(255,255,255,0.05)", justifyContent: "center", alignItems: "center" },
-  headerTitleBox: { alignItems: "center" },
-  headerTitle: { color: "#FFF", fontSize: moderateScale(16), fontWeight: "900", letterSpacing: 1 },
-  headerSubtitle: { color: "#FF6B00", fontSize: moderateScale(11), fontWeight: "bold", textTransform: "uppercase" },
+  heroTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+  heroObjective: { fontSize: 28, fontWeight: '900', color: MATCH_COLORS.textBase, marginBottom: 4, letterSpacing: -0.5 },
+  heroLevel: { fontSize: 14, color: MATCH_COLORS.primary, fontWeight: '800', letterSpacing: 0.5, marginTop: 2 },
   
-  scrollContent: { padding: scale(20), paddingBottom: verticalScale(80) },
-  sectionContainer: { marginBottom: verticalScale(25) },
-  sectionTitle: { color: "#FFF", fontSize: moderateScale(14), fontWeight: "900", letterSpacing: 0.5, marginBottom: verticalScale(15), textTransform: "uppercase" },
+  heroBadge: { backgroundColor: MATCH_COLORS.primaryDim, borderWidth: 1, borderColor: MATCH_COLORS.primaryNeon, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: 'row', alignItems: 'center' },
+  heroBadgeText: { color: MATCH_COLORS.primary, fontSize: 12, fontWeight: '900', marginLeft: 6, letterSpacing: 1 },
   
-  cardHoje: {
-    backgroundColor: "#111",
-    borderRadius: moderateScale(24),
-    padding: scale(24),
-    borderWidth: 1,
-    borderColor: "rgba(255, 107, 0, 0.4)",
-    shadowColor: "#FF6B00",
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
+  statBlock: { flex: 1 },
+  statValue: { fontSize: 22, fontWeight: '900', color: MATCH_COLORS.textBase },
+  statLabel: { fontSize: 11, color: MATCH_COLORS.textMuted, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '700' },
+  
+  progressBarContainer: { height: 6, backgroundColor: '#1A1A20', borderRadius: 3, overflow: 'hidden', marginBottom: 10 },
+  progressBarFill: { height: '100%', backgroundColor: MATCH_COLORS.primary, borderRadius: 3 },
+  progressDisclaimer: { fontSize: 12, color: MATCH_COLORS.textDim },
+
+  tabsContainer: { flexDirection: 'row', marginHorizontal: 20, backgroundColor: MATCH_COLORS.cardTransparent, borderRadius: 12, padding: 4, marginBottom: 30, borderWidth: 1, borderColor: MATCH_COLORS.cardBorder },
+  tabBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 8 },
+  tabBtnActive: { backgroundColor: MATCH_COLORS.primaryDim, borderWidth: 1, borderColor: MATCH_COLORS.primaryNeon },
+  tabText: { fontSize: 14, fontWeight: '800', color: MATCH_COLORS.textMuted },
+  tabTextActive: { color: MATCH_COLORS.primary },
+
+  sectionTitle: { fontSize: 12, fontWeight: '900', color: MATCH_COLORS.textMuted, letterSpacing: 1.5, marginLeft: 20, marginBottom: 16 },
+  listContainer: { paddingHorizontal: 20, gap: 16 },
+
+  weekCard: { backgroundColor: MATCH_COLORS.cardTransparent, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: MATCH_COLORS.cardBorder },
+  weekCardActive: { borderColor: MATCH_COLORS.primaryNeon, backgroundColor: MATCH_COLORS.primaryDim },
+  weekCardContent: { flexDirection: 'row', alignItems: 'center' },
+  weekIconBox: { width: 50, height: 50, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.03)', justifyContent: 'center', alignItems: 'center', marginRight: 16, borderWidth: 1, borderColor: MATCH_COLORS.cardBorder },
+  weekIconBoxActive: { backgroundColor: MATCH_COLORS.primaryDim, borderColor: MATCH_COLORS.primaryNeon, borderWidth: 1 },
+  weekInfoContainer: { flex: 1 },
+  
+  weekHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  weekTitle: { fontSize: 18, fontWeight: 'bold', color: MATCH_COLORS.textBase },
+  deloadBadge: { backgroundColor: MATCH_COLORS.primaryDim, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginLeft: 10, borderWidth: 1, borderColor: MATCH_COLORS.primaryNeon },
+  deloadText: { color: MATCH_COLORS.primary, fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+  weekMetaText: { fontSize: 12, color: MATCH_COLORS.textDim, fontWeight: '600', textTransform: 'uppercase' },
+  
+  dayCard: { 
+    backgroundColor: MATCH_COLORS.cardTransparent, 
+    borderRadius: 20, 
+    padding: 20, 
+    borderWidth: 1.5, 
+    borderColor: MATCH_COLORS.primaryNeon, 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    shadowColor: MATCH_COLORS.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-    elevation: 10,
-    overflow: "hidden",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3
   },
-  cardGradientBg: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-  cardHojeTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: verticalScale(20) },
-  badgeHoje: { backgroundColor: "#FF6B00", flexDirection: "row", alignItems: "center", paddingHorizontal: scale(10), paddingVertical: verticalScale(4), borderRadius: moderateScale(8) },
-  badgeHojeText: { color: "#FFF", fontSize: moderateScale(10), fontWeight: "900", letterSpacing: 1 },
-  statusPill: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.05)", paddingHorizontal: scale(8), paddingVertical: verticalScale(4), borderRadius: moderateScale(8) },
-  statusDotGreen: { width: scale(6), height: scale(6), borderRadius: scale(3), backgroundColor: "#00E676", marginRight: scale(6) },
-  statusPillText: { color: "#AAA", fontSize: moderateScale(10), fontWeight: "bold" },
+  dayCardCompleted: { borderColor: MATCH_COLORS.successNeon, backgroundColor: MATCH_COLORS.successDim },
   
-  cardTitleHoje: { color: "#FFF", fontSize: moderateScale(26), fontWeight: "900", marginBottom: verticalScale(4), letterSpacing: -0.5 },
-  cardObjetivoHoje: { color: "#888", fontSize: moderateScale(14), marginBottom: verticalScale(20) },
+  dayIconBox: { width: 56, height: 56, borderRadius: 18, backgroundColor: MATCH_COLORS.primaryDim, justifyContent: 'center', alignItems: 'center', marginRight: 16, borderWidth: 1, borderColor: MATCH_COLORS.primaryNeon },
+  dayIconBoxCompleted: { backgroundColor: MATCH_COLORS.successDim, borderColor: MATCH_COLORS.successNeon },
   
-  infoGridHoje: { flexDirection: "row", justifyContent: "space-between", marginBottom: verticalScale(25) },
-  infoRow: { flexDirection: "row", alignItems: "center", gap: scale(6) },
-  infoText: { color: "#FFF", fontSize: moderateScale(13), fontWeight: "bold" },
+  dayTitle: { fontSize: 18, fontWeight: '900', color: MATCH_COLORS.textBase, marginBottom: 4 },
+  dayObjective: { fontSize: 14, color: MATCH_COLORS.textMuted, marginBottom: 12 },
+  dayMetricsRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  dayMetricItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dayMetricText: { fontSize: 13, color: MATCH_COLORS.textMuted, fontWeight: '600' },
+
+  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, marginTop: 10 },
+  emptyTitle: { fontSize: 18, fontWeight: 'bold', color: MATCH_COLORS.textBase, marginTop: 20, marginBottom: 10 },
+  emptySubtitle: { fontSize: 14, color: MATCH_COLORS.textMuted, textAlign: 'center', lineHeight: 22 },
   
-  btnIniciarHoje: { backgroundColor: "#FF6B00", borderRadius: moderateScale(16), paddingVertical: verticalScale(16), flexDirection: "row", justifyContent: "center", alignItems: "center" },
-  btnIniciarHojeText: { color: "#000", fontSize: moderateScale(14), fontWeight: "900", letterSpacing: 1 },
-  
-  cardNormal: { backgroundColor: "#0A0A0A", borderRadius: moderateScale(20), padding: scale(20), marginBottom: verticalScale(15), borderWidth: 1, borderColor: "#1A1A1A" },
-  cardNormalTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: verticalScale(4) },
-  cardNormalTitle: { color: "#FFF", fontSize: moderateScale(18), fontWeight: "900" },
-  cardNormalObjetivo: { color: "#888", fontSize: moderateScale(12), marginBottom: verticalScale(15) },
-  
-  cardNormalStats: { flexDirection: "row", alignItems: "center", backgroundColor: "#111", borderRadius: moderateScale(12), padding: scale(12), marginBottom: verticalScale(15) },
-  statBox: { flex: 1, alignItems: "center" },
-  statValue: { color: "#FFF", fontSize: moderateScale(14), fontWeight: "900" },
-  statLabel: { color: "#666", fontSize: moderateScale(10), fontWeight: "bold", textTransform: "uppercase", marginTop: verticalScale(2) },
-  statDivider: { width: 1, height: "80%", backgroundColor: "#222" },
-  
-  cardNormalFooter: { borderTopWidth: 1, borderTopColor: "#1A1A1A", paddingTop: verticalScale(12), flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  footerLabel: { color: "#666", fontSize: moderateScale(12) },
-  footerValue: { color: "#FFF", fontWeight: "bold" },
+  notesContainer: { marginHorizontal: 20, backgroundColor: MATCH_COLORS.primaryDim, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: MATCH_COLORS.primaryNeon, marginBottom: 24 },
+  notesHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  notesTitle: { color: MATCH_COLORS.primary, fontWeight: '900', fontSize: 12, marginLeft: 8, letterSpacing: 1 },
+  notesText: { color: MATCH_COLORS.textBase, fontSize: 15, lineHeight: 24 },
 });

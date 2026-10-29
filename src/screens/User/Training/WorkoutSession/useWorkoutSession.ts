@@ -7,7 +7,6 @@ export function useWorkoutSession(navigation: any, route: any) {
 
   const [treinoInfo, setTreinoInfo] = useState({ id: "", nome: "Carregando..." });
   const [exercicios, setExercicios] = useState<any[]>([]);
-  const [indiceAtual, setIndiceAtual] = useState(0);
   const [progressoBarra, setProgressoBarra] = useState(0);
   const [observacaoTreinoGeral, setObservacaoTreinoGeral] = useState("");
   
@@ -22,85 +21,116 @@ export function useWorkoutSession(navigation: any, route: any) {
 
   const [modalDorVisivel, setModalDorVisivel] = useState(false);
   const [exercicioDorId, setExercicioDorId] = useState<string>("");
+  const [exercicioDorNome, setExercicioDorNome] = useState<string>("");
 
-  const abrirModalDor = (exId: string) => {
+  const abrirModalDor = (exId: string, exNome: string) => {
     setExercicioDorId(exId);
+    setExercicioDorNome(exNome);
     setModalDorVisivel(true);
   };
 
   const fecharModalDor = () => {
     setModalDorVisivel(false);
     setExercicioDorId("");
+    setExercicioDorNome("");
   };
 
   const handleDorRegistradaSucesso = () => {
     setSentiuDor(true);
-    fecharModalDor();
-    Alert.alert("Registrado", "O personal será notificado sobre esse desconforto para avaliar seu movimento.");
   };
 
   const buscarTreinoParaExecucao = async () => {
-    const { data: prescricao, error: errPrescricao } = await supabase
-      .from("treinos_prescritos")
-      .select(`
-        id, nome,
-        treinos_exercicios (
-          id, ordem, descanso_segundos, observacao_personal,
-          exercicios_dicionario (nome, grupo_muscular, midia_url),
-          treinos_series_prescritas (id, numero_serie, reps_alvo, carga_alvo)
-        )
-      `)
-      .eq("id", treinoId)
+    const { data: diaTreino, error: errDia } = await supabase
+      .from('workout_days')
+      .select(`id, name, planned_exercises (*)`)
+      .eq('id', treinoId)
       .single();
 
-    if (errPrescricao) throw errPrescricao;
+    if (errDia) throw errDia;
 
-    const { data: ultimaExecucao } = await supabase
-      .from("treinos_execucoes")
-      .select("dados_execucao")
-      .eq("treino_id", treinoId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const listaPlanejados = diaTreino.planned_exercises || [];
+    
+    const exerciseIds = listaPlanejados.map((pe: any) => pe.exercise_id).filter(Boolean);
+    const globalExerciseIds = listaPlanejados.map((pe: any) => pe.global_exercise_id).filter(Boolean);
 
-    return { prescricao, ultimaExecucao: ultimaExecucao?.dados_execucao || null };
+    let dicionario: any[] = [];
+    
+    if (exerciseIds.length > 0) {
+        const { data: exData } = await supabase.from('exercises').select('*').in('id', exerciseIds);
+        if (exData) dicionario = [...dicionario, ...exData];
+    }
+    
+    if (globalExerciseIds.length > 0) {
+        const { data: globalData } = await supabase.from('global_exercises').select('*').in('id', globalExerciseIds);
+        if (globalData) dicionario = [...dicionario, ...globalData];
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    let historicoUltimo = null;
+    if (user) {
+        const { data: ultimaExecucao } = await supabase
+          .from("treinos_execucoes")
+          .select("dados_execucao")
+          .eq("workout_day_id", treinoId)
+          .eq("student_id", user.id)
+          .order("data_inicio", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        historicoUltimo = ultimaExecucao?.dados_execucao || null;
+    }
+
+    return { diaTreino, dicionario, ultimaExecucao: historicoUltimo };
   };
 
-  const prepararTreino = ({ prescricao, ultimaExecucao }: any) => {
-    setTreinoInfo({ id: prescricao.id, nome: prescricao.nome });
+  const prepararTreino = ({ diaTreino, dicionario, ultimaExecucao }: any) => {
+    setTreinoInfo({ id: diaTreino.id, nome: diaTreino.name });
 
-    const exerciciosOrdenados = prescricao.treinos_exercicios.sort((a: any, b: any) => a.ordem - b.ordem);
+    const listaOriginal = diaTreino.planned_exercises || [];
     
-    const formatado = exerciciosOrdenados.map((ex: any) => {
-      const seriesOrdenadas = ex.treinos_series_prescritas.sort((a: any, b: any) => a.numero_serie - b.numero_serie);
+    const formatado = listaOriginal.map((ex: any) => {
+      const libData = dicionario.find((d: any) => d.id === ex.exercise_id || d.id === ex.global_exercise_id) || {};
+
+      const nomeOriginal = 
+        libData.name || libData.nome || libData.title || 
+        ex.exercise_name || ex.name || ex.nome || ex.title ||
+        "Exercício";
+
+      const mediaUrl = 
+        libData.gif_url || libData.video_url || libData.thumbnail_url || 
+        libData.media_url || libData.image_url || ex.custom_media_url || null;
+
+      const historicoExercicio = ultimaExecucao ? ultimaExecucao.find((he: any) => he.nome === nomeOriginal) : null;
       
-      const historicoExercicio = ultimaExecucao ? ultimaExecucao.find((he: any) => he.nome === ex.exercicios_dicionario?.nome) : null;
+      const numSeries = Number(ex.sets) || 0;
+      const arrayDeSeries = Array.from({ length: numSeries }).map((_, sIdx) => {
+          const cargaAnterior = historicoExercicio?.series?.[sIdx]?.carga_feita || null;
+
+          let valorTempo = "--";
+          if (ex.rest_seconds) valorTempo = String(ex.rest_seconds);
+          else if (ex.time_target) valorTempo = ex.time_target;
+          else if (ex.tempo) valorTempo = ex.tempo;
+
+          return {
+            id: `${ex.id}-serie-${sIdx + 1}`,
+            numero: sIdx + 1,
+            tempo_alvo: valorTempo, 
+            reps_alvo: ex.reps_target || "--",
+            carga_alvo: ex.weight_target || "--",
+            reps_feitas: ex.reps_target || "0", 
+            carga_feita: cargaAnterior ? cargaAnterior : (ex.weight_target || "0"), 
+            concluida: false
+          };
+      });
 
       return {
         id: ex.id,
-        nome: ex.exercicios_dicionario?.nome,
-        grupo_muscular: ex.exercicios_dicionario?.grupo_muscular,
-        imagem_url: ex.exercicios_dicionario?.midia_url,
-        descanso: ex.descanso_segundos || 60,
-        observacao_personal: ex.observacao_personal,
+        nome: nomeOriginal,
+        grupo_muscular: libData.muscle_group || ex.group_code || "Geral",
+        imagem_url: mediaUrl, 
+        descanso: ex.rest_seconds || 60,
+        observacao_personal: ex.public_note || null,
         observacao_aluno: "",
-        series: seriesOrdenadas.map((s: any, sIdx: number) => {
-          
-          const cargaAnterior = historicoExercicio?.series?.[sIdx]?.carga_feita || null;
-          const repsAnteriores = historicoExercicio?.series?.[sIdx]?.reps_feitas || null;
-
-          return {
-            id: s.id,
-            numero: s.numero_serie,
-            reps_alvo: s.reps_alvo,
-            carga_alvo: s.carga_alvo,
-            reps_feitas: s.reps_alvo, 
-            carga_feita: cargaAnterior ? cargaAnterior : s.carga_alvo, 
-            carga_historico: cargaAnterior, 
-            reps_historico: repsAnteriores,
-            concluida: false
-          };
-        })
+        series: arrayDeSeries
       };
     });
 
@@ -139,8 +169,6 @@ export function useWorkoutSession(navigation: any, route: any) {
 
   const pularDescanso = () => setEmDescanso(false);
   
-  const focarExercicio = (index: number) => setIndiceAtual(index);
-
   const cancelarTreino = () => {
     Alert.alert("Cancelar Treino", "Tem certeza que deseja sair? O progresso não será salvo.", [
       { text: "Continuar Treinando", style: "cancel" },
@@ -173,69 +201,18 @@ export function useWorkoutSession(navigation: any, route: any) {
     });
     
     setProgressoBarra((seriesConcluidas / seriesTotais) * 100);
-
-    const isUltimaSerieDoExercicio = sIndex === novaLista[exIndex].series.length - 1;
-    const isUltimoExercicio = exIndex === novaLista.length - 1;
-
-    if (isUltimaSerieDoExercicio && isUltimoExercicio) {
-      setMostrarFinalizacao(true);
-      return;
-    }
-
-    if (isUltimaSerieDoExercicio) {
-      setIndiceAtual(exIndex + 1);
-    }
-
     setTempoDescansoRestante(novaLista[exIndex].descanso);
     setEmDescanso(true);
   };
 
-  const finalizarTreinoNoBanco = async () => {
-    if (nivelEsforco === null || sentiuDor === null) {
-        return Alert.alert("Atenção", "Por favor, indique seu nível de esforço e se sentiu alguma dor antes de finalizar.");
-    }
-
-    try {
-      const jsonExecucao = exercicios.map(ex => ({
-          nome: ex.nome,
-          observacao_aluno: ex.observacao_aluno,
-          series: ex.series.map((s: any) => ({
-              numero: s.numero,
-              reps_feitas: s.reps_feitas,
-              carga_feita: s.carga_feita
-          }))
-      }));
-
-      const { error } = await supabase
-        .from('treinos_execucoes')
-        .insert([{
-          treino_id: treinoId,
-          data_inicio: dataInicio,
-          tempo_total_segundos: tempoTotalTreino,
-          esforco_rpe: nivelEsforco, 
-          sentiu_dor: sentiuDor, 
-          observacao_geral: observacaoTreinoGeral,
-          dados_execucao: jsonExecucao 
-        }]);
-
-      if (error) throw error;
-
-      navigation.replace("WorkoutCompletion", { tempoTotal: tempoTotalTreino, conexaoId, dor: sentiuDor });
-      
-    } catch (error) {
-      console.log("Erro ao salvar treino:", error);
-      Alert.alert("Erro", "Houve um problema ao salvar seu histórico, mas seu treino foi excelente!");
-      navigation.replace("WorkoutCompletion", { tempoTotal: tempoTotalTreino, conexaoId });
-    }
-  };
-
   return {
-    treinoInfo, exercicios, indiceAtual, progressoBarra,
+    conexaoId, 
+    treinoInfo, exercicios, progressoBarra,
     emDescanso, tempoDescansoRestante, tempoTotalTreino,
     observacaoTreinoGeral, setObservacaoTreinoGeral,
-    mostrarFinalizacao, nivelEsforco, setNivelEsforco, sentiuDor, setSentiuDor,
-    modalDorVisivel, exercicioDorId, abrirModalDor, fecharModalDor, handleDorRegistradaSucesso,
+    mostrarFinalizacao, setMostrarFinalizacao, nivelEsforco, setNivelEsforco, sentiuDor, setSentiuDor,
+    modalDorVisivel, exercicioDorId, exercicioDorNome, abrirModalDor, fecharModalDor, handleDorRegistradaSucesso,
     formatarTempo, atualizarExecucaoSerie, atualizarObservacaoAluno,
-    focarExercicio, concluirSerie, pularDescanso, cancelarTreino, finalizarTreinoNoBanco
+    concluirSerie, pularDescanso, cancelarTreino
   };
 }

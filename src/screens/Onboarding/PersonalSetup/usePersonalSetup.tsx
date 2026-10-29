@@ -92,7 +92,12 @@ export function usePersonalSetup(navigation: any) {
           if (data.bairro) setBairro(data.bairro);
           if (data.latitude) setLatitude(data.latitude);
           if (data.longitude) setLongitude(data.longitude);
-          if (data.genero) setGenero(data.genero);
+          
+          if (data.genero) {
+            if (data.genero === "homem") setGenero("Masculino");
+            else if (data.genero === "mulher") setGenero("Feminino");
+            else setGenero("Outro");
+          }
           
           if (data.turnos_disponiveis) setTurnos(data.turnos_disponiveis);
           if (data.status_agenda) setStatusAgenda(data.status_agenda);
@@ -176,8 +181,12 @@ export function usePersonalSetup(navigation: any) {
       setLongitude(location.coords.longitude);
       let reverse = await Location.reverseGeocodeAsync({ latitude: location.coords.latitude, longitude: location.coords.longitude });
       if (reverse && reverse.length > 0) {
-        setCidade(reverse[0].city || reverse[0].subregion || "");
-        setBairro(reverse[0].district || reverse[0].name || "");
+        const geo = reverse[0];
+        const novaCidade = geo.city || geo.subregion || cidade;
+        const novoBairro = geo.district || geo.name || bairro;
+        
+        if (novaCidade) setCidade(novaCidade);
+        if (novoBairro) setBairro(novoBairro);
       }
     } catch (error) {
       Alert.alert("Erro", "Falha no GPS.");
@@ -219,7 +228,7 @@ export function usePersonalSetup(navigation: any) {
 
   const handleSalvar = async () => {
     if (!cobranca || !acompanhamento || !autonomiaEsperada || valoresAluno.length === 0 || !estiloComunicacao) {
-      return Alert.alert("Atenção", "Preencha suas preferências de trabalho no último passo.");
+      return Alert.alert("Atenção", "Preencha suas preferências de Match no último passo.");
     }
     setLoading(true);
     try {
@@ -244,9 +253,14 @@ export function usePersonalSetup(navigation: any) {
         outroValorTexto: valoresAluno.includes("outro") ? outroValorTexto.trim() : null,
       };
 
+      let generoDB = "outro";
+      if (genero === "Masculino") generoDB = "homem";
+      if (genero === "Feminino") generoDB = "mulher";
+
       const { error } = await supabase.from("personals").upsert({
         id: user.id, email: user.email, nome: nome.trim(), cref: cref.trim().toUpperCase(), telefone: telefone.trim(),
-        cidade: cidade.trim(), bairro: bairro.trim(), latitude, longitude, tempo_experiencia: experiencia, genero,
+        cidade: cidade.trim(), bairro: bairro.trim(), latitude, longitude, tempo_experiencia: experiencia, 
+        genero: generoDB, 
         turnos_disponiveis: servicosOferecidos.includes("Presencial") ? turnos : [],
         status_agenda: statusAgenda, servicos_oferecidos: servicosOferecidos,
         preco_consultoria: servicosOferecidos.includes("Consultoria") ? precoConsultoria : null,

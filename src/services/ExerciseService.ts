@@ -33,17 +33,12 @@ export class ExerciseService {
 
       return { success: true, url: publicUrlData.publicUrl };
     } catch (error: any) {
-      console.error("Erro no upload:", error);
       return { success: false, error: error.message };
     }
   }
 
   static async updateExerciseMedia(exerciseId: string, mediaUrl: string) {
     try {
-      console.log(`\n--- INICIANDO UPDATE NO BANCO ---`);
-      console.log(`ID do Exercício Alvo: ${exerciseId}`);
-      console.log(`URL da Mídia enviada: ${mediaUrl}`);
-
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Usuário não autenticado.");
 
@@ -51,26 +46,42 @@ export class ExerciseService {
         .from('exercises')
         .update({ 
           video_url: mediaUrl, 
-          gif_url: mediaUrl,
-          personal_id: session.user.id
+          gif_url: mediaUrl
         })
         .eq('id', exerciseId)
+        .eq('personal_id', session.user.id)
         .select();
-
-      console.log(`RESPOSTA DO SUPABASE (Error):`, error);
-      console.log(`RESPOSTA DO SUPABASE (Data):`, data);
 
       if (error) throw new Error(error.message);
       
       if (!data || data.length === 0) {
-        console.log(`❌ ALERTA: O banco retornou vazio. A edição foi BLOQUEADA silenciosamente.`);
-        throw new Error("O banco bloqueou a edição (Provável erro de permissão RLS).");
+        let original = null;
+        
+        const { data: globalEx } = await supabase.from('global_exercises').select('*').eq('id', exerciseId).single();
+        if (globalEx) {
+            original = globalEx;
+        } else {
+            const { data: otherEx } = await supabase.from('exercises').select('*').eq('id', exerciseId).single();
+            if (otherEx) original = otherEx;
+        }
+
+        if (original) {
+            const { error: cloneError } = await supabase.from('exercises').insert({
+                name: original.name,
+                muscle_group: original.muscle_group || original.primaryMuscle,
+                equipment: original.equipment,
+                video_url: mediaUrl,
+                gif_url: mediaUrl,
+                personal_id: session.user.id
+            });
+            if (cloneError) throw cloneError;
+            return { success: true };
+        }
+        throw new Error("Erro de permissão ou exercício não encontrado.");
       }
 
-      console.log(`✅ SUCESSO: Exercício atualizado no banco!`);
       return { success: true };
     } catch (error: any) {
-      console.log(`🚨 ERRO NO UPDATE:`, error.message);
       return { success: false, error: error.message };
     }
   }
