@@ -28,7 +28,6 @@ export function useDashboard(navigation: any, conexaoId: string) {
   const [salvandoAvaliacao, setSalvandoAvaliacao] = useState(false);
   const [jaAvaliou, setJaAvaliou] = useState(false);
 
-
   const [financeiroInfo, setFinanceiroInfo] = useState({
     status: 'pendente' as 'em_dia' | 'pendente' | 'atrasado',
     valor: 'R$ 0,00',
@@ -52,8 +51,8 @@ export function useDashboard(navigation: any, conexaoId: string) {
       setPersonal(conexaoData.personals);
       setAluno(conexaoData.usuarios);
 
-      const dataInicio = new Date(conexaoData.atualizado_em || conexaoData.criado_em || Date.now());
       const hojeData = new Date();
+      const dataInicio = new Date(conexaoData.atualizado_em || conexaoData.criado_em || Date.now());
       const diffTime = Math.abs(hojeData.getTime() - dataInicio.getTime());
       const diasCorridos = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
       const diasLimitados = diasCorridos > 60 ? 60 : diasCorridos;
@@ -72,14 +71,13 @@ export function useDashboard(navigation: any, conexaoId: string) {
       const { data: programaTreino } = await supabase
         .from('training_programs')
         .select(`
-          id,
-          name,
-          general_observation,
+          id, name, general_observation,
+          training_weeks (
+             id, name, start_date, end_date,
+             workout_days ( id, name, order_index, objective, planned_exercises ( id ) )
+          ),
           workout_days (
-            id,
-            name,
-            order_index,
-            planned_exercises ( id )
+             id, name, order_index, objective, planned_exercises ( id )
           )
         `)
         .eq('student_id', user.id)
@@ -88,26 +86,18 @@ export function useDashboard(navigation: any, conexaoId: string) {
         .limit(1)
         .maybeSingle();
 
-      if (programaTreino?.general_observation) {
-        setRecadoPersonal(programaTreino.general_observation);
-      } else {
-        setRecadoPersonal(conexaoData.recado_evolucao || null);
-      }
+      setRecadoPersonal(programaTreino?.general_observation || conexaoData.recado_evolucao || null);
 
-      if (programaTreino && programaTreino.workout_days && programaTreino.workout_days.length > 0) {
-        const primeiroDia = programaTreino.workout_days.sort((a: any, b: any) => a.order_index - b.order_index)[0];
+      let treinosConcluidosGeral: any[] = [];
+      if (conexaoId) {
+        const { data: execucoesHistorico } = await supabase
+          .from('treinos_execucoes')
+          .select('treino_id, data_inicio')
+          .eq('conexao_id', conexaoId);
         
-        setTreinoHoje({
-           id: primeiroDia.id,
-           nome: primeiroDia.name,
-           qtd_exercicios: primeiroDia.planned_exercises?.length || 0,
-           duracao_estimada: `${Math.max(30, (primeiroDia.planned_exercises?.length || 0) * 8)} min`,
-           fez_hoje: false
-        });
-        setTemTreinosNaSemana(true); 
-      } else {
-        setTreinoHoje(null);
-        setTemTreinosNaSemana(false);
+        if (execucoesHistorico) {
+            treinosConcluidosGeral = execucoesHistorico;
+        }
       }
 
       const ultimos7Dias: Date[] = [];
@@ -115,18 +105,93 @@ export function useDashboard(navigation: any, conexaoId: string) {
         const d = new Date(); d.setDate(d.getDate() - i);
         ultimos7Dias.push(d);
       }
-      const todayStr = new Date().toISOString().split('T')[0];
+      
+      const todayStr = hojeData.toISOString().split('T')[0];
+
       const calendarioFormatado = ultimos7Dias.map(d => {
-        const dateStr = d.toISOString().split('T')[0];
+        const dataLocal = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
+        const dateStr = dataLocal.toISOString().split('T')[0];
+        
         const isToday = dateStr === todayStr;
         const diaStr = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+
+        const treinouNesteDia = treinosConcluidosGeral.some(exec => {
+           if (!exec.data_inicio) return false;
+           const dExec = new Date(exec.data_inicio);
+           const dExecLocal = new Date(dExec.getTime() - (dExec.getTimezoneOffset() * 60000));
+           const dataExecStr = dExecLocal.toISOString().split('T')[0];
+           
+           return dataExecStr === dateStr;
+        });
+
+        let statusDia = 'pendente';
+        if (treinouNesteDia) statusDia = 'concluido';
+        else if (isToday) statusDia = 'hoje';
+        else if (dateStr > todayStr) statusDia = 'futuro';
+
         return {
           dia: diaStr.charAt(0).toUpperCase() + diaStr.slice(1),
           data: d.getDate().toString().padStart(2, '0'),
-          status: (isToday ? 'hoje' : dateStr > todayStr ? 'futuro' : 'pendente') as any
+          status: statusDia as any
         };
       });
       setSemanaAtual(calendarioFormatado);
+
+      if (programaTreino) {
+        let semanasSource: any[] = programaTreino.training_weeks || [];
+        let diasLegados: any[] = programaTreino.workout_days || [];
+        
+        if (semanasSource.length === 0 && diasLegados.length > 0) {
+            semanasSource = [{ 
+                id: 'semana-legada', 
+                name: 'Sua Rotina', 
+                start_date: null,
+                end_date: null,
+                workout_days: diasLegados 
+            }];
+        }
+
+        if (semanasSource.length > 0) {
+            const semanasOrdenadas = [...semanasSource].sort((a: any, b: any) => {
+                if(a.start_date && b.start_date) return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+                return a.name.localeCompare(b.name);
+            });
+
+            let proximoTreino = null;
+
+            for (const week of semanasOrdenadas) {
+                const diasOrdenados = [...(week.workout_days || [])].sort((a: any, b: any) => a.order_index - b.order_index);
+                for (const dia of diasOrdenados) {
+                    const jaFez = treinosConcluidosGeral.some(exec => exec.treino_id === dia.id);
+                    if (!jaFez) { 
+                        proximoTreino = dia; 
+                        break; 
+                    }
+                }
+                if (proximoTreino) break;
+            }
+            
+            if (proximoTreino) {
+                setTreinoHoje({
+                   id: proximoTreino.id,
+                   nome: proximoTreino.name,
+                   qtd_exercicios: proximoTreino.planned_exercises?.length || 0,
+                   duracao_estimada: `${Math.max(30, (proximoTreino.planned_exercises?.length || 0) * 8)} min`,
+                   fez_hoje: false
+                });
+                setTemTreinosNaSemana(true); 
+            } else {
+                setTreinoHoje(null);
+                setTemTreinosNaSemana(treinosConcluidosGeral.length > 0);
+            }
+        } else {
+            setTreinoHoje(null);
+            setTemTreinosNaSemana(false);
+        }
+      } else {
+         setTreinoHoje(null);
+         setTemTreinosNaSemana(false);
+      }
 
       const { data: avalData } = await supabase
         .from("avaliacoes")
@@ -156,6 +221,13 @@ export function useDashboard(navigation: any, conexaoId: string) {
     const t = setTimeout(carregarInicial, 0);
     return () => { isMounted = false; clearTimeout(t); };
   }, [conexaoId]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+        fetchDados();
+    });
+    return unsubscribe;
+  }, [navigation, conexaoId]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

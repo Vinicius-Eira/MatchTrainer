@@ -57,7 +57,6 @@ export function WorkoutCompletion({ route, navigation }: any) {
             </View>
           </View>
 
-          {/* NOVA ÁREA DE FEEDBACK (MFIT STYLE) */}
           <View style={styles.feedbackSection}>
               <Text style={styles.sectionTitle}>Como foi o seu treino?</Text>
               <Text style={styles.sectionSubtitle}>Selecione a intensidade percebida</Text>

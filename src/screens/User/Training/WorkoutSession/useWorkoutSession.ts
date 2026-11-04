@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
-import { supabase } from "../../../../services/supabase";
+import { supabase } from "../../../../services/supabase"; 
 
 export function useWorkoutSession(navigation: any, route: any) {
   const { treinoId, conexaoId } = route.params || {};
@@ -37,6 +37,13 @@ export function useWorkoutSession(navigation: any, route: any) {
 
   const handleDorRegistradaSucesso = () => {
     setSentiuDor(true);
+    
+    const novaLista = [...exercicios];
+    const index = novaLista.findIndex(e => e.id === exercicioDorId);
+    if(index !== -1) {
+        novaLista[index].relato_dor = true;
+        setExercicios(novaLista);
+    }
   };
 
   const buscarTreinoParaExecucao = async () => {
@@ -65,26 +72,29 @@ export function useWorkoutSession(navigation: any, route: any) {
         if (globalData) dicionario = [...dicionario, ...globalData];
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    let historicoUltimo = null;
-    if (user) {
-        const { data: ultimaExecucao } = await supabase
+    let historicoDesteTreino: any = null;
+    
+    // 🔥 BUSCA USANDO A COLUNA CORRETA (conexao_id em vez de student_id)
+    if (conexaoId) {
+        const { data: execucaoAnterior } = await supabase
           .from("treinos_execucoes")
           .select("dados_execucao")
-          .eq("workout_day_id", treinoId)
-          .eq("student_id", user.id)
+          .eq("treino_id", treinoId) 
+          .eq("conexao_id", conexaoId) 
           .order("data_inicio", { ascending: false })
           .limit(1)
           .maybeSingle();
-        historicoUltimo = ultimaExecucao?.dados_execucao || null;
+        
+        if (execucaoAnterior) {
+            historicoDesteTreino = execucaoAnterior;
+        }
     }
 
-    return { diaTreino, dicionario, ultimaExecucao: historicoUltimo };
+    return { diaTreino, dicionario, historicoDesteTreino };
   };
 
-  const prepararTreino = ({ diaTreino, dicionario, ultimaExecucao }: any) => {
+  const prepararTreino = ({ diaTreino, dicionario, historicoDesteTreino }: any) => {
     setTreinoInfo({ id: diaTreino.id, nome: diaTreino.name });
-
     const listaOriginal = diaTreino.planned_exercises || [];
     
     const formatado = listaOriginal.map((ex: any) => {
@@ -92,19 +102,31 @@ export function useWorkoutSession(navigation: any, route: any) {
 
       const nomeOriginal = 
         libData.name || libData.nome || libData.title || 
-        ex.exercise_name || ex.name || ex.nome || ex.title ||
-        "Exercício";
+        ex.exercise_name || ex.name || ex.nome || ex.title || "Exercício";
 
       const mediaUrl = 
         libData.gif_url || libData.video_url || libData.thumbnail_url || 
         libData.media_url || libData.image_url || ex.custom_media_url || null;
 
-      const historicoExercicio = ultimaExecucao ? ultimaExecucao.find((he: any) => he.nome === nomeOriginal) : null;
+      let cargaFeita = ex.weight_target ? String(ex.weight_target) : "";
+      let observacaoAluno = "";
+      
+      // Resgata o histórico real do aluno
+      if (historicoDesteTreino && historicoDesteTreino.dados_execucao) {
+          const exercicioNoHistorico = historicoDesteTreino.dados_execucao.find((he: any) => he.nome === nomeOriginal);
+          if (exercicioNoHistorico) {
+              if (exercicioNoHistorico.series && exercicioNoHistorico.series.length > 0) {
+                  const c = exercicioNoHistorico.series[0].carga_feita;
+                  if (c && c !== "0" && c !== "") cargaFeita = String(c);
+              }
+              if (exercicioNoHistorico.observacao_aluno) {
+                  observacaoAluno = exercicioNoHistorico.observacao_aluno;
+              }
+          }
+      }
       
       const numSeries = Number(ex.sets) || 0;
       const arrayDeSeries = Array.from({ length: numSeries }).map((_, sIdx) => {
-          const cargaAnterior = historicoExercicio?.series?.[sIdx]?.carga_feita || null;
-
           let valorTempo = "--";
           if (ex.rest_seconds) valorTempo = String(ex.rest_seconds);
           else if (ex.time_target) valorTempo = ex.time_target;
@@ -115,9 +137,9 @@ export function useWorkoutSession(navigation: any, route: any) {
             numero: sIdx + 1,
             tempo_alvo: valorTempo, 
             reps_alvo: ex.reps_target || "--",
-            carga_alvo: ex.weight_target || "--",
+            carga_alvo: ex.weight_target || "", 
             reps_feitas: ex.reps_target || "0", 
-            carga_feita: cargaAnterior ? cargaAnterior : (ex.weight_target || "0"), 
+            carga_feita: cargaFeita, 
             concluida: false
           };
       });
@@ -129,7 +151,8 @@ export function useWorkoutSession(navigation: any, route: any) {
         imagem_url: mediaUrl, 
         descanso: ex.rest_seconds || 60,
         observacao_personal: ex.public_note || null,
-        observacao_aluno: "",
+        observacao_aluno: observacaoAluno, 
+        relato_dor: false,
         series: arrayDeSeries
       };
     });
@@ -213,6 +236,6 @@ export function useWorkoutSession(navigation: any, route: any) {
     mostrarFinalizacao, setMostrarFinalizacao, nivelEsforco, setNivelEsforco, sentiuDor, setSentiuDor,
     modalDorVisivel, exercicioDorId, exercicioDorNome, abrirModalDor, fecharModalDor, handleDorRegistradaSucesso,
     formatarTempo, atualizarExecucaoSerie, atualizarObservacaoAluno,
-    concluirSerie, pularDescanso, cancelarTreino
+    concluirSerie, pularDescanso, cancelarTreino, dataInicio
   };
 }

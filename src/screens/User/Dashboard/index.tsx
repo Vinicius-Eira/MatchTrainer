@@ -174,16 +174,24 @@ export function AlunoDashboard({ route, navigation }: any) {
           <Text style={styles.sectionTitle}>Sua Consistência</Text>
           <View style={styles.calendarRow}>
             {semanaAtual.map((dia, i) => {
+              const isConcluido = dia.status === 'concluido';
+              const isHoje = dia.status === 'hoje';
+
               return (
-                <View key={i} style={[styles.dayBox, dia.status === 'hoje' && styles.dayBoxHoje]}>
-                  <Text style={[styles.dayLabel, dia.status === 'hoje' && {color: '#FF6B00'}]}>{dia.dia}</Text>
-                  <Text style={[styles.dayDate, dia.status === 'hoje' && {color: '#FFF'}]}>{dia.data}</Text>
-                  {dia.status === 'concluido' ? (
-                    <View style={styles.statusDotConcluido}>
-                      <Ionicons name="checkmark" size={10} color="#000" />
+                <View key={i} style={[
+                  styles.dayBox, 
+                  isHoje && styles.dayBoxHoje,
+                  isConcluido && { borderColor: 'rgba(0, 230, 118, 0.4)', backgroundColor: 'rgba(0, 230, 118, 0.08)' }
+                ]}>
+                  <Text style={[styles.dayLabel, isHoje && {color: '#FF6B00'}, isConcluido && {color: '#00E676', fontWeight: 'bold'}]}>{dia.dia}</Text>
+                  <Text style={[styles.dayDate, isHoje && {color: '#FFF'}, isConcluido && {color: '#00E676', fontWeight: 'bold'}]}>{dia.data}</Text>
+                  
+                  {isConcluido ? (
+                    <View style={[styles.statusDot, { backgroundColor: '#00E676', shadowColor: '#00E676', shadowOpacity: 0.8, shadowRadius: 6, justifyContent: 'center', alignItems: 'center' }]}>
+                      <Ionicons name="checkmark-sharp" size={10} color="#000" />
                     </View>
                   ) : (
-                    <View style={[styles.statusDot, dia.status === 'hoje' ? {backgroundColor: '#FF6B00', shadowColor: '#FF6B00', shadowOpacity: 0.8, shadowRadius: 5} : {backgroundColor: 'transparent'}]} />
+                    <View style={[styles.statusDot, isHoje ? {backgroundColor: '#FF6B00', shadowColor: '#FF6B00', shadowOpacity: 0.8, shadowRadius: 5} : {backgroundColor: 'transparent'}]} />
                   )}
                 </View>
               );
@@ -240,7 +248,6 @@ export function AlunoDashboard({ route, navigation }: any) {
                   </View>
                   <Text style={styles.premiumWorkoutTitle}>{treinoHoje.nome || "Treino do Dia"}</Text>
                 </View>
-                {/* O Ícone de Play foi removido daqui! */}
               </View>
 
               <View style={styles.premiumWorkoutInfoRow}>
@@ -255,7 +262,6 @@ export function AlunoDashboard({ route, navigation }: any) {
                 </View>
               </View>
 
-              {/* Botão Vazado Neon */}
               <View style={styles.premiumBtnStartOutline}>
                 <Text style={styles.premiumBtnStartTextOutline}>INICIAR TREINO</Text>
                 <Ionicons name="arrow-forward" size={18} color="#FF6B00" style={{ marginLeft: 8 }} />
@@ -267,7 +273,7 @@ export function AlunoDashboard({ route, navigation }: any) {
                  <MaterialCommunityIcons name="sleep" size={32} color="#555" />
               </View>
               <Text style={styles.emptyWorkoutTitle}>Descanso ou Fim de Ciclo</Text>
-              <Text style={styles.emptyWorkoutDesc}>Nenhum treino programado para hoje. Aguarde seu personal atualizar a ficha.</Text>
+              <Text style={styles.emptyWorkoutDesc}>Você não tem treinos pendentes para hoje.</Text>
             </View>
           )}
 
