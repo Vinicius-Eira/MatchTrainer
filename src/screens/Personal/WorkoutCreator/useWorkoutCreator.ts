@@ -64,9 +64,9 @@ export function useWorkoutCreator(navigation: any, route: any) {
         if (data) {
           let mappedWeeks = [];
           if (data.training_weeks && data.training_weeks.length > 0) {
-              mappedWeeks = data.training_weeks.map((week: any) => ({ id: week.id, name: week.name, generalObservation: week.general_notes || '', days: (week.workout_days || []).map((day: any) => mapDayFromDB(day)) }));
+              mappedWeeks = data.training_weeks.map((week: any) => ({ id: week.id, name: week.name, start_date: week.start_date, end_date: week.end_date, generalObservation: week.general_notes || '', days: (week.workout_days || []).map((day: any) => mapDayFromDB(day)) }));
           } else if (data.workout_days) {
-              mappedWeeks = [{ id: `week_${Date.now()}`, name: 'Semana 1', generalObservation: data.general_observation || '', days: data.workout_days.map((day: any) => mapDayFromDB(day)) }];
+              mappedWeeks = [{ id: `week_${Date.now()}`, name: 'Semana 1', start_date: null, end_date: null, generalObservation: data.general_observation || '', days: data.workout_days.map((day: any) => mapDayFromDB(day)) }];
           }
           store.hydrateWorkout(data.name, data.objective, mappedWeeks, data.id);
         }
@@ -101,6 +101,8 @@ export function useWorkoutCreator(navigation: any, route: any) {
             mappedWeeks = data.training_weeks.map((week: any, wIndex: number) => ({ 
                 id: `imp_w_${Date.now()}_${wIndex}`, 
                 name: week.name, 
+                start_date: null,
+                end_date: null,
                 generalObservation: week.general_notes || '', 
                 days: (week.workout_days || []).map((day: any, dIndex: number) => {
                     const d = mapDayFromDB(day);
@@ -113,6 +115,8 @@ export function useWorkoutCreator(navigation: any, route: any) {
             mappedWeeks = [{ 
                 id: `week_${Date.now()}`, 
                 name: 'Semana 1', 
+                start_date: null,
+                end_date: null,
                 generalObservation: data.general_observation || '', 
                 days: data.workout_days.map((day: any, dIndex: number) => {
                     const d = mapDayFromDB(day);
@@ -234,71 +238,94 @@ Retorne APENAS o JSON válido, sem crases, sem formatação markdown:
     if (!isPresetMode && !studentId) { Alert.alert('Erro', 'O ID do aluno não foi encontrado.'); return; }
     
     setIsPublishing(true);
-    const cleanedWeeks = store.weeks.map(week => ({
-      ...week,
-      days: week.days.map(day => ({
-        ...day,
-        exercises: day.exercises.map(ex => ({
-          ...ex,
-          exercise_id: ex.exercise_id || null,
-          global_exercise_id: ex.global_exercise_id || null
-        }))
-      }))
-    }));
 
-    const result = await WorkoutService.publishWorkout(isPresetMode ? null : studentId, store.programName, store.objective, cleanedWeeks, store.programId, isPresetMode);
+    const dataInicialBase = new Date();
+
+    const cleanedWeeks = store.weeks.map((week, index) => {
+      let finalStart = week.start_date;
+      let finalEnd = week.end_date;
+
+      if (!finalStart || !finalEnd) {
+          const startDate = new Date(dataInicialBase);
+          startDate.setDate(startDate.getDate() + (index * 7));
+          
+          const endDate = new Date(startDate);
+          endDate.setDate(endDate.getDate() + 6); 
+
+          finalStart = startDate.toISOString().split('T')[0];
+          finalEnd = endDate.toISOString().split('T')[0];
+      }
+
+      return {
+        ...week,
+        start_date: finalStart,
+        end_date: finalEnd,
+        days: week.days.map(day => ({
+          ...day,
+          exercises: day.exercises.map(ex => ({
+            ...ex,
+            exercise_id: ex.exercise_id || undefined,
+            global_exercise_id: ex.global_exercise_id || undefined,
+            public_note: ex.public_note || undefined,
+            private_note: ex.private_note || undefined
+          }))
+        }))
+      };
+    });
+
+    const result = await WorkoutService.publishWorkout(isPresetMode ? null : studentId, store.programName, store.objective, cleanedWeeks as any, store.programId, isPresetMode);
     setIsPublishing(false);
     
     if (result.success) { store.reset(); setShowSuccessModal(true); } else { Alert.alert('Erro ao Salvar', result.error); }
   };
 
-      const handleArchiveWorkout = () => {
-    Alert.alert(
-      "Arquivar Ficha",
-      "Deseja arquivar esta ficha? Ela deixará de aparecer nos treinos ativos e irá para o histórico do aluno.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Arquivar", onPress: async () => {
-            setIsLoading(true);
-            const { error } = await supabase
-              .from('training_programs')
-              .update({ is_active: false }) 
-              .eq('id', programIdToEdit);
-            setIsLoading(false);
-            
-            if (error) Alert.alert("Erro", "Não foi possível arquivar.");
-            else {
-              Alert.alert("Sucesso", "Ficha movida para o histórico.");
-              navigation.goBack();
-            }
-        }}
-      ]
-    );
-  };
+    const handleArchiveWorkout = () => {
+    Alert.alert(
+      "Arquivar Ficha",
+      "Deseja arquivar esta ficha? Ela deixará de aparecer nos treinos ativos e irá para o histórico do aluno.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Arquivar", onPress: async () => {
+            setIsLoading(true);
+            const { error } = await supabase
+              .from('training_programs')
+              .update({ is_active: false }) 
+              .eq('id', programIdToEdit);
+            setIsLoading(false);
+            
+            if (error) Alert.alert("Erro", "Não foi possível arquivar.");
+            else {
+              Alert.alert("Sucesso", "Ficha movida para o histórico.");
+     navigation.goBack();
+            }
+        }}
+      ]
+    );
+  };
 
-  const handleDeleteWorkout = () => {
-    Alert.alert(
-      "Excluir Permanentemente",
-      "Esta ação apagará a ficha do banco de dados definitivamente. Deseja continuar?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Excluir", style: "destructive", onPress: async () => {
-            setIsLoading(true);
-            const { error } = await supabase
-              .from('training_programs') 
-              .delete()
-              .eq('id', programIdToEdit);
-            setIsLoading(false);
-            
-            if (error) Alert.alert("Erro", "Não foi possível excluir.");
-            else {
-              Alert.alert("Sucesso", "Ficha excluída com sucesso.");
-              navigation.goBack();
-            }
-        }}
-      ]
-    );
-  };
+  const handleDeleteWorkout = () => {
+    Alert.alert(
+      "Excluir Permanentemente",
+      "Esta ação apagará a ficha do banco de dados definitivamente. Deseja continuar?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Excluir", style: "destructive", onPress: async () => {
+            setIsLoading(true);
+            const { error } = await supabase
+              .from('training_programs') 
+              .delete()
+              .eq('id', programIdToEdit);
+            setIsLoading(false);
+            
+            if (error) Alert.alert("Erro", "Não foi possível excluir.");
+            else {
+              Alert.alert("Sucesso", "Ficha excluída com sucesso.");
+              navigation.goBack();
+            }
+        }}
+      ]
+    );
+  };
 
   return { 
     store, isPresetMode, programIdToEdit, isLoading, isPublishing, 

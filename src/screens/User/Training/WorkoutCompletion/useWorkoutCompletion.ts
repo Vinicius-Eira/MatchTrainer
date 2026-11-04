@@ -3,12 +3,11 @@ import { Alert } from "react-native";
 import { supabase } from "../../../../services/supabase"; 
 
 export function useFinalizacaoTreino(navigation: any, route: any) {
-  const { tempoTotal = 0, conexaoId, treinoId, exercicios = [] } = route.params || {};
+  const { tempoTotal = 0, conexaoId, treinoId, exercicios = [], dataInicio, sentiuDor } = route.params || {};
 
   const [treinoNome, setTreinoNome] = useState("Carregando...");
   const [salvando, setSalvando] = useState(false);
   
-  // NOVOS ESTADOS PARA O FEEDBACK
   const [intensidade, setIntensidade] = useState<string | null>(null);
   const [feedback, setFeedback] = useState("");
 
@@ -22,7 +21,7 @@ export function useFinalizacaoTreino(navigation: any, route: any) {
         const carga = Number(serie.carga_feita) || 0;
         volumeCalculado += reps * carga;
 
-        if (carga > Number(serie.carga_alvo)) {
+        if (carga > Number(serie.carga_alvo || 0)) {
           prsCalculados += 1;
         }
       }
@@ -49,34 +48,47 @@ export function useFinalizacaoTreino(navigation: any, route: any) {
   }, [treinoId]);
 
   const finalizarESalvar = async () => {
-    // Obriga o aluno a escolher a intensidade
     if (!intensidade) {
         Alert.alert("Quase lá!", "Por favor, selecione como foi a intensidade do seu treino antes de finalizar.");
         return;
     }
 
+    if (!conexaoId) {
+        Alert.alert("Erro", "ID de conexão ausente. Não é possível salvar o treino.");
+        return;
+    }
+
+    // 🔥 CONVERSÃO PARA O BANCO (INT4): O Supabase só aceita número nessa coluna!
+    const mapaIntensidade: any = {
+        "Leve": 1,
+        "Moderado": 2,
+        "Intenso": 3,
+        "Máximo": 4
+    };
+    const rpeValorBanco = mapaIntensidade[intensidade] || 2; // Default 2 se der erro
+
     setSalvando(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-         await supabase.from('treinos_execucoes').insert([{
-           workout_day_id: treinoId,
-           student_id: user.id,
-           duracao_segundos: tempoTotal,
-           volume_total: volumeCalculado,
-           dados_execucao: exercicios,
-           nivel_esforco: intensidade, // Enviando a intensidade
-           observacoes: feedback,      // Enviando o comentário
-           data_inicio: new Date().toISOString()
-         }]);
-      }
+        // Envia para o banco 100% alinhado com as colunas reais da sua imagem
+        const { error } = await supabase.from('treinos_execucoes').insert([{
+          conexao_id: conexaoId,
+          treino_id: treinoId,
+          tempo_total_segundos: tempoTotal,
+          volume_total_kg: volumeCalculado,
+          dados_execucao: exercicios,
+          esforco_rpe: rpeValorBanco, // Agora envia o NÚMERO em vez do TEXTO
+          sentiu_dor: sentiuDor || false,
+          observacao_geral: feedback,
+          data_inicio: dataInicio || new Date().toISOString(),
+          data_fim: new Date().toISOString()
+        }]);
+        
+        if (error) throw error; 
       
-      // Salva e volta para a Home
       navigation.popToTop(); 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro ao finalizar treino:", err);
-      Alert.alert("Erro", "Não foi possível sincronizar o treino. Tente novamente.");
+      Alert.alert("Erro ao Salvar", err.message || "O banco de dados recusou o salvamento. Tente novamente.");
       setSalvando(false);
     }
   };

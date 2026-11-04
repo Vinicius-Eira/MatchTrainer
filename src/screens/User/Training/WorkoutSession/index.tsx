@@ -6,7 +6,6 @@ import { styles } from "./styles";
 import { useWorkoutSession } from "./useWorkoutSession";
 
 import { PainModal } from '../../../../components/training/PainModal';
-import { RestTimer } from '../../../../components/training/RestTimer';
 import { FinishWorkoutModal } from '../../../../components/training/FinishWorkoutModal';
 
 export function WorkoutSession({ route, navigation }: any) {
@@ -146,11 +145,12 @@ export function WorkoutSession({ route, navigation }: any) {
                       </View>
                     ) : null}
 
+                    {/* CABEÇALHO LIMPO (Sem a "Carga Alvo") */}
                     <View style={styles.seriesHeaderTitles}>
                       <Text style={styles.seriesHeaderLabelTitle}>SÉRIE</Text>
-                      <Text style={styles.seriesHeaderLabelCenter}>TEMPO</Text>
+                      <Text style={styles.seriesHeaderLabelCenter}>DESCANSO</Text>
                       <Text style={styles.seriesHeaderLabelCenter}>REPS</Text>
-                      <Text style={styles.seriesHeaderLabelCenter}>CARGA (KG)</Text>
+                      <Text style={styles.seriesHeaderLabelCenter}>CARGA</Text>
                       <Text style={styles.seriesHeaderLabelCheck}>FEITO</Text>
                     </View>
 
@@ -179,7 +179,7 @@ export function WorkoutSession({ route, navigation }: any) {
                               value={String(serie.carga_feita)}
                               onChangeText={(v) => atualizarExecucaoSerie(index, sIndex, 'carga_feita', v)}
                               editable={isAtiva}
-                              placeholder="0"
+                              placeholder="kg"
                               placeholderTextColor="#444"
                             />
                           </View>
@@ -203,7 +203,7 @@ export function WorkoutSession({ route, navigation }: any) {
                       <Text style={styles.alunoAcoesTitle}>Detalhes da Execução (Opcional)</Text>
                       <TextInput
                         style={styles.alunoObsInput}
-                        placeholder="Ex: Tive dificuldade na última série..."
+                        placeholder="Deixe um comentário sobre esse exercício..."
                         placeholderTextColor="#555"
                         value={ex.observacao_aluno}
                         onChangeText={(v) => atualizarObservacaoAluno(index, v)}
@@ -236,7 +236,7 @@ export function WorkoutSession({ route, navigation }: any) {
                 tempoTotal: tempoTotalTreino, 
                 conexaoId: conexaoId, 
                 treinoId: treinoInfo.id, 
-                exercicios: exercicios 
+                exercicios: exercicios, 
               });
             }} 
             activeOpacity={0.7}
@@ -277,15 +277,6 @@ export function WorkoutSession({ route, navigation }: any) {
         session_exercise_id={exercicioDorId} exercicioNome={exercicioDorNome} onSaveSuccess={handleDorRegistradaSucesso}
       />
 
-      <FinishWorkoutModal
-        isVisible={mostrarFinalizacao}
-        onClose={() => {
-          setMostrarFinalizacao(false);
-          setTimeout(() => { navigation.replace("WorkoutCompletion", { tempoTotal: tempoTotalTreino, conexaoId, treinoId: treinoInfo.id, exercicios }); }, 400);
-        }}
-        session_id={treinoInfo.id} stats={getStats()}
-      />
-
     </SafeAreaView>
   );
-}
+};

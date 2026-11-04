@@ -31,6 +31,8 @@ export interface DraftDay {
 export interface DraftWeek {
   id: string;
   name: string;
+  start_date?: string | null; 
+  end_date?: string | null;
   generalObservation: string;
   days: DraftDay[];
 }
