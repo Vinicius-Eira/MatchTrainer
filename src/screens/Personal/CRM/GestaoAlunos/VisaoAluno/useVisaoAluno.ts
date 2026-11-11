@@ -26,13 +26,13 @@ const MAP_FREQUENCIA: Record<string, string> = {
 export function useVisaoAluno(route: any, navigation: any) {
   const { conexaoId, aluno, statusAtual } = route.params;
   const [status, setStatus] = useState<string>(statusAtual);
-  
+
   const [activeTab, setActiveTab] = useState<string>("visao_geral"); 
-  
+
   const [isFetchingData, setIsFetchingData] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  
+
   const [alunoSolicitouSaida, setAlunoSolicitouSaida] = useState<boolean>(false);
   const [dataInicioParceria, setDataInicioParceria] = useState<string | null>(null);
   const [planoAtivo, setPlanoAtivo] = useState<any>(null);
@@ -42,63 +42,38 @@ export function useVisaoAluno(route: any, navigation: any) {
   const [adesao, setAdesao] = useState<any[]>([]);
   const [totalTreinos, setTotalTreinos] = useState<number>(0);
   const [ultimosLogs, setUltimosLogs] = useState<any[]>([]);
+  const [alertaTreino, setAlertaTreino] = useState<string | null>(null);
+
+  const [dadosBio, setDadosBio] = useState<any>(null);
 
   let prefs: any = {};
   try {
-    prefs =
-      typeof aluno.preferencias === "string"
-        ? JSON.parse(aluno.preferencias)
-        : aluno.preferencias || {};
+    prefs = typeof aluno.preferencias === "string" ? JSON.parse(aluno.preferencias) : aluno.preferencias || {};
   } catch (e) {}
 
   const carregarDadosAluno = async (pularLoading = false) => {
-    if (!pularLoading) {
-      setIsFetchingData(true);
-    }
-    
+    if (!pularLoading) setIsFetchingData(true);
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
-      const [planoRes, anamneseRes, msgsRes, conexaoRes] = await Promise.all([
-        supabase
-          .from("planos")
-          .select("*")
-          .eq("conexao_id", conexaoId)
-          .in("status", ["ativo", "aguardando_assinatura", "pendente"])
-          .maybeSingle(),
-        supabase
-          .from("anamneses")
-          .select("*")
-          .eq("usuario_id", aluno.id)
-          .eq("personal_id", session.user.id)
-          .order('criado_em', { ascending: false })
-          .limit(1)
-          .maybeSingle(), 
-        supabase
-          .from("mensagens")
-          .select("conteudo")
-          .eq("conexao_id", conexaoId)
-          .eq("tipo_remetente", "aluno")
-          .like("conteudo", "%solicitar o encerramento%"),
-        supabase
-          .from("conexoes")
-          .select("confirmado_em, atualizado_em, criado_em, status")
-          .eq("id", conexaoId)
-          .maybeSingle()
+      const [planoRes, anamneseRes, msgsRes, conexaoRes, bioRes] = await Promise.all([
+        supabase.from("planos").select("*").eq("conexao_id", conexaoId).in("status", ["ativo", "aguardando_assinatura", "pendente"]).maybeSingle(),
+        supabase.from("anamneses").select("*").eq("usuario_id", aluno.id).eq("personal_id", session.user.id).order('criado_em', { ascending: false }).limit(1).maybeSingle(), 
+        supabase.from("mensagens").select("conteudo").eq("conexao_id", conexaoId).eq("tipo_remetente", "aluno").like("conteudo", "%solicitar o encerramento%"),
+        supabase.from("conexoes").select("confirmado_em, atualizado_em, criado_em, status").eq("id", conexaoId).maybeSingle(),
+        supabase.from("aluno_evolucao").select("*").eq("conexao_id", conexaoId).order('data_registro', { ascending: false }).limit(1).maybeSingle()
       ]);
 
       if (planoRes.data) setPlanoAtivo(planoRes.data);
       if (anamneseRes.data) setAnamnese(anamneseRes.data);
       if (msgsRes.data && msgsRes.data.length > 0) setAlunoSolicitouSaida(true);
-      
+      if (bioRes.data) setDadosBio(bioRes.data);
+
       if (conexaoRes.data) {
-        setDataInicioParceria(
-          conexaoRes.data.confirmado_em || conexaoRes.data.atualizado_em || conexaoRes.data.criado_em
-        );
-        if (conexaoRes.data.status !== status) {
-          setStatus(conexaoRes.data.status);
-        }
+        setDataInicioParceria(conexaoRes.data.confirmado_em || conexaoRes.data.atualizado_em || conexaoRes.data.criado_em);
+        if (conexaoRes.data.status !== status) setStatus(conexaoRes.data.status);
       }
 
       await calcularMetricasEvolucao();
@@ -112,22 +87,12 @@ export function useVisaoAluno(route: any, navigation: any) {
 
   const calcularMetricasEvolucao = async () => {
     try {
-      const { data: treinosPrescritos } = await supabase
-        .from('treinos_prescritos')
-        .select('id, nome')
-        .eq('conexao_id', conexaoId);
-
-      if (!treinosPrescritos || treinosPrescritos.length === 0) {
-        setTotalTreinos(0); setStreak(0); setAdesao([]); setUltimosLogs([]);
-        return;
-      }
-
-      const idsTreinos = treinosPrescritos.map(t => t.id);
+      const { data: workoutDaysData } = await supabase.from('workout_days').select('id, name');
 
       const { data: execucoes } = await supabase
         .from("treinos_execucoes")
-        .select("id, treino_id, data_inicio, sentiu_dor, esforco_rpe, duracao_segundos, dados_execucao")
-        .in("treino_id", idsTreinos)
+        .select("id, treino_id, data_inicio, sentiu_dor, esforco_rpe, tempo_total_segundos, volume_total_kg, dados_execucao")
+        .eq("conexao_id", conexaoId) 
         .order("data_inicio", { ascending: false });
 
       if (execucoes && execucoes.length > 0) {
@@ -136,9 +101,20 @@ export function useVisaoAluno(route: any, navigation: any) {
         const dataHoje = new Date();
         const trintaDiasAtras = new Date();
         trintaDiasAtras.setDate(dataHoje.getDate() - 30);
-        
+
         const sessoesRecentes = execucoes.filter(s => new Date(s.data_inicio) >= trintaDiasAtras);
         setStreak(sessoesRecentes.length); 
+        
+        let alertaAtivo = null;
+        for (const exec of execucoes.slice(0, 5)) {
+           if (exec.sentiu_dor) {
+               const dataFmt = new Date(exec.data_inicio).toLocaleDateString('pt-BR');
+               const nomeTreino = workoutDaysData?.find((wd: any) => wd.id === exec.treino_id)?.name || "Treino";
+               alertaAtivo = `O aluno relatou dor/desconforto na execução do ${nomeTreino} no dia ${dataFmt}.`;
+               break; 
+           }
+        }
+        setAlertaTreino(alertaAtivo);
 
         const adesaoMap: any = {};
         execucoes.forEach(s => {
@@ -150,7 +126,7 @@ export function useVisaoAluno(route: any, navigation: any) {
         const adesaoArray = Object.keys(adesaoMap).map(treinoId => {
           const qtd = adesaoMap[treinoId];
           const percentual = Math.round((qtd / execucoes.length) * 100);
-          const nomeTreino = treinosPrescritos.find(t => t.id === treinoId)?.nome || `Treino`;
+          const nomeTreino = workoutDaysData?.find((wd: any) => wd.id === treinoId)?.name || `Treino Antigo`;
           return {
             workout_id: treinoId,
             nome: nomeTreino, 
@@ -164,11 +140,12 @@ export function useVisaoAluno(route: any, navigation: any) {
         const formatarKGs = (pesoTotal: number) => pesoTotal.toLocaleString('pt-BR');
 
         const logsFormatados = execucoes.slice(0, 10).map(exec => {
-            const nomeTreino = treinosPrescritos.find(t => t.id === exec.treino_id)?.nome || "Treino";
-            const mins = Math.floor((exec.duracao_segundos || 0) / 60);
+            const nomeTreino = workoutDaysData?.find((wd: any) => wd.id === exec.treino_id)?.name || "Treino Concluído";
+            const duracaoSecs = exec.tempo_total_segundos || 0;
+            const mins = Math.floor(duracaoSecs / 60);
 
-            let volumeDoTreino = 0;
-            if (exec.dados_execucao && Array.isArray(exec.dados_execucao)) {
+            let volumeDoTreino = exec.volume_total_kg || 0;
+            if (volumeDoTreino === 0 && exec.dados_execucao && Array.isArray(exec.dados_execucao)) {
                 exec.dados_execucao.forEach((ex: any) => {
                     if (ex.series && Array.isArray(ex.series)) {
                         ex.series.forEach((s: any) => {
@@ -194,7 +171,7 @@ export function useVisaoAluno(route: any, navigation: any) {
         setUltimosLogs(logsFormatados);
 
       } else {
-        setTotalTreinos(0); setStreak(0); setAdesao([]); setUltimosLogs([]);
+        setTotalTreinos(0); setStreak(0); setAdesao([]); setUltimosLogs([]); setAlertaTreino(null);
       }
     } catch (error) {
       console.log("Erro ao buscar evolução:", error);
@@ -203,9 +180,7 @@ export function useVisaoAluno(route: any, navigation: any) {
 
   useEffect(() => {
     let isMounted = true;
-    Promise.resolve().then(() => {
-      if (isMounted) carregarDadosAluno(true);
-    });
+    Promise.resolve().then(() => { if (isMounted) carregarDadosAluno(true); });
     return () => { isMounted = false; };
   }, [conexaoId]);
 
@@ -229,11 +204,7 @@ export function useVisaoAluno(route: any, navigation: any) {
   };
 
   const irParaNovoContrato = () => {
-    navigation.navigate("AdicionarAluno", {
-      leadInjetado: aluno, 
-      conexaoId: conexaoId,
-      planoAtivo: planoAtivo 
-    });
+    navigation.navigate("AdicionarAluno", { leadInjetado: aluno, conexaoId: conexaoId, planoAtivo: planoAtivo });
   };
 
   const atualizarStatusBasico = async (novoStatus: string) => {
@@ -246,18 +217,12 @@ export function useVisaoAluno(route: any, navigation: any) {
       if (novoStatus === "inativo") {
         if (planoAtivo) {
           await supabase.from("planos").update({ status: "cancelado" }).eq("id", planoAtivo.id);
-          await supabase.from("historico_financeiro_logs").insert([
-            {
-              personal_id: session?.user.id,
-              aluno_id: aluno.id,
-              referencia_id: planoAtivo.id,
-              tipo_evento: "CONTRATO_CANCELADO",
-              descricao: `Contrato encerrado e parceria movida para inativos.`,
-              metadados: { acao: "cancelamento" },
-            },
-          ]);
+          await supabase.from("historico_financeiro_logs").insert([{
+              personal_id: session?.user.id, aluno_id: aluno.id, referencia_id: planoAtivo.id,
+              tipo_evento: "CONTRATO_CANCELADO", descricao: `Contrato encerrado e parceria movida para inativos.`, metadados: { acao: "cancelamento" },
+          }]);
         }
-        Alert.alert("Ciclo Encerrado", "O aluno foi movido para os inativos e as cobranças futuras foram canceladas.");
+        Alert.alert("Ciclo Encerrado", "O aluno foi movido para inativos.");
         navigation.goBack();
       } else if (novoStatus === "recusado") {
         navigation.goBack();
@@ -271,36 +236,16 @@ export function useVisaoAluno(route: any, navigation: any) {
 
   const handlePersonalEncerraParceria = () => {
     const dataInicio = new Date(dataInicioParceria || Date.now());
-    const hoje = new Date();
-    const diffDays = Math.floor(Math.abs(hoje.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24));
-
+    const diffDays = Math.floor(Math.abs(new Date().getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24));
     let msg = "Tem certeza que deseja encerrar o contrato e pausar as cobranças?\n\nO aluno irá para o seu arquivo de inativos.";
-    if (diffDays <= 7) msg = "Este contrato foi iniciado há menos de 7 dias (Período de Adaptação).\n\nDeseja encerrar e cancelar as cobranças?";
-    else if (diffDays < 30) msg = "Atenção: O aluno não completou o primeiro ciclo de 30 dias.\n\nTem certeza que deseja forçar o cancelamento do contrato agora?";
-
+    if (diffDays <= 7) msg = "Este contrato foi iniciado há menos de 7 dias.\nDeseja encerrar?";
     Alert.alert("Encerrar Parceria", msg, [
       { text: "Cancelar", style: "cancel" },
       { text: "Sim, Encerrar", style: "destructive", onPress: () => atualizarStatusBasico("inativo") },
     ]);
   };
 
-  const abrirChat = () =>
-    navigation.navigate("Chat", {
-      conexaoId,
-      nomeOutro: aluno.nome,
-      fotoOutro: aluno.foto_url,
-      tipoUsuarioLogado: "personal",
-    });
-
-  const calcularIdade = (d: string) => {
-    if (!d) return "--";
-    const n = new Date(d.includes("/") ? `${d.split("/")[2]}-${d.split("/")[1]}-${d.split("/")[0]}` : d);
-    const h = new Date();
-    let i = h.getFullYear() - n.getFullYear();
-    const m = h.getMonth() - n.getMonth();
-    if (m < 0 || (m === 0 && h.getDate() < n.getDate())) i--;
-    return isNaN(i) ? "--" : i.toString();
-  };
+  const abrirChat = () => navigation.navigate("Chat", { conexaoId, nomeOutro: aluno.nome, fotoOutro: aluno.foto_url, tipoUsuarioLogado: "personal" });
 
   const calcularIMC = (p: string | number, a: string | number) => {
     if (!p || !a) return null;
@@ -314,82 +259,41 @@ export function useVisaoAluno(route: any, navigation: any) {
     return { valor: imc.toFixed(1), classificacao: c, cor };
   };
 
+  const calcularIdade = (d: string) => {
+    if (!d) return "--";
+    const n = new Date(d.includes("/") ? `${d.split("/")[2]}-${d.split("/")[1]}-${d.split("/")[0]}` : d);
+    const h = new Date();
+    let i = h.getFullYear() - n.getFullYear();
+    const m = h.getMonth() - n.getMonth();
+    if (m < 0 || (m === 0 && h.getDate() < n.getDate())) i--;
+    return isNaN(i) ? "--" : i.toString();
+  };
+
   const mostrarAjudaAdesao = () => {
     Alert.alert(
       "O que é isso?",
-      "Esta barra compara quantas vezes o aluno completou cada ficha.\n\nSe ele faz muito o 'Treino A' e pouco o 'Treino C', a barra do Treino C ficará menor e vermelha, indicando que ele pode estar 'pulando' esse treino."
+      "Esta barra compara quantas vezes o aluno completou cada ficha.\n\nSe ele faz muito o 'Treino A' e pouco o 'Treino C', a barra do Treino C ficará menor e vermelha, indicando que ele pode estar pulando esse treino."
     );
   };
 
-  
   const fotoUrlRaw = aluno?.foto_url;
   let fotoValida = null;
-  if (typeof fotoUrlRaw === 'string' && fotoUrlRaw.trim().length > 5) {
-      fotoValida = fotoUrlRaw;
-  }
-
-  const cidadeStr = aluno?.cidade?.trim();
-  const bairroStr = aluno?.bairro?.trim();
-  const localizacaoFormatada = [cidadeStr, bairroStr].filter(Boolean).join(" • ") || "Local não informado";
-
-  const arrObjetivos = prefs?.objetivos || [];
-  let objetivoFinalText = null;
-  if (arrObjetivos.length > 0) {
-    objetivoFinalText = arrObjetivos.map((o: string) => o.charAt(0).toUpperCase() + o.slice(1)).join(" e ");
-  }
-  const objetivoFinal = anamnese?.objetivo || objetivoFinalText || "Não informado";
-
-  const orcamentoAluno = prefs?.orcamento ? `R$ ${prefs.orcamento}` : "Aberto";
-  const metaDePeso = prefs?.meta_peso; 
-  const freqReal = prefs?.frequencia_semanal || prefs?.frequencia;
-  const displayFrequencia = MAP_FREQUENCIA[freqReal] || "Não informado";
-  
-  const historicoReal = anamnese?.nivel_experiencia;
-  const displayHistorico = NIVEIS_MAP[historicoReal] || MAP_HISTORICO[prefs?.historico] || "Não informado";
-  
-  const arrLimitacoes = prefs?.limitacoes || [];
-  const isRestrito = anamnese ? anamnese.tem_restricao : (arrLimitacoes.length > 0 && !arrLimitacoes.includes("nenhuma"));
-  
-  let descRestricao = anamnese?.detalhes_restricao;
-  if (!descRestricao) {
-    const subsLim = prefs?.subs_limitacoes || [];
-    descRestricao = subsLim.length > 0 ? subsLim.join(", ") : prefs?.outra_limitacao;
-  }
-  
+  if (typeof fotoUrlRaw === 'string' && fotoUrlRaw.trim().length > 5) fotoValida = fotoUrlRaw;
+  const localizacaoFormatada = [aluno?.cidade?.trim(), aluno?.bairro?.trim()].filter(Boolean).join(" • ") || "Local não informado";
+  const objetivoFinal = anamnese?.objetivo || (prefs?.objetivos || []).map((o: string) => o.charAt(0).toUpperCase() + o.slice(1)).join(" e ") || "Não informado";
+  const metaDePeso = prefs?.meta_peso || null; 
+  const displayFrequencia = MAP_FREQUENCIA[prefs?.frequencia_semanal || prefs?.frequencia] || "Não informado";
+  const displayHistorico = NIVEIS_MAP[anamnese?.nivel_experiencia] || MAP_HISTORICO[prefs?.historico] || "Não informado";
+  const isRestrito = anamnese ? anamnese.tem_restricao : ((prefs?.limitacoes || []).length > 0 && !(prefs?.limitacoes || []).includes("nenhuma"));
+  const descRestricao = anamnese?.detalhes_restricao || ((prefs?.subs_limitacoes || []).length > 0 ? (prefs?.subs_limitacoes || []).join(", ") : prefs?.outra_limitacao);
   const dadosIMC = calcularIMC(aluno.peso, aluno.altura);
+  const orcamentoAluno = prefs?.orcamento ? `R$ ${prefs.orcamento}` : "Aberto";
 
   return {
-    aluno,
-    conexaoId,
-    status,
-    activeTab,
-    setActiveTab,
-    isFetchingData,
-    loading,
-    refreshing,
-    onRefresh,
-    alunoSolicitouSaida,
-    planoAtivo,
-    prefs,
-    irParaNovoContrato,
-    atualizarStatusBasico,
-    handlePersonalEncerraParceria,
-    abrirChat,
-    mostrarAjudaAdesao,
-    calcularIdade,
-    fotoValida,
-    objetivoFinal,
-    localizacaoFormatada,
-    orcamentoAluno,
-    metaDePeso,
-    displayFrequencia,
-    displayHistorico,
-    isRestrito,
-    descRestricao,
-    dadosIMC,
-    streak,
-    totalTreinos,
-    adesao,
-    ultimosLogs
+    aluno, conexaoId, status, activeTab, setActiveTab, isFetchingData, loading, refreshing, onRefresh,
+    alunoSolicitouSaida, planoAtivo, prefs, irParaNovoContrato, atualizarStatusBasico, handlePersonalEncerraParceria,
+    abrirChat, fotoValida, objetivoFinal, localizacaoFormatada, metaDePeso, displayFrequencia, displayHistorico,
+    isRestrito, descRestricao, dadosIMC, streak, totalTreinos, adesao, ultimosLogs, alertaTreino, dadosBio,
+    calcularIdade, mostrarAjudaAdesao, orcamentoAluno
   };
 }
