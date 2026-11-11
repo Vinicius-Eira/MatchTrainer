@@ -1,34 +1,45 @@
-import React from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Linking,
-  Platform,
-  RefreshControl,
-  ScrollView,
-  StatusBar,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import { useVisaoAluno } from "./useVisaoAluno";
-import { styles } from "./styles";
+import {
+    ActivityIndicator,
+    Alert,
+    Image,
+    Linking,
+    Platform,
+    RefreshControl,
+    ScrollView,
+    StatusBar,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import { theme } from "../../../../../theme/theme";
 import { moderateScale } from "../../../../../utils/responsive";
+import { styles } from "./styles";
+import { useVisaoAluno } from "./useVisaoAluno";
 
-import { TabVisaoGeral } from "./components/TabVisaoGeral";
 import { TabTreinosEvolucao } from "./components/TabTreinosEvolucao";
+import { TabVisaoGeral } from "./components/TabVisaoGeral";
+
+const RadarAlertaBanner = ({ mensagem }: { mensagem: string }) => {
+   return (
+      <View style={{ backgroundColor: 'rgba(255, 59, 48, 0.1)', borderWidth: 1, borderColor: 'rgba(255, 59, 48, 0.3)', marginHorizontal: 16, marginTop: 16, padding: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}>
+          <Ionicons name="warning" size={24} color="#FF3B30" />
+          <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '700' }}>Alerta de Saúde e Execução</Text>
+              <Text style={{ color: '#FF3B30', fontSize: 11, marginTop: 2 }}>{mensagem}</Text>
+          </View>
+      </View>
+   )
+}
 
 export function VisaoAluno({ route, navigation }: any) {
   const v = useVisaoAluno(route, navigation); 
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" {...({ translucent: true } as any)} />
 
       <BlurView intensity={Platform.OS === "ios" ? 70 : 100} tint="dark" experimentalBlurMethod="dimezisBlurView" style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton} activeOpacity={0.7}>
@@ -55,7 +66,7 @@ export function VisaoAluno({ route, navigation }: any) {
 
         <View style={styles.heroSection}>
           <LinearGradient colors={["rgba(255,107,0,0.15)", theme.colors.background]} style={styles.heroGradient} />
-          
+
           <View style={styles.avatarWrapper}>
             <View style={styles.avatarGlow} />
             {v.fotoValida ? (
@@ -65,7 +76,7 @@ export function VisaoAluno({ route, navigation }: any) {
                 <Ionicons name="person" size={55} color="#555" />
               </View>
             )}
-            
+
             {v.status === "aluno_ativo" && <View style={styles.onlineBadge}><View style={styles.onlineBadgeInner} /></View>}
             {v.status === "inativo" && (
               <View style={[styles.onlineBadge, { backgroundColor: theme.colors.background, borderColor: theme.colors.textMuted }]}>
@@ -73,7 +84,7 @@ export function VisaoAluno({ route, navigation }: any) {
               </View>
             )}
           </View>
-          
+
           <Text style={styles.studentName}>{v.aluno.nome}</Text>
           <Text style={styles.studentGoal}>Foco: {v.objetivoFinal}</Text>
 
@@ -84,7 +95,7 @@ export function VisaoAluno({ route, navigation }: any) {
                 {v.localizacaoFormatada}
               </Text>
             </View>
-            
+
             <TouchableOpacity onPress={() => Linking.openURL(`whatsapp://send?phone=55${v.aluno.telefone?.replace(/\D/g, "")}`)} style={[styles.quickInfoPill, { borderColor: theme.colors.whatsapp }]}>
               <Ionicons name="logo-whatsapp" size={14} color={theme.colors.whatsapp} />
               <Text style={[styles.quickInfoText, { color: theme.colors.whatsapp }]} numberOfLines={1} ellipsizeMode="tail">{v.aluno.telefone || "Sem número"}</Text>
@@ -98,6 +109,9 @@ export function VisaoAluno({ route, navigation }: any) {
            </View>
         ) : (
           <>
+            {/* O RADAR ENTRARÁ AQUI NA FASE FINAL */}
+            {/* {v.alertaTreino && <RadarAlertaBanner mensagem={v.alertaTreino} />} */}
+          
             {v.status === "aluno_ativo" && (
               <View style={styles.tabContainer}>
                 <TouchableOpacity style={[styles.tabBtn, v.activeTab === "visao_geral" && styles.tabBtnActive]} onPress={() => v.setActiveTab("visao_geral")}>
@@ -127,7 +141,6 @@ export function VisaoAluno({ route, navigation }: any) {
 
       {v.status !== "inativo" && v.activeTab === "visao_geral" && (
         <View style={styles.floatingActionBar}>
-          
           {v.status === "aguardando_assinatura" ? (
             <View style={styles.actionColumn}>
               <View style={styles.actionRow}>
@@ -146,16 +159,16 @@ export function VisaoAluno({ route, navigation }: any) {
                 </TouchableOpacity>
               </View>
             </View>
-            
+
           ) : v.status === "pendente" || v.status === "aguardando_personal" || v.status === "lead" || v.status === "em_contato" ? (
-            
+
             <View style={styles.actionRow}>
               {(v.status === "pendente" || v.status === "aguardando_personal") && (
                 <TouchableOpacity style={[styles.btnDecline, { flex: 0.2, marginRight: 12 }]} onPress={() => v.atualizarStatusBasico("recusado")} disabled={v.loading}>
                   <Feather name="x" size={24} color={theme.colors.danger} />
                 </TouchableOpacity>
               )}
-              
+
               <TouchableOpacity style={[styles.btnChat, { flex: 1 }]} onPress={v.abrirChat} activeOpacity={0.85}>
                 <Ionicons name="chatbubbles" size={22} color={theme.colors.primary} />
                 <Text style={styles.btnChatText}>
@@ -165,12 +178,12 @@ export function VisaoAluno({ route, navigation }: any) {
             </View>
 
           ) : (
-            
+
             <TouchableOpacity style={styles.btnChat} onPress={v.abrirChat} activeOpacity={0.85}>
              <Ionicons name="chatbubbles" size={22} color={theme.colors.primary} />
              <Text style={styles.btnChatText}>Abrir Conversa</Text>
            </TouchableOpacity>
-            
+
           )}
         </View>
       )}

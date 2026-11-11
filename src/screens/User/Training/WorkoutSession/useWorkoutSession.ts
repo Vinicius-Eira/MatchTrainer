@@ -74,7 +74,6 @@ export function useWorkoutSession(navigation: any, route: any) {
 
     let historicoDesteTreino: any = null;
     
-    // 🔥 BUSCA USANDO A COLUNA CORRETA (conexao_id em vez de student_id)
     if (conexaoId) {
         const { data: execucaoAnterior } = await supabase
           .from("treinos_execucoes")
@@ -111,7 +110,6 @@ export function useWorkoutSession(navigation: any, route: any) {
       let cargaFeita = ex.weight_target ? String(ex.weight_target) : "";
       let observacaoAluno = "";
       
-      // Resgata o histórico real do aluno
       if (historicoDesteTreino && historicoDesteTreino.dados_execucao) {
           const exercicioNoHistorico = historicoDesteTreino.dados_execucao.find((he: any) => he.nome === nomeOriginal);
           if (exercicioNoHistorico) {

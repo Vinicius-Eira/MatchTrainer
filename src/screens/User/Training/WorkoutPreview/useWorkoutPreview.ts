@@ -45,13 +45,12 @@ export function useWorkoutPreview(navigation: any, route: any) {
     let historicoDesteTreino = null;
     let ultimaData = null;
 
-    // 🔥 BUSCA HISTÓRICO ISOLADO CORRETO
     if (conexaoId) {
         const { data: h } = await supabase
             .from("treinos_execucoes")
             .select("dados_execucao, data_inicio")
             .eq("treino_id", treinoId)
-            .eq("conexao_id", conexaoId) // FILTRO CORRETO
+            .eq("conexao_id", conexaoId) 
             .order("data_inicio", { ascending: false })
             .limit(1)
             .maybeSingle();

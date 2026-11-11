@@ -26,6 +26,7 @@ import { HistoricoTreinosAluno } from "../screens/Personal/CRM/GestaoAlunos/Hist
 import { ListaTreinosAluno } from "../screens/Personal/CRM/GestaoAlunos/ListaTreinosAluno";
 import { MeusAlunos } from "../screens/Personal/CRM/GestaoAlunos/MeusAlunos";
 import { VisaoAluno } from "../screens/Personal/CRM/GestaoAlunos/VisaoAluno";
+import { Bioimpedancia } from "../screens/Personal/CRM/GestaoAlunos/FormularioBioimpedancia";
 import { AdicionarAluno } from "../screens/Personal/CRM/NovoContrato/AdicionarAluno";
 import { ContratoMatch } from '../screens/Personal/CRM/NovoContrato/ContratoMatch';
 import { PropostaAluno } from "../screens/Personal/CRM/NovoContrato/PropostaAluno";
@@ -133,6 +134,7 @@ export function AppRoutes() {
       <RootStack.Screen name="FeedbackPersonal" component={FeedbackPersonal} />
       <RootStack.Screen name="Avaliacoes" component={Avaliacoes} />
 
+      <RootStack.Screen name="Bioimpedancia" component={Bioimpedancia} options={{ presentation: 'modal' }} />
       <RootStack.Screen name="AlunoLogin" component={AlunoLogin} />
       <RootStack.Screen name="AlunoCadastro" component={AlunoCadastro} />
       <RootStack.Screen name="AlunoSetup" component={AlunoSetup} />

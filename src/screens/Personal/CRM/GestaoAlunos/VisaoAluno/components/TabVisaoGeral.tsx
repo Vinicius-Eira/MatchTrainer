@@ -130,7 +130,6 @@ export function TabVisaoGeral({
           </View>
         </View>
 
-        {/* CORREÇÃO AQUI: Usando ternário para evitar erro de número na tela */}
         {prefs?.sub_objetivo && prefs.sub_objetivo.length > 0 ? (
           <View style={styles.subTagsContainer}>
             {prefs.sub_objetivo.map((sub: string, index: number) => (
@@ -189,7 +188,6 @@ export function TabVisaoGeral({
           </View>
         </View>
 
-        {/* CORREÇÃO AQUI também */}
         {dadosIMC ? (
           <View style={[styles.imcCard, { borderColor: `${dadosIMC.cor}40`, backgroundColor: `${dadosIMC.cor}08` }]}>
             <View style={styles.imcHeaderRow}>
@@ -212,7 +210,6 @@ export function TabVisaoGeral({
               {isRestrito ? "Atenção: Restrições Físicas" : "Nenhuma Restrição Relatada"}
             </Text>
           </View>
-          {/* CORREÇÃO AQUI: Usando ternário para não renderizar string vazia */}
           {isRestrito && descRestricao ? (
             <View style={styles.medicalAlertBody}>
               <Text style={styles.medicalConditionDesc}>{descRestricao}</Text>

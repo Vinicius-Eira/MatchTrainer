@@ -329,21 +329,7 @@ export function PersonalDashboard({ navigation }: any) {
           <Ionicons name="chevron-forward" size={moderateScale(20)} color={theme.colors.textSecondary} />
         </TouchableOpacity>
 
-        {insightsReais.length > 0 && (
-          <View style={{ marginBottom: verticalScale(20), marginTop: verticalScale(15) }}>
-            <Text style={[styles.sectionTitle, { marginBottom: verticalScale(10) }]}>
-                🚨 Atenção Necessária
-            </Text>
-            {insightsReais.map((insight: any) => (
-              <InsightCard 
-                key={insight.id} 
-                insight={insight} 
-                onPress={handleOpenInsight} 
-              />
-            ))}
-          </View>
-        )}
-
+       
         <View style={styles.crmHeader}>
           <Text style={styles.sectionTitle}>Gestão de Alunos</Text>
           <View style={styles.headerActions}>

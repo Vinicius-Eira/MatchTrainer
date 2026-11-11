@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Alert } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, Linking } from "react-native";
 import { supabase } from "../../../../services/supabase";
 import { useOnboarding } from "../../../../hooks/useOnboarding";
 
@@ -244,67 +244,6 @@ export function useDashboard(navigation: any) {
       setEmContato(emContatoReais);
       setInativos(dataInativos);
       setNotaMedia(mediaRes.data || 0);
-
-      const { data: insightsData } = await supabase
-        .from('insights')
-        .select('*')
-        .eq('personal_id', session.user.id)
-        .eq('is_resolved', false)
-        .order('created_at', { ascending: false });
-
-      const doisDiasAtras = new Date();
-      doisDiasAtras.setDate(doisDiasAtras.getDate() - 2);
-
-      const { data: treinosComDor } = await supabase
-        .from('treinos_execucoes')
-        .select('id, treino_id, sentiu_dor, created_at, observacao_geral, treinos_prescritos(usuario_id)')
-        .eq('sentiu_dor', true)
-        .gte('created_at', doisDiasAtras.toISOString());
-
-      let todosOsAlertas = [];
-
-      if (insightsData) {
-        const insightsFormatados = insightsData.map((ins: any) => {
-          const alunoEncontrado = todasConexoes.find(a => a.usuario_id === ins.aluno_id);
-          return {
-            id: ins.id,
-            aluno: { id: ins.aluno_id, nome: alunoEncontrado?.usuarios?.nome || 'Aluno' },
-            priority: ins.priority || 'CRÍTICA',
-            exerciseName: ins.exercise_name || 'Treino Geral',
-            painLocation: ins.pain_location,
-            painIntensity: ins.pain_intensity,
-            type: ins.type,
-            createdAt: ins.created_at
-          };
-        });
-        todosOsAlertas.push(...insightsFormatados);
-      }
-
-      if (treinosComDor) {
-        treinosComDor.forEach((treino: any) => {
-            const usuarioId = treino.treinos_prescritos?.usuario_id;
-            const jaTemInsight = todosOsAlertas.some(a => a.aluno.id === usuarioId);
-            
-            if (!jaTemInsight && usuarioId) {
-                const alunoEncontrado = todasConexoes.find(a => a.usuario_id === usuarioId);
-                todosOsAlertas.push({
-                    id: treino.id,
-                    aluno: { id: usuarioId, nome: alunoEncontrado?.usuarios?.nome || 'Aluno' },
-                    priority: 'MODERADA', 
-                    exerciseName: 'Treino Recente',
-                    painLocation: 'Não especificado',
-                    painIntensity: '?',
-                    type: 'DOR_GERAL',
-                    observacao: treino.observacao_geral,
-                    createdAt: treino.created_at
-                });
-            }
-        });
-      }
-
-      todosOsAlertas.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
-      setInsightsReais(todosOsAlertas);
 
       if (emContatoReais.length === 0 && ativosReais.length > 0) setActiveTab("aluno_ativo");
 

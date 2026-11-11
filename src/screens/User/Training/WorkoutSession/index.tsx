@@ -145,7 +145,6 @@ export function WorkoutSession({ route, navigation }: any) {
                       </View>
                     ) : null}
 
-                    {/* CABEÇALHO LIMPO (Sem a "Carga Alvo") */}
                     <View style={styles.seriesHeaderTitles}>
                       <Text style={styles.seriesHeaderLabelTitle}>SÉRIE</Text>
                       <Text style={styles.seriesHeaderLabelCenter}>DESCANSO</Text>

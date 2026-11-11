@@ -58,25 +58,23 @@ export function useFinalizacaoTreino(navigation: any, route: any) {
         return;
     }
 
-    // 🔥 CONVERSÃO PARA O BANCO (INT4): O Supabase só aceita número nessa coluna!
     const mapaIntensidade: any = {
         "Leve": 1,
         "Moderado": 2,
         "Intenso": 3,
         "Máximo": 4
     };
-    const rpeValorBanco = mapaIntensidade[intensidade] || 2; // Default 2 se der erro
+    const rpeValorBanco = mapaIntensidade[intensidade] || 2; 
 
     setSalvando(true);
     try {
-        // Envia para o banco 100% alinhado com as colunas reais da sua imagem
         const { error } = await supabase.from('treinos_execucoes').insert([{
           conexao_id: conexaoId,
           treino_id: treinoId,
           tempo_total_segundos: tempoTotal,
           volume_total_kg: volumeCalculado,
           dados_execucao: exercicios,
-          esforco_rpe: rpeValorBanco, // Agora envia o NÚMERO em vez do TEXTO
+          esforco_rpe: rpeValorBanco, 
           sentiu_dor: sentiuDor || false,
           observacao_geral: feedback,
           data_inicio: dataInicio || new Date().toISOString(),

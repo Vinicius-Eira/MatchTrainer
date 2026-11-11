@@ -196,7 +196,7 @@ export function ListaTreinosAluno({ route, navigation }: ListaTreinosAlunoProps)
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" {...({ translucent: true } as any)} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: MATCH_COLORS.surfaceDark }]} />
 
       <BlurView intensity={Platform.OS === "ios" ? 40 : 100} tint="dark" style={styles.header}>
