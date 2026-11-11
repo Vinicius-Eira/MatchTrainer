@@ -2,17 +2,17 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Linking,
-    Platform,
-    RefreshControl,
-    ScrollView,
-    StatusBar,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { theme } from "../../../../../theme/theme";
 import { moderateScale } from "../../../../../utils/responsive";
@@ -23,16 +23,16 @@ import { TabTreinosEvolucao } from "./components/TabTreinosEvolucao";
 import { TabVisaoGeral } from "./components/TabVisaoGeral";
 
 const RadarAlertaBanner = ({ mensagem }: { mensagem: string }) => {
-   return (
-      <View style={{ backgroundColor: 'rgba(255, 59, 48, 0.1)', borderWidth: 1, borderColor: 'rgba(255, 59, 48, 0.3)', marginHorizontal: 16, marginTop: 16, padding: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="warning" size={24} color="#FF3B30" />
-          <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '700' }}>Alerta de Saúde e Execução</Text>
-              <Text style={{ color: '#FF3B30', fontSize: 11, marginTop: 2 }}>{mensagem}</Text>
-          </View>
+  return (
+    <View style={{ backgroundColor: 'rgba(255, 59, 48, 0.1)', borderWidth: 1, borderColor: 'rgba(255, 59, 48, 0.3)', marginHorizontal: 16, marginTop: 16, padding: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}>
+      <Ionicons name="warning" size={24} color="#FF3B30" />
+      <View style={{ flex: 1, marginLeft: 10 }}>
+        <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '700' }}>Alerta de Saúde e Execução</Text>
+        <Text style={{ color: '#FF3B30', fontSize: 11, marginTop: 2 }}>{mensagem}</Text>
       </View>
-   )
-}
+    </View>
+  );
+};
 
 export function VisaoAluno({ route, navigation }: any) {
   const v = useVisaoAluno(route, navigation); 
@@ -104,14 +104,11 @@ export function VisaoAluno({ route, navigation }: any) {
         </View>
 
         {v.isFetchingData ? (
-           <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-             <ActivityIndicator size="small" color={theme.colors.primary} />
-           </View>
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          </View>
         ) : (
           <>
-            {/* O RADAR ENTRARÁ AQUI NA FASE FINAL */}
-            {/* {v.alertaTreino && <RadarAlertaBanner mensagem={v.alertaTreino} />} */}
-          
             {v.status === "aluno_ativo" && (
               <View style={styles.tabContainer}>
                 <TouchableOpacity style={[styles.tabBtn, v.activeTab === "visao_geral" && styles.tabBtnActive]} onPress={() => v.setActiveTab("visao_geral")}>
@@ -128,6 +125,7 @@ export function VisaoAluno({ route, navigation }: any) {
             ) : (
               <TabTreinosEvolucao 
                 aluno={v.aluno} 
+                conexaoId={v.conexaoId}
                 navigation={navigation} 
                 mostrarAjudaAdesao={v.mostrarAjudaAdesao}
                 streak={v.streak}
@@ -172,17 +170,17 @@ export function VisaoAluno({ route, navigation }: any) {
               <TouchableOpacity style={[styles.btnChat, { flex: 1 }]} onPress={v.abrirChat} activeOpacity={0.85}>
                 <Ionicons name="chatbubbles" size={22} color={theme.colors.primary} />
                 <Text style={styles.btnChatText}>
-                 {v.status === "pendente" || v.status === "aguardando_personal" ? "Entrar em Conversa" : "Responder Aluno"}
-               </Text>
-             </TouchableOpacity>
+                  {v.status === "pendente" || v.status === "aguardando_personal" ? "Entrar em Conversa" : "Responder Aluno"}
+                </Text>
+              </TouchableOpacity>
             </View>
 
           ) : (
 
             <TouchableOpacity style={styles.btnChat} onPress={v.abrirChat} activeOpacity={0.85}>
-             <Ionicons name="chatbubbles" size={22} color={theme.colors.primary} />
-             <Text style={styles.btnChatText}>Abrir Conversa</Text>
-           </TouchableOpacity>
+              <Ionicons name="chatbubbles" size={22} color={theme.colors.primary} />
+              <Text style={styles.btnChatText}>Abrir Conversa</Text>
+            </TouchableOpacity>
 
           )}
         </View>

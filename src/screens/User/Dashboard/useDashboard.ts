@@ -39,17 +39,31 @@ export function useDashboard(navigation: any, conexaoId: string) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: conexaoData, error: errorC } = await supabase
+      let queryConexao = supabase
         .from("conexoes")
-        .select("*, personals(*), usuarios(*)")
-        .eq("id", conexaoId)
-        .single();
+        .select("*, personals(*), usuarios(*)");
 
-      if (errorC) throw errorC;
+      if (conexaoId && conexaoId !== "1") {
+        queryConexao = queryConexao.eq("id", conexaoId);
+      } else {
+        queryConexao = queryConexao
+          .eq("usuario_id", user.id)
+          .in("status", ["aluno_ativo", "aguardando_assinatura", "pendente"])
+          .order("criado_em", { ascending: false })
+          .limit(1);
+      }
+
+      const { data: conexaoData, error: errorC } = await queryConexao.maybeSingle();
+
+      if (errorC || !conexaoData) throw errorC || new Error("Conexão não encontrada");
       
+      const realConexaoId = conexaoData.id;
+
       setConexao(conexaoData);
       setPersonal(conexaoData.personals);
       setAluno(conexaoData.usuarios);
+
+      setRecadoPersonal(conexaoData.recado_evolucao || null);
 
       const hojeData = new Date();
       const dataInicio = new Date(conexaoData.atualizado_em || conexaoData.criado_em || Date.now());
@@ -63,7 +77,7 @@ export function useDashboard(navigation: any, conexaoId: string) {
       const { data: quests } = await supabase
         .from('questionarios')
         .select('*')
-        .eq('conexao_id', conexaoId)
+        .eq('conexao_id', realConexaoId)
         .eq('status', 'pendente')
         .limit(1);
       setAnamnesePendente(quests && quests.length > 0 ? quests[0] : null);
@@ -86,23 +100,24 @@ export function useDashboard(navigation: any, conexaoId: string) {
         .limit(1)
         .maybeSingle();
 
-      setRecadoPersonal(programaTreino?.general_observation || conexaoData.recado_evolucao || null);
+      setRecadoPersonal(conexaoData.recado_evolucao || programaTreino?.general_observation || null);
 
       let treinosConcluidosGeral: any[] = [];
-      if (conexaoId) {
+      if (realConexaoId) {
         const { data: execucoesHistorico } = await supabase
           .from('treinos_execucoes')
           .select('treino_id, data_inicio')
-          .eq('conexao_id', conexaoId);
+          .eq('conexao_id', realConexaoId);
         
         if (execucoesHistorico) {
-            treinosConcluidosGeral = execucoesHistorico;
+          treinosConcluidosGeral = execucoesHistorico;
         }
       }
 
       const ultimos7Dias: Date[] = [];
-      for(let i = 6; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
         ultimos7Dias.push(d);
       }
       
@@ -116,12 +131,12 @@ export function useDashboard(navigation: any, conexaoId: string) {
         const diaStr = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
 
         const treinouNesteDia = treinosConcluidosGeral.some(exec => {
-           if (!exec.data_inicio) return false;
-           const dExec = new Date(exec.data_inicio);
-           const dExecLocal = new Date(dExec.getTime() - (dExec.getTimezoneOffset() * 60000));
-           const dataExecStr = dExecLocal.toISOString().split('T')[0];
-           
-           return dataExecStr === dateStr;
+          if (!exec.data_inicio) return false;
+          const dExec = new Date(exec.data_inicio);
+          const dExecLocal = new Date(dExec.getTime() - (dExec.getTimezoneOffset() * 60000));
+          const dataExecStr = dExecLocal.toISOString().split('T')[0];
+          
+          return dataExecStr === dateStr;
         });
 
         let statusDia = 'pendente';
@@ -142,55 +157,55 @@ export function useDashboard(navigation: any, conexaoId: string) {
         let diasLegados: any[] = programaTreino.workout_days || [];
         
         if (semanasSource.length === 0 && diasLegados.length > 0) {
-            semanasSource = [{ 
-                id: 'semana-legada', 
-                name: 'Sua Rotina', 
-                start_date: null,
-                end_date: null,
-                workout_days: diasLegados 
-            }];
+          semanasSource = [{ 
+            id: 'semana-legada', 
+            name: 'Sua Rotina', 
+            start_date: null,
+            end_date: null,
+            workout_days: diasLegados 
+          }];
         }
 
         if (semanasSource.length > 0) {
-            const semanasOrdenadas = [...semanasSource].sort((a: any, b: any) => {
-                if(a.start_date && b.start_date) return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
-                return a.name.localeCompare(b.name);
+          const semanasOrdenadas = [...semanasSource].sort((a: any, b: any) => {
+            if (a.start_date && b.start_date) return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+            return a.name.localeCompare(b.name);
+          });
+
+          let proximoTreino = null;
+
+          for (const week of semanasOrdenadas) {
+            const diasOrdenados = [...(week.workout_days || [])].sort((a: any, b: any) => a.order_index - b.order_index);
+            for (const dia of diasOrdenados) {
+              const jaFez = treinosConcluidosGeral.some(exec => exec.treino_id === dia.id);
+              if (!jaFez) { 
+                proximoTreino = dia; 
+                break; 
+              }
+            }
+            if (proximoTreino) break;
+          }
+          
+          if (proximoTreino) {
+            setTreinoHoje({
+              id: proximoTreino.id,
+              nome: proximoTreino.name,
+              qtd_exercicios: proximoTreino.planned_exercises?.length || 0,
+              duracao_estimada: `${Math.max(30, (proximoTreino.planned_exercises?.length || 0) * 8)} min`,
+              fez_hoje: false
             });
-
-            let proximoTreino = null;
-
-            for (const week of semanasOrdenadas) {
-                const diasOrdenados = [...(week.workout_days || [])].sort((a: any, b: any) => a.order_index - b.order_index);
-                for (const dia of diasOrdenados) {
-                    const jaFez = treinosConcluidosGeral.some(exec => exec.treino_id === dia.id);
-                    if (!jaFez) { 
-                        proximoTreino = dia; 
-                        break; 
-                    }
-                }
-                if (proximoTreino) break;
-            }
-            
-            if (proximoTreino) {
-                setTreinoHoje({
-                   id: proximoTreino.id,
-                   nome: proximoTreino.name,
-                   qtd_exercicios: proximoTreino.planned_exercises?.length || 0,
-                   duracao_estimada: `${Math.max(30, (proximoTreino.planned_exercises?.length || 0) * 8)} min`,
-                   fez_hoje: false
-                });
-                setTemTreinosNaSemana(true); 
-            } else {
-                setTreinoHoje(null);
-                setTemTreinosNaSemana(treinosConcluidosGeral.length > 0);
-            }
-        } else {
+            setTemTreinosNaSemana(true); 
+          } else {
             setTreinoHoje(null);
-            setTemTreinosNaSemana(false);
+            setTemTreinosNaSemana(treinosConcluidosGeral.length > 0);
+          }
+        } else {
+          setTreinoHoje(null);
+          setTemTreinosNaSemana(false);
         }
       } else {
-         setTreinoHoje(null);
-         setTemTreinosNaSemana(false);
+        setTreinoHoje(null);
+        setTemTreinosNaSemana(false);
       }
 
       const { data: avalData } = await supabase
@@ -224,7 +239,7 @@ export function useDashboard(navigation: any, conexaoId: string) {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-        fetchDados();
+      fetchDados();
     });
     return unsubscribe;
   }, [navigation, conexaoId]);
@@ -255,7 +270,7 @@ export function useDashboard(navigation: any, conexaoId: string) {
 
   const irParaChat = () => {
     navigation.navigate("Chat", {
-      conexaoId,
+      conexaoId: conexao?.id || conexaoId,
       nomeOutro: personal?.nome,
       fotoOutro: personal?.foto_url,
       tipoUsuarioLogado: "aluno",
@@ -272,7 +287,7 @@ export function useDashboard(navigation: any, conexaoId: string) {
         { text: "Não", style: "cancel" },
         { text: "Sim, Cancelar Vínculo", style: "destructive", onPress: async () => {
             setLoading(true);
-            await supabase.from("conexoes").delete().eq("id", conexaoId);
+            await supabase.from("conexoes").delete().eq("id", conexao?.id || conexaoId);
             navigation.reset({ index: 0, routes: [{ name: "UsuarioTabs" }] });
           },
         },
@@ -304,7 +319,7 @@ export function useDashboard(navigation: any, conexaoId: string) {
   };
 
   return {
-    loading, refreshing, aluno, personal, diasTreino, progressoBarra, estaNoPeriodoTeste, modalidade,
+    loading, refreshing, aluno, personal, conexao, diasTreino, progressoBarra, estaNoPeriodoTeste, modalidade,
     semanaAtual, temTreinosNaSemana, treinoHoje, recadoPersonal, anamnesePendente, modalAvaliacaoVisible, notaSelecionada, comentario,
     salvandoAvaliacao, jaAvaliou, financeiroInfo, setModalAvaliacaoVisible, setNotaSelecionada, setComentario,
     onRefresh, handleLogout, handleWhatsApp, featureBloqueada, handleAcaoEncerramento, handleEnviarAvaliacao, irParaChat,

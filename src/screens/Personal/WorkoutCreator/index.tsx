@@ -155,7 +155,6 @@ export function WorkoutCreator({ navigation, route }: any) {
                             <Text style={{ color: v.store.activeWeekId === week.id ? "#000" : "#FFF", fontSize: 13, fontWeight: "bold" }}>{week.name}</Text>
                           </TouchableOpacity>
                           
-                          {/* Lixeira visível se for a semana ativa e houver mais de uma semana */}
                           {(v.store.activeWeekId === week.id && v.store.weeks.length > 1) && (
                             <TouchableOpacity 
                               style={{ marginLeft: 12, backgroundColor: 'rgba(0,0,0,0.2)', padding: 4, borderRadius: 10 }}
@@ -182,7 +181,6 @@ export function WorkoutCreator({ navigation, route }: any) {
                     </ScrollView>
                   </View>
 
-                  {/* 🔥 ABAS DOS DIAS COM BOTÃO DE EXCLUIR */}
                   {activeWeekData && (
                     <View style={{ marginTop: 15, paddingHorizontal: 20, marginBottom: 10 }}>
                         <Text style={{ color: "#888", fontSize: 10, fontWeight: "bold", textTransform: "uppercase", marginBottom: 8, letterSpacing: 1 }}>Treinos da {activeWeekData.name}</Text>

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { styles } from '../../styles'; 
 import { localStyles } from './styles'; 
 import { theme } from '../../../../../../../theme/theme';
 import { verticalScale } from '../../../../../../../utils/responsive';
+import { supabase } from '../../../../../../../services/supabase';
 import { AlertaDorAluno } from '../RelatoDor';
 
 const BentoCardBio = ({ titulo, valor, unidade, variacao, corV, icone, descricao }: any) => (
@@ -50,6 +52,7 @@ const getAnaliseRPE = (rpe?: number) => {
 
 export function TabTreinosEvolucao({ 
   aluno, 
+  conexaoId,
   navigation,
   mostrarAjudaAdesao, 
   streak, 
@@ -60,8 +63,84 @@ export function TabTreinosEvolucao({
   const temDados = adesao && adesao.length > 0;
   const [abaVisualizacao, setAbaVisualizacao] = useState<'evolucao' | 'corpo'>('evolucao');
   const [tipoSegmentar, setTipoSegmentar] = useState<'gordura' | 'massa'>('gordura');
-  
   const [ocultarAlertaDor, setOcultarAlertaDor] = useState(false);
+
+  const [idConexaoReal, setIdConexaoReal] = useState<string | null>(conexaoId || null);
+  const [recadoAtualSalvo, setRecadoAtualSalvo] = useState<string>("");
+  const [novoRecadoInput, setNovoRecadoInput] = useState<string>("");
+  const [dataUltimoRecado, setDataUltimoRecado] = useState<string | null>(null);
+  const [editorFeedbackAberto, setEditorFeedbackAberto] = useState(false);
+  const [salvandoRecado, setSalvandoRecado] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const carregarRecadoExistente = async () => {
+      try {
+        let query = supabase.from('conexoes').select('id, recado_evolucao, data_recado');
+        if (conexaoId) {
+          query = query.eq('id', conexaoId);
+        } else if (aluno?.id) {
+          query = query.eq('usuario_id', aluno.id).in('status', ['aluno_ativo', 'aguardando_assinatura', 'pendente']);
+        } else {
+          return;
+        }
+
+        const { data } = await query.maybeSingle();
+        if (data && isMounted) {
+          setIdConexaoReal(data.id);
+          setRecadoAtualSalvo(data.recado_evolucao || "");
+          if (data.data_recado) {
+            setDataUltimoRecado(new Date(data.data_recado).toLocaleDateString('pt-BR'));
+          }
+        }
+      } catch (err) {
+        console.log("Erro ao carregar recado do personal:", err);
+      }
+    };
+
+    carregarRecadoExistente();
+    return () => { isMounted = false; };
+  }, [conexaoId, aluno?.id]);
+
+  const abrirEditorNovoFeedback = () => {
+    setNovoRecadoInput("");
+    setEditorFeedbackAberto(true);
+  };
+
+  const salvarFeedbackEvolucao = async () => {
+    if (!idConexaoReal) {
+      return Alert.alert("Erro", "Vínculo do aluno não localizado.");
+    }
+    const textoLimpo = novoRecadoInput.trim();
+    if (!textoLimpo) {
+      return Alert.alert("Campo vazio", "Escreva uma mensagem antes de enviar para o aluno.");
+    }
+
+    setSalvandoRecado(true);
+    try {
+      const agoraIso = new Date().toISOString();
+
+      const { error } = await supabase
+        .from('conexoes')
+        .update({
+          recado_evolucao: textoLimpo,
+          data_recado: agoraIso
+        })
+        .eq('id', idConexaoReal);
+
+      if (error) throw error;
+
+      setRecadoAtualSalvo(textoLimpo);
+      setDataUltimoRecado(new Date(agoraIso).toLocaleDateString('pt-BR'));
+      setNovoRecadoInput("");
+      setEditorFeedbackAberto(false);
+    } catch (err) {
+      console.log("Erro ao salvar feedback:", err);
+      Alert.alert("Erro", "Não foi possível enviar o feedback.");
+    } finally {
+      setSalvandoRecado(false);
+    }
+  };
 
   let prefs: any = {};
   try { prefs = typeof aluno?.preferencias === 'string' ? JSON.parse(aluno.preferencias) : aluno?.preferencias || {}; } catch(e){}
@@ -110,7 +189,101 @@ export function TabTreinosEvolucao({
         </View>
       </View>
 
-      <View style={[styles.sectionHeaderRow, { marginTop: verticalScale(30), marginBottom: verticalScale(16) }]}>
+      <View style={[styles.sectionHeaderRow, { marginTop: verticalScale(26), marginBottom: verticalScale(12) }]}>
+        <Ionicons name="chatbubble-ellipses" size={22} color={theme.colors.primary} />
+        <Text style={styles.sectionHeading}>Conexão & Feedback</Text>
+      </View>
+
+      <View style={localStyles.feedbackCardWrapper}>
+        <LinearGradient colors={['rgba(255, 107, 0, 0.12)', 'transparent']} style={localStyles.gradientFill} />
+
+        <View style={localStyles.feedbackTopRow}>
+          <View style={localStyles.feedbackIconBox}>
+            <Ionicons name="megaphone-outline" size={20} color="#FF6B00" />
+          </View>
+          <View style={{ flex: 1, marginRight: 10 }}>
+            <Text style={localStyles.feedbackMainTitle}>Feedback para o Aluno</Text>
+            <Text style={localStyles.feedbackSubtitle}>
+              {recadoAtualSalvo 
+                ? `Último envio em ${dataUltimoRecado || 'Recente'}` 
+                : 'Destaque orientações no painel principal do aluno'}
+            </Text>
+          </View>
+          {recadoAtualSalvo && !editorFeedbackAberto && (
+            <View style={localStyles.ativoPill}>
+              <View style={localStyles.ativoDot} />
+              <Text style={localStyles.ativoPillText}>ATIVO</Text>
+            </View>
+          )}
+        </View>
+
+        {!editorFeedbackAberto ? (
+          <View>
+            {recadoAtualSalvo ? (
+              <View style={localStyles.previewQuoteBox}>
+                <Text style={localStyles.previewQuoteLabel}>MENSAGEM ATUAL NO PAINEL DO ALUNO:</Text>
+                <Text style={localStyles.previewQuoteText} numberOfLines={2}>
+                  {recadoAtualSalvo}
+                </Text>
+              </View>
+            ) : null}
+
+            <TouchableOpacity 
+              style={localStyles.btnAbrirEditor} 
+              onPress={abrirEditorNovoFeedback}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="create-outline" size={18} color="#FF6B00" style={{ marginRight: 8 }} />
+              <Text style={localStyles.btnAbrirEditorText}>
+                {recadoAtualSalvo ? "ENVIAR NOVO FEEDBACK" : "ESCREVER FEEDBACK PARA O ALUNO"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={localStyles.editorContainer}>
+            <Text style={localStyles.editorLabel}>NOVA MENSAGEM DE ACOMPANHAMENTO:</Text>
+            <TextInput
+              style={localStyles.feedbackInput}
+              placeholder={`Ex: Excelente semana de treinos, ${aluno?.nome?.split(' ')[0] || 'aluno'}! Mantenha o foco na execução...`}
+              placeholderTextColor="#666"
+              multiline
+              autoFocus
+              numberOfLines={3}
+              value={novoRecadoInput}
+              onChangeText={setNovoRecadoInput}
+            />
+
+            <View style={localStyles.editorActionsRow}>
+              <TouchableOpacity 
+                style={localStyles.btnCancelarFeedback} 
+                onPress={() => setEditorFeedbackAberto(false)}
+                disabled={salvandoRecado}
+                activeOpacity={0.7}
+              >
+                <Text style={localStyles.btnCancelarFeedbackText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={localStyles.btnEnviarFeedback} 
+                onPress={salvarFeedbackEvolucao}
+                disabled={salvandoRecado}
+                activeOpacity={0.8}
+              >
+                {salvandoRecado ? (
+                  <ActivityIndicator size="small" color="#000" />
+                ) : (
+                  <>
+                    <Ionicons name="send" size={14} color="#000" style={{ marginRight: 6 }} />
+                    <Text style={localStyles.btnEnviarFeedbackText}>ENVIAR AGORA</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+
+      <View style={[styles.sectionHeaderRow, { marginTop: verticalScale(28), marginBottom: verticalScale(16) }]}>
         <Ionicons name="trending-up" size={24} color={theme.colors.primary} />
         <Text style={styles.sectionHeading}>Bioimpedância</Text>
       </View>
@@ -118,7 +291,7 @@ export function TabTreinosEvolucao({
       <TouchableOpacity 
           style={localStyles.btnNovaAvaliacao}
           activeOpacity={0.7}
-          onPress={() => navigation.navigate("Bioimpedancia", { conexaoId: aluno.id })}
+          onPress={() => navigation.navigate("Bioimpedancia", { conexaoId: idConexaoReal || aluno.id })}
       >
           <Ionicons name="add-circle-outline" size={22} color={theme.colors.primary} style={{ marginRight: 8 }} />
           <Text style={localStyles.btnNovaAvaliacaoText}>NOVA AVALIAÇÃO FÍSICA</Text>
