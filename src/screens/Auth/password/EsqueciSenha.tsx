@@ -104,7 +104,6 @@ export function EsqueciSenha({ navigation }: any) {
                   />
                 </View>
 
-                {/* BOTÃO OUTLINE NEON */}
                 <TouchableOpacity style={[styles.btnOutline, loading && { opacity: 0.7 }]} onPress={handleRecuperarSenha} disabled={loading} activeOpacity={0.8}>
                   <LinearGradient colors={["rgba(255, 107, 0, 0.15)", "rgba(255, 107, 0, 0.02)"]} style={StyleSheet.absoluteFill}  />
                   {loading ? (

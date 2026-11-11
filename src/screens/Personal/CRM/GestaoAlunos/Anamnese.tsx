@@ -204,7 +204,6 @@ export function AnamneseBuilder({ route, navigation }: any) {
         </TouchableOpacity>
       </View>
 
-      {/* NOVO MODAL PREMIUM DE SUCESSO */}
       <Modal visible={modalSucessoVisivel} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", padding: 20 }}>
           <View style={{ backgroundColor: "#0A0A0C", borderRadius: 24, padding: 30, alignItems: "center", borderWidth: 1, borderColor: "#00E676" }}>
@@ -222,7 +221,6 @@ export function AnamneseBuilder({ route, navigation }: any) {
         </View>
       </Modal>
 
-      {/* Modal de Nova Pergunta Original */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
           <View style={styles.modalContent}>

@@ -10,11 +10,13 @@ import { useDashboard } from "./useDashboard";
 export function AlunoDashboard({ route, navigation }: any) {
   const { conexaoId } = route.params || { conexaoId: "1" };
   const {
-    loading, refreshing, aluno, personal, diasTreino, progressoBarra, estaNoPeriodoTeste,
-    semanaAtual, temTreinosNaSemana, treinoHoje, recadoPersonal, anamnesePendente, jaAvaliou,
+    loading, refreshing, aluno, personal, conexao, diasTreino, progressoBarra, estaNoPeriodoTeste,
+    semanaAtual, temTreinosNaSemana, treinoHoje, recadoPersonal, dataRecadoPersonal, anamnesePendente, jaAvaliou,
     onRefresh, handleLogout, handleWhatsApp, featureBloqueada,
     handleAcaoEncerramento, verPerfilPersonal, irParaMeuPerfil, irParaChat
   } = useDashboard(navigation, conexaoId);
+
+  const realConexaoId = conexao?.id || conexaoId;
 
   const [financeiroInfo, setFinanceiroInfo] = useState({
     status: 'em_dia' as 'em_dia' | 'pendente' | 'atrasado',
@@ -28,12 +30,12 @@ export function AlunoDashboard({ route, navigation }: any) {
   useEffect(() => {
     let isMounted = true;
     const carregarResumoFinanceiro = async () => {
-      if (!conexaoId) return;
+      if (!realConexaoId || realConexaoId === "1") return;
       try {
         const { data: contrato } = await supabase
           .from('planos')
           .select('valor_mensal, dia_vencimento')
-          .eq('conexao_id', conexaoId)
+          .eq('conexao_id', realConexaoId)
           .in('status', ['ativo', 'aguardando_assinatura', 'pendente'])
           .maybeSingle();
 
@@ -46,11 +48,11 @@ export function AlunoDashboard({ route, navigation }: any) {
           let anoVencimento = hoje.getFullYear();
 
           if (hoje.getDate() > diaVencimento + 5) {
-             mesVencimento += 1;
-             if (mesVencimento > 11) {
-                mesVencimento = 0;
-                anoVencimento += 1;
-             }
+            mesVencimento += 1;
+            if (mesVencimento > 11) {
+              mesVencimento = 0;
+              anoVencimento += 1;
+            }
           }
 
           const dataVenc = new Date(anoVencimento, mesVencimento, diaVencimento);
@@ -72,7 +74,7 @@ export function AlunoDashboard({ route, navigation }: any) {
     };
     carregarResumoFinanceiro();
     return () => { isMounted = false; };
-  }, [conexaoId, refreshing]);
+  }, [realConexaoId, refreshing]);
 
   if (loading || !aluno || !personal) {
     return (
@@ -98,21 +100,21 @@ export function AlunoDashboard({ route, navigation }: any) {
 
       <View style={styles.studentHeader}>
         <View style={styles.studentHeaderLeft}>
-           {aluno.foto_url && !imgErroAluno ? (
-             <Image 
-               source={{ uri: aluno.foto_url }} 
-               style={styles.studentAvatar} 
-               onError={() => setImgErroAluno(true)} 
-             />
-           ) : (
-             <View style={[styles.studentAvatar, { backgroundColor: '#1A1A1A', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#333' }]}>
-                <Ionicons name="person" size={20} color="#666" />
-             </View>
-           )}
-           <View style={{ marginLeft: 12 }}>
-              <Text style={styles.studentGreeting}>Olá, <Text style={{ color: "#FFF" }}>{aluno.nome?.split(' ')[0]}</Text></Text>
-              <Text style={styles.studentSub}>Pronto para o treino de hoje?</Text>
-           </View>
+          {aluno.foto_url && !imgErroAluno ? (
+            <Image 
+              source={{ uri: aluno.foto_url }} 
+              style={styles.studentAvatar} 
+              onError={() => setImgErroAluno(true)} 
+            />
+          ) : (
+            <View style={[styles.studentAvatar, { backgroundColor: '#1A1A1A', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#333' }]}>
+              <Ionicons name="person" size={20} color="#666" />
+            </View>
+          )}
+          <View style={{ marginLeft: 12 }}>
+            <Text style={styles.studentGreeting}>Olá, <Text style={{ color: "#FFF" }}>{aluno.nome?.split(' ')[0]}</Text></Text>
+            <Text style={styles.studentSub}>Pronto para o treino de hoje?</Text>
+          </View>
         </View>
         <View style={styles.studentHeaderRight}>
           <TouchableOpacity style={styles.btnIcon} onPress={irParaMeuPerfil}>
@@ -219,7 +221,7 @@ export function AlunoDashboard({ route, navigation }: any) {
               </View>
             </TouchableOpacity>
           ) : (
-             <View style={styles.checkinCardNeutro}>
+            <View style={styles.checkinCardNeutro}>
               <Ionicons name="checkmark-circle" size={24} color="#00E676" />
               <View style={{ marginLeft: 12, flex: 1 }}>
                 <Text style={{ color: "#FFF", fontWeight: "bold", fontSize: 14 }}>Tudo em dia</Text>
@@ -230,14 +232,14 @@ export function AlunoDashboard({ route, navigation }: any) {
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 25, marginBottom: 15 }}>
             <Text style={[styles.sectionTitle, { marginTop: 0, marginBottom: 0 }]}>Treino do Dia</Text>
-            <TouchableOpacity style={styles.btnVerTodos} onPress={() => navigation.navigate("WorkoutList", { conexaoId })}>
+            <TouchableOpacity style={styles.btnVerTodos} onPress={() => navigation.navigate("WorkoutList", { conexaoId: realConexaoId })}>
               <Text style={styles.btnVerTodosText}>Ver todos</Text>
               <Ionicons name="chevron-forward" size={14} color="#FF6B00" />
             </TouchableOpacity>
           </View>
 
           {treinoHoje ? (
-            <TouchableOpacity style={styles.premiumWorkoutCard} activeOpacity={0.9} onPress={() => navigation.navigate("WorkoutPreview", { treinoId: treinoHoje.id, conexaoId })}>
+            <TouchableOpacity style={styles.premiumWorkoutCard} activeOpacity={0.9} onPress={() => navigation.navigate("WorkoutPreview", { treinoId: treinoHoje.id, conexaoId: realConexaoId })}>
               <LinearGradient colors={["#1A0B02", "#0A0A0C"]} style={styles.absoluteFill} />
               
               <View style={styles.premiumWorkoutHeader}>
@@ -270,29 +272,67 @@ export function AlunoDashboard({ route, navigation }: any) {
           ) : (
             <View style={styles.premiumEmptyWorkout}>
               <View style={styles.emptyWorkoutIconBg}>
-                 <MaterialCommunityIcons name="sleep" size={32} color="#555" />
+                <MaterialCommunityIcons name="sleep" size={32} color="#555" />
               </View>
               <Text style={styles.emptyWorkoutTitle}>Descanso ou Fim de Ciclo</Text>
               <Text style={styles.emptyWorkoutDesc}>Você não tem treinos pendentes para hoje.</Text>
             </View>
           )}
 
-          {recadoPersonal ? (
-            <View style={styles.feedbackBubble}>
-              <Ionicons name="chatbubble-ellipses" size={24} color="#FF6B00" />
-              <Text style={styles.feedbackText}>
-                <Text style={{fontWeight: 'bold', color: "#FFF"}}>Do seu personal: </Text>
-                {recadoPersonal}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.feedbackBubbleEmpty}>
-              <Ionicons name="chatbox-outline" size={20} color="#FF6B00" />
-              <Text style={styles.feedbackTextEmpty}>Seu personal ainda não adicionou nenhum comentário sobre a sua evolução.</Text>
-            </View>
-          )}
+          <View style={styles.coachFeedbackCard}>
+            <LinearGradient 
+              colors={recadoPersonal ? ["rgba(255, 107, 0, 0.16)", "rgba(10, 10, 14, 0.95)"] : ["rgba(255, 255, 255, 0.03)", "transparent"]} 
+              style={styles.absoluteFill} 
+            />
 
-          <Text style={[styles.sectionTitle, { marginTop: 20, marginBottom: 10 }]}>Financeiro</Text>
+            <View style={styles.coachFeedbackTopBar}>
+              <View style={styles.coachFeedbackProfileRow}>
+                <View style={styles.coachFeedbackAvatarWrap}>
+                  {personal.foto_url && !imgErroPersonal ? (
+                    <Image source={{ uri: personal.foto_url }} style={styles.coachFeedbackAvatarImg} />
+                  ) : (
+                    <Ionicons name="person" size={16} color="#FF6B00" />
+                  )}
+                  <View style={styles.coachFeedbackOnlineDot} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <Text style={styles.coachFeedbackLabel}>FEEDBACK DO PERSONAL</Text>
+                    <View style={styles.coachFeedbackActiveTag}>
+                      <Text style={styles.coachFeedbackActiveTagText}>ACOMPANHAMENTO ATIVO</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.coachFeedbackTrainerName}>Prof. {personal.nome?.split(' ')[0]}</Text>
+                </View>
+              </View>
+
+              {dataRecadoPersonal && (
+                <View style={styles.coachFeedbackDateChip}>
+                  <Ionicons name="calendar-outline" size={10} color="#FF6B00" style={{ marginRight: 4 }} />
+                  <Text style={styles.coachFeedbackDateText}>{dataRecadoPersonal}</Text>
+                </View>
+              )}
+            </View>
+
+            {recadoPersonal ? (
+              <>
+                <View style={styles.coachFeedbackQuoteBox}>
+                  <Ionicons name="chatbubble-ellipses" size={18} color="#FF6B00" style={{ marginRight: 10, marginTop: 2 }} />
+                  <Text style={styles.coachFeedbackQuoteText}>"{recadoPersonal}"</Text>
+                </View>
+
+              </>
+            ) : (
+              <View style={styles.coachFeedbackEmptyBox}>
+                <Ionicons name="sparkles-outline" size={18} color="#FF6B00" style={{ marginRight: 10 }} />
+                <Text style={styles.coachFeedbackEmptyText}>
+                  Seu treinador está acompanhando seus treinos. Assim que ele enviar uma nova observação sobre sua evolução, ela aparecerá em destaque aqui.
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={[styles.sectionTitle, { marginTop: 22, marginBottom: 10 }]}>Financeiro</Text>
           <TouchableOpacity style={[styles.financeiroCard, { backgroundColor: finProps.bg, borderColor: finProps.border, overflow: 'hidden' }]} activeOpacity={0.8} onPress={() => navigation.navigate("Finance")}>
             <LinearGradient colors={[finProps.bg, "transparent"]} style={styles.absoluteFill} />
             <View style={[styles.financeiroIconBox, { backgroundColor: finProps.cor + '20' }]}>
@@ -305,19 +345,19 @@ export function AlunoDashboard({ route, navigation }: any) {
               </Text>
             </View>
             <View style={{ backgroundColor: '#1A1A20', padding: 6, borderRadius: 12 }}>
-               <Ionicons name="chevron-forward" size={16} color="#FFF" />
+              <Ionicons name="chevron-forward" size={16} color="#FFF" />
             </View>
           </TouchableOpacity>
 
           <View style={styles.gridActionsPremium}>
-            <TouchableOpacity style={styles.actionCardPremium} activeOpacity={0.8} onPress={() => navigation.navigate("Progress")}>
+            <TouchableOpacity style={styles.actionCardPremium} activeOpacity={0.8} onPress={() => navigation.navigate("Progress", { conexaoId: realConexaoId })}>
               <LinearGradient colors={["rgba(0, 230, 118, 0.1)", "transparent"]} style={styles.absoluteFill} />
               <View style={[styles.actionIconWrapper, { backgroundColor: "rgba(0, 230, 118, 0.15)" }]}>
                 <Ionicons name="trending-up" size={24} color="#00E676" />
               </View>
               <View style={{ marginTop: 12 }}>
-                  <Text style={styles.actionCardTitle}>Sua Evolução</Text>
-                  <Text style={styles.actionCardDesc}>Recordes e Metas</Text>
+                <Text style={styles.actionCardTitle}>Sua Evolução</Text>
+                <Text style={styles.actionCardDesc}>Recordes e Metas</Text>
               </View>
             </TouchableOpacity>
 
@@ -327,8 +367,8 @@ export function AlunoDashboard({ route, navigation }: any) {
                 <Ionicons name="chatbubbles" size={24} color="#FF6B00" />
               </View>
               <View style={{ marginTop: 12 }}>
-                  <Text style={styles.actionCardTitle}>Mensagens</Text>
-                  <Text style={styles.actionCardDesc}>Fale com Personal</Text>
+                <Text style={styles.actionCardTitle}>Mensagens</Text>
+                <Text style={styles.actionCardDesc}>Fale com Personal</Text>
               </View>
             </TouchableOpacity>
           </View>

@@ -153,7 +153,6 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({ visible, onC
           <BlurView intensity={Platform.OS === 'ios' ? 30 : 90} tint="dark" style={StyleSheet.absoluteFill} />
           
           <View style={styles.container}>
-            {/* HEADER */}
             <View style={styles.header}>
               <View style={styles.headerTitleRow}>
                 <View style={styles.iconGlowBox}>
@@ -169,7 +168,6 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({ visible, onC
               </TouchableOpacity>
             </View>
 
-            {/* SEGMENTED CONTROL (TABS) */}
             <View style={styles.segmentedControl}>
               <TouchableOpacity 
                 style={[styles.segmentBtn, mode === 'manual' && styles.segmentBtnActive]} 
@@ -188,7 +186,6 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({ visible, onC
               </TouchableOpacity>
             </View>
 
-            {/* CONTEÚDO */}
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
               
               {mode === 'import' ? (
@@ -307,7 +304,6 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({ visible, onC
 
             </ScrollView>
 
-            {/* BOTÃO NEON TRANSPARENTE */}
             <View style={styles.footer}>
               <TouchableOpacity 
                 onPress={handleGenerate} 

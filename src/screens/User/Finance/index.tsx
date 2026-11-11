@@ -56,7 +56,6 @@ export function Finance({ navigation }: any) {
             <View style={styles.invoiceBody}>
               <Text style={styles.valueLabel}>PRÓXIMA FATURA</Text>
               
-              {/* Preço Limpo sem sombras e com destaque */}
               <View style={styles.valueRow}>
                 <Text style={styles.valueText}>{detalhes.valor}</Text>
               </View>

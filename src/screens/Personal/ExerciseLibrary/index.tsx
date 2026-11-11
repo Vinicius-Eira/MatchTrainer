@@ -90,7 +90,6 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
                   <Feather name="plus" size={22} color="#FFF" />
                 </View>
               )}
-              {/* O botão "Gravar" que ficava aqui foi removido conforme solicitado */}
             </View>
           </View>
         </View>
