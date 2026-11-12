@@ -1,7 +1,7 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState, useEffect } from "react";
-import { ActivityIndicator, Image, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, Modal, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { supabase } from "../../../services/supabase"; 
 import { CONSTANTS } from "./constants";
 import { styles } from "./styles";
@@ -11,7 +11,7 @@ export function AlunoDashboard({ route, navigation }: any) {
   const { conexaoId } = route.params || { conexaoId: "1" };
   const {
     loading, refreshing, aluno, personal, conexao, diasTreino, progressoBarra, estaNoPeriodoTeste,
-    semanaAtual, temTreinosNaSemana, treinoHoje, recadoPersonal, dataRecadoPersonal, anamnesePendente, jaAvaliou,
+    semanaAtual, temTreinosNaSemana, treinoHoje, statusTreinoDia, recadoPersonal, dataRecadoPersonal, anamnesePendente, jaAvaliou,
     onRefresh, handleLogout, handleWhatsApp, featureBloqueada,
     handleAcaoEncerramento, verPerfilPersonal, irParaMeuPerfil, irParaChat
   } = useDashboard(navigation, conexaoId);
@@ -26,6 +26,7 @@ export function AlunoDashboard({ route, navigation }: any) {
 
   const [imgErroAluno, setImgErroAluno] = useState(false);
   const [imgErroPersonal, setImgErroPersonal] = useState(false);
+  const [modalRecadoVisivel, setModalRecadoVisivel] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -93,6 +94,48 @@ export function AlunoDashboard({ route, navigation }: any) {
     }
   };
   const finProps = getFinanceiroProps();
+
+  const renderEstadoSemTreino = () => {
+    if (statusTreinoDia === 'fim_ciclo') {
+      return (
+        <View style={styles.premiumEmptyWorkout}>
+          <View style={[styles.emptyWorkoutIconBg, { backgroundColor: 'rgba(0, 230, 118, 0.1)', borderColor: 'rgba(0, 230, 118, 0.3)', borderWidth: 1 }]}>
+            <Ionicons name="trophy-outline" size={30} color="#00E676" />
+          </View>
+          <Text style={styles.emptyWorkoutTitle}>Ciclo Concluído!</Text>
+          <Text style={styles.emptyWorkoutDesc}>
+            Parabéns! Você finalizou todos os treinos desta programação. Seu personal já pode liberar o próximo ciclo.
+          </Text>
+        </View>
+      );
+    }
+
+    if (statusTreinoDia === 'descanso') {
+      return (
+        <View style={styles.premiumEmptyWorkout}>
+          <View style={styles.emptyWorkoutIconBg}>
+            <MaterialCommunityIcons name="sleep" size={32} color="#FF6B00" />
+          </View>
+          <Text style={styles.emptyWorkoutTitle}>Dia de Descanso</Text>
+          <Text style={styles.emptyWorkoutDesc}>
+            Você está em dia com os treinos desta etapa da semana. Aproveite para recuperar a musculatura!
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.premiumEmptyWorkout}>
+        <View style={styles.emptyWorkoutIconBg}>
+          <MaterialCommunityIcons name="clipboard-text-outline" size={32} color="#555" />
+        </View>
+        <Text style={styles.emptyWorkoutTitle}>Aguardando Programação</Text>
+        <Text style={styles.emptyWorkoutDesc}>
+          Seu personal trainer ainda está estruturando os treinos da sua rotina ativa.
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -243,12 +286,19 @@ export function AlunoDashboard({ route, navigation }: any) {
               <LinearGradient colors={["#1A0B02", "#0A0A0C"]} style={styles.absoluteFill} />
               
               <View style={styles.premiumWorkoutHeader}>
-                <View>
+                <View style={{ flex: 1 }}>
                   <View style={styles.premiumWorkoutBadge}>
                     <Ionicons name="flame" size={12} color="#FF6B00" />
-                    <Text style={styles.premiumWorkoutBadgeText}>FOCO DO DIA</Text>
+                    <Text style={styles.premiumWorkoutBadgeText}>
+                      {treinoHoje.nome_semana ? `${treinoHoje.nome_semana.toUpperCase()} • FOCO DO DIA` : "FOCO DO DIA"}
+                    </Text>
                   </View>
                   <Text style={styles.premiumWorkoutTitle}>{treinoHoje.nome || "Treino do Dia"}</Text>
+                  {treinoHoje.objetivo ? (
+                    <Text style={styles.premiumWorkoutObjective} numberOfLines={1}>
+                      {treinoHoje.objetivo}
+                    </Text>
+                  ) : null}
                 </View>
               </View>
 
@@ -270,69 +320,70 @@ export function AlunoDashboard({ route, navigation }: any) {
               </View>
             </TouchableOpacity>
           ) : (
-            <View style={styles.premiumEmptyWorkout}>
-              <View style={styles.emptyWorkoutIconBg}>
-                <MaterialCommunityIcons name="sleep" size={32} color="#555" />
+            renderEstadoSemTreino()
+          )}
+
+          {recadoPersonal ? (
+            <TouchableOpacity 
+              style={styles.feedbackBubble} 
+              activeOpacity={0.85} 
+              onPress={() => setModalRecadoVisivel(true)}
+            >
+              <LinearGradient colors={["rgba(255, 107, 0, 0.12)", "transparent"]} style={styles.absoluteFill} />
+              
+              <View style={styles.feedbackHeaderRow}>
+                <View style={styles.feedbackTitleRow}>
+                  <View style={styles.feedbackIconBadge}>
+                    <Ionicons name="chatbubble-ellipses" size={16} color="#FF6B00" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.feedbackLabelUpper}>FEEDBACK DO TREINADOR</Text>
+                    <Text style={styles.feedbackTitle} numberOfLines={1}>
+                      Prof. {personal.nome?.split(' ')[0] || "Treinador"}
+                    </Text>
+                  </View>
+                </View>
+
+                {dataRecadoPersonal ? (
+                  <View style={styles.feedbackDateBadge}>
+                    <Text style={styles.feedbackDateText}>{dataRecadoPersonal}</Text>
+                  </View>
+                ) : null}
               </View>
-              <Text style={styles.emptyWorkoutTitle}>Descanso ou Fim de Ciclo</Text>
-              <Text style={styles.emptyWorkoutDesc}>Você não tem treinos pendentes para hoje.</Text>
+
+              <View style={styles.feedbackQuoteBox}>
+                <Text style={styles.feedbackText} numberOfLines={3}>
+                  "{recadoPersonal}"
+                </Text>
+              </View>
+
+              <View style={styles.feedbackMetaFooter}>
+                <View style={styles.feedbackMetaPill}>
+                  <View style={styles.feedbackOnlineDot} />
+                  <Text style={styles.feedbackMetaPillText}>Acompanhamento de Evolução</Text>
+                </View>
+
+                <View style={styles.feedbackReadMoreRow}>
+                  <Text style={styles.feedbackReadMoreText}>Ler completo</Text>
+                  <Ionicons name="chevron-forward" size={13} color="#FF6B00" />
+                </View>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.feedbackBubbleEmpty}>
+              <View style={styles.feedbackIconBadge}>
+                <Ionicons name="chatbox-outline" size={16} color="#FF6B00" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.feedbackEmptyTitle}>Feedback do Treinador</Text>
+                <Text style={styles.feedbackTextEmpty}>
+                  Seu personal ainda não adicionou nenhum comentário sobre a sua evolução.
+                </Text>
+              </View>
             </View>
           )}
 
-          <View style={styles.coachFeedbackCard}>
-            <LinearGradient 
-              colors={recadoPersonal ? ["rgba(255, 107, 0, 0.16)", "rgba(10, 10, 14, 0.95)"] : ["rgba(255, 255, 255, 0.03)", "transparent"]} 
-              style={styles.absoluteFill} 
-            />
-
-            <View style={styles.coachFeedbackTopBar}>
-              <View style={styles.coachFeedbackProfileRow}>
-                <View style={styles.coachFeedbackAvatarWrap}>
-                  {personal.foto_url && !imgErroPersonal ? (
-                    <Image source={{ uri: personal.foto_url }} style={styles.coachFeedbackAvatarImg} />
-                  ) : (
-                    <Ionicons name="person" size={16} color="#FF6B00" />
-                  )}
-                  <View style={styles.coachFeedbackOnlineDot} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Text style={styles.coachFeedbackLabel}>FEEDBACK DO PERSONAL</Text>
-                    <View style={styles.coachFeedbackActiveTag}>
-                      <Text style={styles.coachFeedbackActiveTagText}>ACOMPANHAMENTO ATIVO</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.coachFeedbackTrainerName}>Prof. {personal.nome?.split(' ')[0]}</Text>
-                </View>
-              </View>
-
-              {dataRecadoPersonal && (
-                <View style={styles.coachFeedbackDateChip}>
-                  <Ionicons name="calendar-outline" size={10} color="#FF6B00" style={{ marginRight: 4 }} />
-                  <Text style={styles.coachFeedbackDateText}>{dataRecadoPersonal}</Text>
-                </View>
-              )}
-            </View>
-
-            {recadoPersonal ? (
-              <>
-                <View style={styles.coachFeedbackQuoteBox}>
-                  <Ionicons name="chatbubble-ellipses" size={18} color="#FF6B00" style={{ marginRight: 10, marginTop: 2 }} />
-                  <Text style={styles.coachFeedbackQuoteText}>"{recadoPersonal}"</Text>
-                </View>
-
-              </>
-            ) : (
-              <View style={styles.coachFeedbackEmptyBox}>
-                <Ionicons name="sparkles-outline" size={18} color="#FF6B00" style={{ marginRight: 10 }} />
-                <Text style={styles.coachFeedbackEmptyText}>
-                  Seu treinador está acompanhando seus treinos. Assim que ele enviar uma nova observação sobre sua evolução, ela aparecerá em destaque aqui.
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <Text style={[styles.sectionTitle, { marginTop: 22, marginBottom: 10 }]}>Financeiro</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 20, marginBottom: 10 }]}>Financeiro</Text>
           <TouchableOpacity style={[styles.financeiroCard, { backgroundColor: finProps.bg, borderColor: finProps.border, overflow: 'hidden' }]} activeOpacity={0.8} onPress={() => navigation.navigate("Finance")}>
             <LinearGradient colors={[finProps.bg, "transparent"]} style={styles.absoluteFill} />
             <View style={[styles.financeiroIconBox, { backgroundColor: finProps.cor + '20' }]}>
@@ -395,6 +446,69 @@ export function AlunoDashboard({ route, navigation }: any) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <Modal visible={modalRecadoVisivel} transparent animationType="fade" onRequestClose={() => setModalRecadoVisivel(false)}>
+        <View style={styles.feedbackModalOverlay}>
+          <View style={styles.feedbackModalCard}>
+            <LinearGradient colors={["rgba(255, 107, 0, 0.15)", "transparent"]} style={styles.absoluteFill} />
+
+            <View style={styles.feedbackModalHeader}>
+              <View style={styles.feedbackIconBadge}>
+                <Ionicons name="chatbubble-ellipses" size={18} color="#FF6B00" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.feedbackLabelUpper}>ACOMPANHAMENTO</Text>
+                <Text style={styles.feedbackModalTitle}>Feedback do Treinador</Text>
+              </View>
+              <TouchableOpacity style={styles.feedbackModalCloseBtn} onPress={() => setModalRecadoVisivel(false)}>
+                <Ionicons name="close" size={20} color="#888" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.feedbackModalStatsGrid}>
+              <View style={styles.feedbackModalStatBox}>
+                <Text style={styles.feedbackModalStatLabel}>TREINADOR</Text>
+                <Text style={styles.feedbackModalStatValue} numberOfLines={1}>
+                  Prof. {personal.nome?.split(' ')[0] || "Personal"}
+                </Text>
+              </View>
+              {dataRecadoPersonal ? (
+                <View style={styles.feedbackModalStatBox}>
+                  <Text style={styles.feedbackModalStatLabel}>DATA</Text>
+                  <Text style={[styles.feedbackModalStatValue, { color: '#FF6B00' }]}>
+                    {dataRecadoPersonal}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
+            <View style={styles.feedbackModalMessageBox}>
+              <Text style={styles.feedbackModalMessageLabel}>MENSAGEM DO SEU PERSONAL:</Text>
+              <Text style={styles.feedbackModalMessageText}>{recadoPersonal}</Text>
+            </View>
+
+            <View style={styles.feedbackModalActionsRow}>
+              <TouchableOpacity 
+                style={styles.feedbackModalBtnSecondary} 
+                onPress={() => {
+                  setModalRecadoVisivel(false);
+                  navigation.navigate("Progress", { conexaoId: realConexaoId });
+                }}
+              >
+                <Ionicons name="trending-up" size={16} color="#FF6B00" style={{ marginRight: 6 }} />
+                <Text style={styles.feedbackModalBtnSecondaryText}>SUA EVOLUÇÃO</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.feedbackModalBtnPrimary} 
+                onPress={() => setModalRecadoVisivel(false)}
+              >
+                <Text style={styles.feedbackModalBtnPrimaryText}>FECHAR</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
