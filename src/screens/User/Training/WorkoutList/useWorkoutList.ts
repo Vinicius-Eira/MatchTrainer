@@ -46,19 +46,27 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
   const [expandedFeedbackId, setExpandedFeedbackId] = useState<string | null>(null);
 
   const toggleFeedback = (id: string) => {
-      setExpandedFeedbackId(prev => prev === id ? null : id);
+    setExpandedFeedbackId(prev => prev === id ? null : id);
   };
 
   const formatarDataBR = (dataIso?: string | null) => {
     if (!dataIso) return null;
     try {
-      if (dataIso.length === 10 && dataIso.includes('-')) {
-        const parts = dataIso.split('-');
+      const limpo = dataIso.split('T')[0];
+      if (limpo.length === 10 && limpo.includes('-')) {
+        const parts = limpo.split('-');
         return `${parts[2]}/${parts[1]}/${parts[0]}`; 
       }
       const d = new Date(dataIso);
-      return new Date(d.getTime() + d.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
     } catch { return null; }
+  };
+
+  const paraDataLocalISO = (d: Date) => {
+    const ano = d.getFullYear();
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const dia = String(d.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
   };
 
   const DIAS_SEMANA = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"];
@@ -67,16 +75,23 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Usuário não logado");
 
-    let cid = currentConexaoId;
+    let cid = currentConexaoId && currentConexaoId !== "1" ? currentConexaoId : null;
     if (!cid) {
-      const { data: conexao } = await supabase.from('conexoes').select('id').eq('usuario_id', user.id).in('status', ['aluno_ativo', 'aguardando_assinatura', 'pendente']).maybeSingle();
+      const { data: conexao } = await supabase
+        .from('conexoes')
+        .select('id')
+        .eq('usuario_id', user.id)
+        .in('status', ['aluno_ativo', 'aguardando_assinatura', 'pendente'])
+        .order('criado_em', { ascending: false })
+        .limit(1)
+        .maybeSingle();
       if (conexao) cid = conexao.id;
     }
 
     const { data: programas, error: errTreinos } = await supabase
       .from('training_programs')
       .select(`
-        id, name, objective, general_observation,
+        id, name, objective, general_observation, created_at,
         training_weeks (
           id, name, general_notes, start_date, end_date,
           workout_days ( id, name, order_index, planned_exercises ( id, public_note ) )
@@ -97,45 +112,67 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
     let execucoes: any[] = [];
     if (programas && cid) {
       const { data: historico } = await supabase
-         .from('treinos_execucoes')
-         .select('treino_id')
-         .eq('conexao_id', cid);
-      if(historico) execucoes = historico;
+        .from('treinos_execucoes')
+        .select('treino_id')
+        .eq('conexao_id', cid);
+      if (historico) execucoes = historico;
     }
 
     return { cid, programa: programas, execucoes };
   };
 
   const processarDados = (programa: any, execucoes: any[]) => {
-    let nomeRotina = programa?.name || "Planejamento Atual";
-    if (nomeRotina.toLowerCase().includes("deload")) nomeRotina = "Planejamento Atual";
+    const nomeRotina = (programa?.name && programa.name.trim())
+      ? programa.name.trim()
+      : (programa?.objective && programa.objective.trim() ? programa.objective.trim() : "Treino Personalizado");
 
     let weeksSource = programa?.training_weeks || [];
-    let legacyDays = programa?.workout_days || [];
+    const legacyDays = programa?.workout_days || [];
 
     if (weeksSource.length === 0 && legacyDays.length > 0) {
-      weeksSource = [{ id: 'legacy-week-1', name: 'Sua Rotina', start_date: null, end_date: null, general_notes: programa.general_observation || '', workout_days: legacyDays }];
+      weeksSource = [{
+        id: 'legacy-week-1',
+        name: 'Semana 1',
+        start_date: null,
+        end_date: null,
+        general_notes: programa.general_observation || '',
+        workout_days: legacyDays
+      }];
     }
 
-    if (weeksSource.length === 0) return { semanasMapeadas: [], total: 0, concluidosTotais: 0, semanaAtualCalculada: null, programNameTratado: nomeRotina };
+    if (weeksSource.length === 0) {
+      return { semanasMapeadas: [], total: 0, concluidosTotais: 0, semanaAtualCalculada: null, programNameTratado: nomeRotina };
+    }
 
-    const sortedWeeks = weeksSource.sort((a: any, b: any) => {
-       if(a.start_date && b.start_date) return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
-       return a.name.localeCompare(b.name);
+    const sortedWeeks = [...weeksSource].sort((a: any, b: any) => {
+      if (a.start_date && b.start_date) return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+      return (a.name || "").localeCompare(b.name || "", undefined, { numeric: true, sensitivity: 'base' });
     });
     
     let sumTreinos = 0;
     let sumConcluidosGeral = 0;
-    let weekAtualDetectada: string | null = null;
-    const dataAtual = new Date();
-    dataAtual.setHours(0, 0, 0, 0); 
+    let weekPorDataReal: string | null = null;
+    let primeiraWeekComPendentes: string | null = null;
+
+    const dataHoje = new Date();
+    dataHoje.setHours(0, 0, 0, 0);
+
+    const dataCriacaoPrograma = programa?.created_at ? new Date(programa.created_at) : new Date();
+    const baseCriacaoLocal = new Date(
+      dataCriacaoPrograma.getFullYear(),
+      dataCriacaoPrograma.getMonth(),
+      dataCriacaoPrograma.getDate(),
+      0, 0, 0, 0
+    );
+
+    const idsConcluidosSet = new Set(execucoes.map(exec => String(exec.treino_id)));
 
     const semanasMapeadas: MappedWeek[] = sortedWeeks.map((week: any, index: number) => {
-      const sortedDays = (week.workout_days || []).sort((a: any, b: any) => a.order_index - b.order_index);
+      const sortedDays = [...(week.workout_days || [])].sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
       let concluidosNaSemana = 0;
 
       const diasMapeados: MappedDay[] = sortedDays.map((dia: any, idx: number) => {
-        const completed = execucoes.some(exec => exec.treino_id === dia.id); 
+        const completed = idsConcluidosSet.has(String(dia.id)); 
         if (completed) { concluidosNaSemana++; sumConcluidosGeral++; }
         
         const diaSemana = DIAS_SEMANA[idx % 7];
@@ -144,7 +181,7 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
         return {
           id: dia.id,
           nome: dia.name,
-          objetivo: "Treinamento",
+          objetivo: programa?.objective || "Treinamento",
           qtd_exercicios: dia.planned_exercises?.length || 0,
           qtd_series: (dia.planned_exercises?.length || 0) * 3, 
           duracao_estimada: `${Math.max(30, (dia.planned_exercises?.length || 0) * 8)} min`,
@@ -156,37 +193,37 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
       });
 
       sumTreinos += diasMapeados.length;
-      
-      let sDate = week.start_date || null;
-      let eDate = week.end_date || null;
+
+      let sDate = week.start_date ? week.start_date.split('T')[0] : null;
+      let eDate = week.end_date ? week.end_date.split('T')[0] : null;
 
       if (!sDate || !eDate) {
-          const inicioFicticio = new Date(dataAtual);
-          inicioFicticio.setDate(inicioFicticio.getDate() + (index * 7)); 
-          
-          const fimFicticio = new Date(inicioFicticio);
-          fimFicticio.setDate(fimFicticio.getDate() + 6); 
+        const inicioFixo = new Date(baseCriacaoLocal);
+        inicioFixo.setDate(inicioFixo.getDate() + (index * 7)); 
+        
+        const fimFixo = new Date(inicioFixo);
+        fimFixo.setDate(fimFixo.getDate() + 6); 
 
-          sDate = inicioFicticio.toISOString().split('T')[0];
-          eDate = fimFicticio.toISOString().split('T')[0];
-      }
-      
-      if (!weekAtualDetectada) {
-         if (sDate && eDate) {
-             const start = new Date(sDate);
-             const end = new Date(eDate);
-             const startAdjusted = new Date(start.getTime() + start.getTimezoneOffset() * 60000);
-             const endAdjusted = new Date(end.getTime() + end.getTimezoneOffset() * 60000);
-             startAdjusted.setHours(0,0,0,0);
-             endAdjusted.setHours(0,0,0,0);
-
-             if (dataAtual >= startAdjusted && dataAtual <= endAdjusted) weekAtualDetectada = week.id;
-         } else if (concluidosNaSemana < diasMapeados.length) {
-             weekAtualDetectada = week.id;
-         }
+        sDate = paraDataLocalISO(inicioFixo);
+        eDate = paraDataLocalISO(fimFixo);
       }
 
-      let tituloHierarquico = `${nomeRotina} | ${week.name}`;
+      if (sDate && eDate && !weekPorDataReal) {
+        const [sY, sM, sD] = sDate.split('-').map(Number);
+        const [eY, eM, eD] = eDate.split('-').map(Number);
+        const startLocal = new Date(sY, sM - 1, sD, 0, 0, 0, 0);
+        const endLocal = new Date(eY, eM - 1, eD, 23, 59, 59, 999);
+
+        if (dataHoje >= startLocal && dataHoje <= endLocal && concluidosNaSemana < diasMapeados.length) {
+          weekPorDataReal = week.id;
+        }
+      }
+
+      if (!primeiraWeekComPendentes && concluidosNaSemana < diasMapeados.length && diasMapeados.length > 0) {
+        primeiraWeekComPendentes = week.id;
+      }
+
+      const tituloHierarquico = `${nomeRotina} / ${week.name}`;
 
       return {
         id: week.id,
@@ -202,7 +239,10 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
       };
     });
 
-    if (!weekAtualDetectada && semanasMapeadas.length > 0) weekAtualDetectada = semanasMapeadas[semanasMapeadas.length - 1].id;
+    const weekAtualDetectada =
+      weekPorDataReal ||
+      primeiraWeekComPendentes ||
+      (semanasMapeadas.length > 0 ? semanasMapeadas[semanasMapeadas.length - 1].id : null);
 
     return { semanasMapeadas, total: sumTreinos, concluidosTotais: sumConcluidosGeral, semanaAtualCalculada: weekAtualDetectada, programNameTratado: nomeRotina };
   };
@@ -212,10 +252,7 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
     setConexaoId(result.cid);
     
     if (result.programa) {
-      let dbObjective = result.programa.objective || "Treinamento";
-      if (dbObjective.toLowerCase().includes("deload")) {
-          dbObjective = "Foco e Evolução";
-      }
+      const dbObjective = result.programa.objective || "Hipertrofia e Evolução";
       setProgramObjective(dbObjective);
       setProgramLevel("Intermediário"); 
       
@@ -226,7 +263,7 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
       setTreinosConcluidosGeral(concluidosTotais);
       setCurrentAutoWeekId(semanaAtualCalculada);
     } else {
-      setProgramName("Planejamento Atual");
+      setProgramName("Meus Treinos");
       setProgramObjective("Aguardando Rotina");
       setProgramLevel("");
       setSemanas([]);
@@ -246,7 +283,7 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-        fetchDadosEAtualizarEstado();
+      fetchDadosEAtualizarEstado();
     });
     return unsubscribe;
   }, [navigation, conexaoId]);

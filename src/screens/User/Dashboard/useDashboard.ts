@@ -3,6 +3,8 @@ import { Alert, Linking } from "react-native";
 import { supabase } from "../../../services/supabase";
 import { DiaSemana, Modality } from "./constants";
 
+export type StatusTreinoDia = 'disponivel' | 'descanso' | 'fim_ciclo' | 'sem_programa';
+
 export function useDashboard(navigation: any, conexaoId: string) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -13,7 +15,9 @@ export function useDashboard(navigation: any, conexaoId: string) {
   
   const [anamnesePendente, setAnamnesePendente] = useState<any>(null);
   const [recadoPersonal, setRecadoPersonal] = useState<string | null>(null);
+  const [dataRecadoPersonal, setDataRecadoPersonal] = useState<string | null>(null);
   const [treinoHoje, setTreinoHoje] = useState<any>(null);
+  const [statusTreinoDia, setStatusTreinoDia] = useState<StatusTreinoDia>('sem_programa');
   const [semanaAtual, setSemanaAtual] = useState<DiaSemana[]>([]);
   const [temTreinosNaSemana, setTemTreinosNaSemana] = useState(false);
 
@@ -33,6 +37,24 @@ export function useDashboard(navigation: any, conexaoId: string) {
     valor: 'R$ 0,00',
     vencimento: '--/--'
   });
+
+  const normalizarDataLocal = (isoDateStr: string) => {
+    if (isoDateStr.length === 10 && isoDateStr.includes('-')) {
+      const [ano, mes, dia] = isoDateStr.split('-').map(Number);
+      return new Date(ano, mes - 1, dia, 0, 0, 0, 0);
+    }
+    const d = new Date(isoDateStr);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+  };
+
+  const isDiaDeDescansoExplicito = (nomeDia?: string, qtdExercicios?: number) => {
+    if (!nomeDia) return false;
+    const nomeLimpo = nomeDia.toLowerCase().trim();
+    return (
+      (nomeLimpo.includes("descanso") || nomeLimpo.includes("day off") || nomeLimpo.includes("folga")) &&
+      (qtdExercicios || 0) === 0
+    );
+  };
 
   const fetchDados = async () => {
     try {
@@ -64,9 +86,14 @@ export function useDashboard(navigation: any, conexaoId: string) {
       setAluno(conexaoData.usuarios);
 
       setRecadoPersonal(conexaoData.recado_evolucao || null);
+      setDataRecadoPersonal(
+        conexaoData.data_recado 
+          ? new Date(conexaoData.data_recado).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+          : null
+      );
 
       const hojeData = new Date();
-      const dataInicio = new Date(conexaoData.atualizado_em || conexaoData.criado_em || Date.now());
+      const dataInicio = new Date(conexaoData.confirmado_em || conexaoData.criado_em || Date.now());
       const diffTime = Math.abs(hojeData.getTime() - dataInicio.getTime());
       const diasCorridos = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
       const diasLimitados = diasCorridos > 60 ? 60 : diasCorridos;
@@ -82,16 +109,17 @@ export function useDashboard(navigation: any, conexaoId: string) {
         .limit(1);
       setAnamnesePendente(quests && quests.length > 0 ? quests[0] : null);
 
-      const { data: programaTreino } = await supabase
+      const { data: programaTreino, error: errProg } = await supabase
         .from('training_programs')
         .select(`
-          id, name, general_observation,
+          id, name, objective, general_observation,
           training_weeks (
-             id, name, start_date, end_date,
-             workout_days ( id, name, order_index, objective, planned_exercises ( id ) )
+            id, name, general_notes, start_date, end_date,
+            workout_days ( id, name, order_index, planned_exercises ( id, public_note ) )
           ),
           workout_days (
-             id, name, order_index, objective, planned_exercises ( id )
+            id, name, order_index,
+            planned_exercises ( id, public_note )
           )
         `)
         .eq('student_id', user.id)
@@ -99,6 +127,10 @@ export function useDashboard(navigation: any, conexaoId: string) {
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      if (errProg && errProg.code !== 'PGRST116') {
+        console.log("Aviso ao consultar programa de treino:", errProg);
+      }
 
       setRecadoPersonal(conexaoData.recado_evolucao || programaTreino?.general_observation || null);
 
@@ -121,7 +153,10 @@ export function useDashboard(navigation: any, conexaoId: string) {
         ultimos7Dias.push(d);
       }
       
-      const todayStr = hojeData.toISOString().split('T')[0];
+      const hojeLocal = new Date(hojeData.getTime() - (hojeData.getTimezoneOffset() * 60000));
+      const todayStr = hojeLocal.toISOString().split('T')[0];
+
+      let treinouNosUltimos7Dias = false;
 
       const calendarioFormatado = ultimos7Dias.map(d => {
         const dataLocal = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
@@ -139,6 +174,8 @@ export function useDashboard(navigation: any, conexaoId: string) {
           return dataExecStr === dateStr;
         });
 
+        if (treinouNesteDia) treinouNosUltimos7Dias = true;
+
         let statusDia = 'pendente';
         if (treinouNesteDia) statusDia = 'concluido';
         else if (isToday) statusDia = 'hoje';
@@ -151,14 +188,15 @@ export function useDashboard(navigation: any, conexaoId: string) {
         };
       });
       setSemanaAtual(calendarioFormatado);
+      setTemTreinosNaSemana(treinouNosUltimos7Dias);
 
       if (programaTreino) {
         let semanasSource: any[] = programaTreino.training_weeks || [];
-        let diasLegados: any[] = programaTreino.workout_days || [];
+        const diasLegados: any[] = programaTreino.workout_days || [];
         
         if (semanasSource.length === 0 && diasLegados.length > 0) {
           semanasSource = [{ 
-            id: 'semana-legada', 
+            id: 'legacy-week-1', 
             name: 'Sua Rotina', 
             start_date: null,
             end_date: null,
@@ -168,44 +206,130 @@ export function useDashboard(navigation: any, conexaoId: string) {
 
         if (semanasSource.length > 0) {
           const semanasOrdenadas = [...semanasSource].sort((a: any, b: any) => {
-            if (a.start_date && b.start_date) return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
-            return a.name.localeCompare(b.name);
+            if (a.start_date && b.start_date) {
+              return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+            }
+            return (a.name || "").localeCompare(b.name || "", undefined, { numeric: true, sensitivity: 'base' });
           });
 
-          let proximoTreino = null;
+          const idsConcluidosSet = new Set(treinosConcluidosGeral.map(e => String(e.treino_id)));
+          const hojeMeiaNoite = new Date(hojeData.getFullYear(), hojeData.getMonth(), hojeData.getDate(), 0, 0, 0, 0);
 
-          for (const week of semanasOrdenadas) {
-            const diasOrdenados = [...(week.workout_days || [])].sort((a: any, b: any) => a.order_index - b.order_index);
-            for (const dia of diasOrdenados) {
-              const jaFez = treinosConcluidosGeral.some(exec => exec.treino_id === dia.id);
-              if (!jaFez) { 
-                proximoTreino = dia; 
-                break; 
+          let totalTreinosReaisPrograma = 0;
+          let totalTreinosConcluidosPrograma = 0;
+
+          const semanasProcessadas = semanasOrdenadas.map((week: any) => {
+            const diasOrdenados = [...(week.workout_days || [])].sort(
+              (a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0)
+            );
+
+            const diasValidos = diasOrdenados.filter(
+              (d: any) => !isDiaDeDescansoExplicito(d.name, d.planned_exercises?.length)
+            );
+            const temDiaDescansoExplicito = diasOrdenados.some(
+              (d: any) => isDiaDeDescansoExplicito(d.name, d.planned_exercises?.length)
+            );
+
+            totalTreinosReaisPrograma += diasValidos.length;
+
+            const pendentesDaSemana = diasValidos.filter((d: any) => !idsConcluidosSet.has(String(d.id)));
+            const concluidosDaSemana = diasValidos.length - pendentesDaSemana.length;
+            totalTreinosConcluidosPrograma += concluidosDaSemana;
+
+            let isDentroDaDataAtual = false;
+            if (week.start_date && week.end_date) {
+              const dtInicio = normalizarDataLocal(week.start_date);
+              const dtFim = normalizarDataLocal(week.end_date);
+              if (hojeMeiaNoite >= dtInicio && hojeMeiaNoite <= dtFim) {
+                isDentroDaDataAtual = true;
               }
             }
-            if (proximoTreino) break;
-          }
-          
-          if (proximoTreino) {
-            setTreinoHoje({
-              id: proximoTreino.id,
-              nome: proximoTreino.name,
-              qtd_exercicios: proximoTreino.planned_exercises?.length || 0,
-              duracao_estimada: `${Math.max(30, (proximoTreino.planned_exercises?.length || 0) * 8)} min`,
-              fez_hoje: false
-            });
-            setTemTreinosNaSemana(true); 
-          } else {
+
+            return {
+              ...week,
+              diasOrdenados,
+              diasValidos,
+              pendentesDaSemana,
+              concluidosDaSemana,
+              temDiaDescansoExplicito,
+              isDentroDaDataAtual
+            };
+          });
+
+          if (totalTreinosReaisPrograma === 0) {
+            const existeDescansoCadastrado = semanasProcessadas.some(w => w.temDiaDescansoExplicito);
             setTreinoHoje(null);
-            setTemTreinosNaSemana(treinosConcluidosGeral.length > 0);
+            setStatusTreinoDia(existeDescansoCadastrado ? 'descanso' : 'sem_programa');
+          } else if (totalTreinosConcluidosPrograma >= totalTreinosReaisPrograma) {
+            setTreinoHoje(null);
+            setStatusTreinoDia('fim_ciclo');
+          } else {
+            const semanaPorDataHoje = semanasProcessadas.find(w => w.isDentroDaDataAtual);
+            const primeiraSemanaComPendentes = semanasProcessadas.find(w => w.pendentesDaSemana.length > 0);
+
+            let semanaAlvo = null;
+            let isDescansoEntreSemanas = false;
+
+            if (semanaPorDataHoje) {
+              if (semanaPorDataHoje.pendentesDaSemana.length > 0) {
+                semanaAlvo = semanaPorDataHoje;
+              } else {
+                const indiceSemanaHoje = semanasProcessadas.indexOf(semanaPorDataHoje);
+                const semanaAnteriorPendente = semanasProcessadas
+                  .slice(0, indiceSemanaHoje)
+                  .find(w => w.pendentesDaSemana.length > 0);
+
+                if (semanaAnteriorPendente) {
+                  semanaAlvo = semanaAnteriorPendente;
+                } else {
+                  const proximaSemanaFutura = semanasProcessadas
+                    .slice(indiceSemanaHoje + 1)
+                    .find(w => w.pendentesDaSemana.length > 0);
+
+                  if (proximaSemanaFutura?.start_date && normalizarDataLocal(proximaSemanaFutura.start_date) > hojeMeiaNoite) {
+                    isDescansoEntreSemanas = true;
+                  } else {
+                    semanaAlvo = proximaSemanaFutura || primeiraSemanaComPendentes;
+                  }
+                }
+              }
+            } else {
+              semanaAlvo = primeiraSemanaComPendentes;
+            }
+
+            if (isDescansoEntreSemanas) {
+              setTreinoHoje(null);
+              setStatusTreinoDia('descanso');
+            } else if (semanaAlvo && semanaAlvo.pendentesDaSemana.length > 0) {
+              const proximoTreino = semanaAlvo.pendentesDaSemana[0];
+              const qtdEx = proximoTreino.planned_exercises?.length || 0;
+              let objetivoFormatado = programaTreino.objective || "Treinamento";
+              if (objetivoFormatado.toLowerCase().includes("deload")) {
+                objetivoFormatado = "Foco e Evolução";
+              }
+
+              setTreinoHoje({
+                id: proximoTreino.id,
+                nome: proximoTreino.name,
+                nome_semana: semanaAlvo.name,
+                objetivo: objetivoFormatado,
+                qtd_exercicios: qtdEx,
+                duracao_estimada: `${Math.max(30, qtdEx * 8)} min`,
+                fez_hoje: false
+              });
+              setStatusTreinoDia('disponivel');
+            } else {
+              setTreinoHoje(null);
+              setStatusTreinoDia('fim_ciclo');
+            }
           }
         } else {
           setTreinoHoje(null);
-          setTemTreinosNaSemana(false);
+          setStatusTreinoDia('sem_programa');
         }
       } else {
         setTreinoHoje(null);
-        setTemTreinosNaSemana(false);
+        setStatusTreinoDia('sem_programa');
       }
 
       const { data: avalData } = await supabase
@@ -320,7 +444,7 @@ export function useDashboard(navigation: any, conexaoId: string) {
 
   return {
     loading, refreshing, aluno, personal, conexao, diasTreino, progressoBarra, estaNoPeriodoTeste, modalidade,
-    semanaAtual, temTreinosNaSemana, treinoHoje, recadoPersonal, anamnesePendente, modalAvaliacaoVisible, notaSelecionada, comentario,
+    semanaAtual, temTreinosNaSemana, treinoHoje, statusTreinoDia, recadoPersonal, dataRecadoPersonal, anamnesePendente, modalAvaliacaoVisible, notaSelecionada, comentario,
     salvandoAvaliacao, jaAvaliou, financeiroInfo, setModalAvaliacaoVisible, setNotaSelecionada, setComentario,
     onRefresh, handleLogout, handleWhatsApp, featureBloqueada, handleAcaoEncerramento, handleEnviarAvaliacao, irParaChat,
     verPerfilPersonal: () => navigation.navigate("PersonalPublicProfile", { personalId: personal?.id, fromDashboard: true }),
