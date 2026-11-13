@@ -50,9 +50,9 @@ export function WorkoutPreview({ route, navigation }: any) {
             <Text style={styles.treinoObjetivo}>{treino.objetivo}</Text>
           </View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 107, 0, 0.1)', padding: 12, borderRadius: 8, marginTop: 5, borderWidth: 1, borderColor: 'rgba(255, 107, 0, 0.3)' }}>
-             <Ionicons name="analytics-outline" size={20} color="#FF6B00" style={{ marginRight: 10 }} />
-             <Text style={{ color: '#FFF', fontSize: 13, flex: 1, lineHeight: 18 }}>{treino.mensagem_hype}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 107, 0, 0.1)', padding: 14, borderRadius: 12, marginTop: 8, width: '100%', borderWidth: 1, borderColor: 'rgba(255, 107, 0, 0.3)' }}>
+            <Ionicons name="analytics-outline" size={20} color="#FF6B00" style={{ marginRight: 10 }} />
+            <Text style={{ color: '#FFF', fontSize: 13, flex: 1, lineHeight: 18 }}>{treino.mensagem_hype}</Text>
           </View>
 
           {treino.observacao_geral && (
@@ -62,6 +62,7 @@ export function WorkoutPreview({ route, navigation }: any) {
           )}
           
           <View style={styles.macroStatsContainer}>
+            <LinearGradient colors={["rgba(255, 107, 0, 0.08)", "transparent"]} style={styles.macroStatsGradient} />
             <View style={styles.macroStat}>
               <Text style={styles.macroStatValue}>{exercicios.length}</Text>
               <Text style={styles.macroStatLabel}>Exercícios</Text>
@@ -82,35 +83,37 @@ export function WorkoutPreview({ route, navigation }: any) {
         <Text style={styles.sectionTitle}>Plano de Execução</Text>
         
         <View style={styles.listaContainer}>
-          {exercicios.map((ex, index) => (
+          {exercicios.map((ex: any) => (
             <View key={ex.id} style={styles.exercicioCard}>
               
               <View style={styles.exercicioRow}>
-                <View style={[styles.videoContainer, { width: 100, height: 80 }]}>
+                <View style={styles.videoContainer}>
                   {ex.imagem_url ? (
                     <Image source={{ uri: ex.imagem_url }} style={styles.videoThumbnail} />
                   ) : (
                     <View style={styles.videoPlaceholder}>
-                      <MaterialCommunityIcons name="weight-lifter" size={32} color="#444" />
+                      <MaterialCommunityIcons name="weight-lifter" size={38} color="#444" />
                     </View>
                   )}
                   <View style={styles.playOverlay}>
-                    <Ionicons name="play" size={20} color="#FFF" style={{ marginLeft: 3 }} />
+                    <Ionicons name="play" size={22} color="#FFF" style={{ marginLeft: 3 }} />
                   </View>
                 </View>
 
                 <View style={styles.exercicioMainInfo}>
                   <View>
                     <Text style={styles.exercicioNome} numberOfLines={2}>{ex.nome}</Text>
-                    {ex.grupo_muscular && (
+                    {ex.grupo_muscular ? (
                       <Text style={styles.grupoMuscularText}>{ex.grupo_muscular}</Text>
-                    )}
+                    ) : null}
                   </View>
 
                   <View style={styles.premiumMetricsBlock}>
                     <View style={styles.premiumMetricRow}>
                       <Text style={styles.premiumMetricLabel}>Séries / Reps</Text>
-                      <Text style={styles.premiumMetricValue}>{ex.series} <Text style={styles.metricSubText}>×</Text> {ex.reps_alvo}</Text>
+                      <Text style={styles.premiumMetricValue}>
+                        {ex.series} <Text style={styles.metricSubText}>×</Text> {ex.reps_alvo}
+                      </Text>
                     </View>
 
                     <View style={styles.premiumMetricRowHighlight}>
@@ -120,11 +123,29 @@ export function WorkoutPreview({ route, navigation }: any) {
 
                     <View style={styles.premiumMetricRow}>
                       <Text style={styles.premiumMetricLabel}>Descanso</Text>
-                      <Text style={styles.premiumMetricValue}>{ex.descanso}<Text style={styles.metricSubText}>s</Text></Text>
+                      <Text style={styles.premiumMetricValue}>
+                        {ex.descanso} <Text style={styles.metricSubText}>s</Text>
+                      </Text>
                     </View>
                   </View>
                 </View>
               </View>
+
+              {ex.series_historico && ex.series_historico.length > 0 && (
+                <View style={styles.seriesHistoryBox}>
+                  <Text style={styles.seriesHistoryLabel}>ÚLTIMAS CARGAS POR SÉRIE:</Text>
+                  <View style={styles.seriesPillsRow}>
+                    {ex.series_historico.map((s: any, idx: number) => (
+                      <View key={idx} style={[styles.serieChip, s.isMax && styles.serieChipMax]}>
+                        <Text style={styles.serieChipNumber}>S{s.numero}:</Text>
+                        <Text style={[styles.serieChipValue, s.isMax && { color: '#FF6B00' }]}>
+                          {s.carga} kg
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
 
               {ex.observacao ? (
                 <View style={styles.trainerNoteBox}>
