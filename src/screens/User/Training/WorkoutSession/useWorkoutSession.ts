@@ -5,13 +5,16 @@ import { supabase } from "../../../../services/supabase";
 export function useWorkoutSession(navigation: any, route: any) {
   const { treinoId, conexaoId } = route.params || {};
 
+  const [realConexaoId, setRealConexaoId] = useState<string | null>(
+    conexaoId && conexaoId !== "1" ? conexaoId : null
+  );
   const [treinoInfo, setTreinoInfo] = useState({ id: "", nome: "Carregando..." });
   const [exercicios, setExercicios] = useState<any[]>([]);
   const [progressoBarra, setProgressoBarra] = useState(0);
   const [observacaoTreinoGeral, setObservacaoTreinoGeral] = useState("");
   
   const [nivelEsforco, setNivelEsforco] = useState<number | null>(null); 
-  const [sentiuDor, setSentiuDor] = useState<boolean | null>(null); 
+  const [sentiuDor, setSentiuDor] = useState<boolean>(false); 
   const [mostrarFinalizacao, setMostrarFinalizacao] = useState(false);
 
   const [tempoTotalTreino, setTempoTotalTreino] = useState(0);
@@ -40,13 +43,31 @@ export function useWorkoutSession(navigation: any, route: any) {
     
     const novaLista = [...exercicios];
     const index = novaLista.findIndex(e => e.id === exercicioDorId);
-    if(index !== -1) {
-        novaLista[index].relato_dor = true;
-        setExercicios(novaLista);
+    if (index !== -1) {
+      novaLista[index].relato_dor = true;
+      setExercicios(novaLista);
     }
   };
 
   const buscarTreinoParaExecucao = async () => {
+    let cid = conexaoId && conexaoId !== "1" ? conexaoId : null;
+    if (!cid) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: con } = await supabase
+          .from("conexoes")
+          .select("id")
+          .eq("usuario_id", user.id)
+          .in("status", ["aluno_ativo", "aguardando_assinatura", "pendente"])
+          .order("criado_em", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (con) {
+          cid = con.id;
+        }
+      }
+    }
+
     const { data: diaTreino, error: errDia } = await supabase
       .from('workout_days')
       .select(`id, name, planned_exercises (*)`)
@@ -63,36 +84,37 @@ export function useWorkoutSession(navigation: any, route: any) {
     let dicionario: any[] = [];
     
     if (exerciseIds.length > 0) {
-        const { data: exData } = await supabase.from('exercises').select('*').in('id', exerciseIds);
-        if (exData) dicionario = [...dicionario, ...exData];
+      const { data: exData } = await supabase.from('exercises').select('*').in('id', exerciseIds);
+      if (exData) dicionario = [...dicionario, ...exData];
     }
     
     if (globalExerciseIds.length > 0) {
-        const { data: globalData } = await supabase.from('global_exercises').select('*').in('id', globalExerciseIds);
-        if (globalData) dicionario = [...dicionario, ...globalData];
+      const { data: globalData } = await supabase.from('global_exercises').select('*').in('id', globalExerciseIds);
+      if (globalData) dicionario = [...dicionario, ...globalData];
     }
 
     let historicoDesteTreino: any = null;
     
-    if (conexaoId) {
-        const { data: execucaoAnterior } = await supabase
-          .from("treinos_execucoes")
-          .select("dados_execucao")
-          .eq("treino_id", treinoId) 
-          .eq("conexao_id", conexaoId) 
-          .order("data_inicio", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (execucaoAnterior) {
-            historicoDesteTreino = execucaoAnterior;
-        }
+    if (cid) {
+      const { data: execucaoAnterior } = await supabase
+        .from("treinos_execucoes")
+        .select("dados_execucao")
+        .eq("treino_id", treinoId) 
+        .eq("conexao_id", cid) 
+        .order("data_inicio", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (execucaoAnterior) {
+        historicoDesteTreino = execucaoAnterior;
+      }
     }
 
-    return { diaTreino, dicionario, historicoDesteTreino };
+    return { cid, diaTreino, dicionario, historicoDesteTreino };
   };
 
-  const prepararTreino = ({ diaTreino, dicionario, historicoDesteTreino }: any) => {
+  const prepararTreino = ({ cid, diaTreino, dicionario, historicoDesteTreino }: any) => {
+    if (cid) setRealConexaoId(cid);
     setTreinoInfo({ id: diaTreino.id, nome: diaTreino.name });
     const listaOriginal = diaTreino.planned_exercises || [];
     
@@ -107,39 +129,51 @@ export function useWorkoutSession(navigation: any, route: any) {
         libData.gif_url || libData.video_url || libData.thumbnail_url || 
         libData.media_url || libData.image_url || ex.custom_media_url || null;
 
-      let cargaFeita = ex.weight_target ? String(ex.weight_target) : "";
+      const cargaAlvoPadrao = ex.weight_target ? String(ex.weight_target) : "";
       let observacaoAluno = "";
+      let seriesHistoricoAntigo: any[] = [];
       
-      if (historicoDesteTreino && historicoDesteTreino.dados_execucao) {
-          const exercicioNoHistorico = historicoDesteTreino.dados_execucao.find((he: any) => he.nome === nomeOriginal);
-          if (exercicioNoHistorico) {
-              if (exercicioNoHistorico.series && exercicioNoHistorico.series.length > 0) {
-                  const c = exercicioNoHistorico.series[0].carga_feita;
-                  if (c && c !== "0" && c !== "") cargaFeita = String(c);
-              }
-              if (exercicioNoHistorico.observacao_aluno) {
-                  observacaoAluno = exercicioNoHistorico.observacao_aluno;
-              }
+      if (historicoDesteTreino && Array.isArray(historicoDesteTreino.dados_execucao)) {
+        const exercicioNoHistorico = historicoDesteTreino.dados_execucao.find(
+          (he: any) => String(he.id) === String(ex.id) || he.nome === nomeOriginal
+        );
+        if (exercicioNoHistorico) {
+          if (Array.isArray(exercicioNoHistorico.series)) {
+            seriesHistoricoAntigo = exercicioNoHistorico.series;
           }
+          if (exercicioNoHistorico.observacao_aluno) {
+            observacaoAluno = exercicioNoHistorico.observacao_aluno;
+          }
+        }
       }
       
       const numSeries = Number(ex.sets) || 0;
       const arrayDeSeries = Array.from({ length: numSeries }).map((_, sIdx) => {
-          let valorTempo = "--";
-          if (ex.rest_seconds) valorTempo = String(ex.rest_seconds);
-          else if (ex.time_target) valorTempo = ex.time_target;
-          else if (ex.tempo) valorTempo = ex.tempo;
+        let valorTempo = "--";
+        if (ex.rest_seconds) valorTempo = String(ex.rest_seconds);
+        else if (ex.time_target) valorTempo = ex.time_target;
+        else if (ex.tempo) valorTempo = ex.tempo;
 
-          return {
-            id: `${ex.id}-serie-${sIdx + 1}`,
-            numero: sIdx + 1,
-            tempo_alvo: valorTempo, 
-            reps_alvo: ex.reps_target || "--",
-            carga_alvo: ex.weight_target || "", 
-            reps_feitas: ex.reps_target || "0", 
-            carga_feita: cargaFeita, 
-            concluida: false
-          };
+        const serieAntigaCorrespondente = seriesHistoricoAntigo[sIdx] || seriesHistoricoAntigo[0];
+        let cargaInicialSerie = cargaAlvoPadrao;
+        if (
+          serieAntigaCorrespondente?.carga_feita &&
+          String(serieAntigaCorrespondente.carga_feita).trim() !== "" &&
+          String(serieAntigaCorrespondente.carga_feita) !== "0"
+        ) {
+          cargaInicialSerie = String(serieAntigaCorrespondente.carga_feita);
+        }
+
+        return {
+          id: `${ex.id}-serie-${sIdx + 1}`,
+          numero: sIdx + 1,
+          tempo_alvo: valorTempo, 
+          reps_alvo: ex.reps_target || "--",
+          carga_alvo: ex.weight_target || "", 
+          reps_feitas: ex.reps_target || "0", 
+          carga_feita: cargaInicialSerie, 
+          concluida: false
+        };
       });
 
       return {
@@ -227,7 +261,7 @@ export function useWorkoutSession(navigation: any, route: any) {
   };
 
   return {
-    conexaoId, 
+    conexaoId: realConexaoId || conexaoId, 
     treinoInfo, exercicios, progressoBarra,
     emDescanso, tempoDescansoRestante, tempoTotalTreino,
     observacaoTreinoGeral, setObservacaoTreinoGeral,

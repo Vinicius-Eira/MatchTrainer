@@ -6,14 +6,13 @@ import { styles } from "./styles";
 import { useWorkoutSession } from "./useWorkoutSession";
 
 import { PainModal } from '../../../../components/training/PainModal';
-import { FinishWorkoutModal } from '../../../../components/training/FinishWorkoutModal';
 
 export function WorkoutSession({ route, navigation }: any) {
   const {
     conexaoId,
     treinoInfo, exercicios, progressoBarra,
     emDescanso, tempoDescansoRestante, tempoTotalTreino,
-    mostrarFinalizacao, setMostrarFinalizacao,
+    sentiuDor, dataInicio,
     modalDorVisivel, exercicioDorId, exercicioDorNome, abrirModalDor, fecharModalDor, handleDorRegistradaSucesso,
     formatarTempo, atualizarExecucaoSerie, atualizarObservacaoAluno,
     concluirSerie, pularDescanso, cancelarTreino
@@ -24,23 +23,6 @@ export function WorkoutSession({ route, navigation }: any) {
 
   const toggleExpand = (index: number) => {
     setExpandedIndex(prev => (prev === index ? -1 : index));
-  };
-
-  const getStats = () => {
-    let setsCompleted = 0;
-    let totalSets = 0;
-    exercicios.forEach(e => {
-      const seriesList = e.series || [];
-      totalSets += seriesList.length;
-      setsCompleted += seriesList.filter((s: any) => s.concluida).length;
-    });
-    return {
-      durationSeconds: tempoTotalTreino,
-      exercisesCompleted: exercicios.filter(e => (e.series || []).every((s: any) => s.concluida)).length,
-      totalExercises: exercicios.length,
-      setsCompleted,
-      totalSets
-    };
   };
 
   return (
@@ -163,7 +145,7 @@ export function WorkoutSession({ route, navigation }: any) {
                           
                           <View style={styles.serieColTempo}>
                             <Text style={[styles.serieTargetText, serie.concluida && styles.textDimmed]}>
-                              {serie.tempo_alvo} 
+                              {serie.tempo_alvo}
                             </Text>
                           </View>
                           
@@ -202,7 +184,7 @@ export function WorkoutSession({ route, navigation }: any) {
                       <Text style={styles.alunoAcoesTitle}>Detalhes da Execução (Opcional)</Text>
                       <TextInput
                         style={styles.alunoObsInput}
-                        placeholder="Deixe um comentário sobre esse exercício..."
+                        placeholder="Deixe um comentário sobre esse exercício (ex: ajuste do banco, pegada)..."
                         placeholderTextColor="#555"
                         value={ex.observacao_aluno}
                         onChangeText={(v) => atualizarObservacaoAluno(index, v)}
@@ -217,7 +199,9 @@ export function WorkoutSession({ route, navigation }: any) {
                         <View style={styles.btnRelatarDorIconBox}>
                           <Ionicons name="warning" size={16} color="#EF4444" />
                         </View>
-                        <Text style={styles.btnRelatarDorText}>Relatar Dor ou Desconforto</Text>
+                        <Text style={styles.btnRelatarDorText}>
+                          {ex.relato_dor ? "Desconforto Registrado neste Exercício" : "Relatar Dor ou Desconforto"}
+                        </Text>
                         <Ionicons name="chevron-forward" size={18} color="rgba(239, 68, 68, 0.5)" />
                       </TouchableOpacity>
                     </View>
@@ -235,7 +219,9 @@ export function WorkoutSession({ route, navigation }: any) {
                 tempoTotal: tempoTotalTreino, 
                 conexaoId: conexaoId, 
                 treinoId: treinoInfo.id, 
-                exercicios: exercicios, 
+                exercicios: exercicios,
+                dataInicio: dataInicio,
+                sentiuDor: sentiuDor
               });
             }} 
             activeOpacity={0.7}
@@ -278,4 +264,4 @@ export function WorkoutSession({ route, navigation }: any) {
 
     </SafeAreaView>
   );
-};
+}
