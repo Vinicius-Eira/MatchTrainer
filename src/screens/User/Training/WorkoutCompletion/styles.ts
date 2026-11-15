@@ -89,7 +89,6 @@ export const styles = StyleSheet.create({
     alignSelf: "center",
   },
 
-  // RESUMO DE CARGAS E ANOTAÇÕES SALVAS
   summarySection: {
     marginBottom: verticalScale(24),
   },
@@ -182,7 +181,6 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  // SEÇÃO DE FEEDBACK E INTENSIDADE (MANTIDA FIEL AO SEU ESTILO)
   feedbackSection: {
     marginBottom: verticalScale(20),
   },

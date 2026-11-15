@@ -8,7 +8,24 @@ export class ExerciseService {
   
   static async uploadExerciseMedia(fileUri: string, isVideo: boolean = true) {
     try {
-      const extension = isVideo ? 'mp4' : 'gif';
+      const uriLower = fileUri.toLowerCase();
+      let extension = isVideo ? 'mp4' : 'gif';
+      let contentType = isVideo ? 'video/mp4' : 'image/gif';
+
+      if (uriLower.endsWith('.gif')) {
+        extension = 'gif';
+        contentType = 'image/gif';
+      } else if (uriLower.endsWith('.png')) {
+        extension = 'png';
+        contentType = 'image/png';
+      } else if (uriLower.endsWith('.jpg') || uriLower.endsWith('.jpeg')) {
+        extension = 'jpg';
+        contentType = 'image/jpeg';
+      } else if (uriLower.endsWith('.mov')) {
+        extension = 'mov';
+        contentType = 'video/quicktime';
+      }
+
       const fileName = `${uuidv4()}-${Date.now()}.${extension}`;
       const filePath = `midias/${fileName}`; 
 
@@ -21,7 +38,8 @@ export class ExerciseService {
       const { error: uploadError } = await supabase.storage
         .from('exercise-media')
         .upload(filePath, arrayBuffer, {
-          contentType: isVideo ? 'video/mp4' : 'image/gif',
+          contentType,
+          upsert: true,
         });
 
       if (uploadError) throw new Error(uploadError.message);
@@ -57,25 +75,25 @@ export class ExerciseService {
       if (!data || data.length === 0) {
         let original = null;
         
-        const { data: globalEx } = await supabase.from('global_exercises').select('*').eq('id', exerciseId).single();
+        const { data: globalEx } = await supabase.from('global_exercises').select('*').eq('id', exerciseId).maybeSingle();
         if (globalEx) {
-            original = globalEx;
+          original = globalEx;
         } else {
-            const { data: otherEx } = await supabase.from('exercises').select('*').eq('id', exerciseId).single();
-            if (otherEx) original = otherEx;
+          const { data: otherEx } = await supabase.from('exercises').select('*').eq('id', exerciseId).maybeSingle();
+          if (otherEx) original = otherEx;
         }
 
         if (original) {
-            const { error: cloneError } = await supabase.from('exercises').insert({
-                name: original.name,
-                muscle_group: original.muscle_group || original.primaryMuscle,
-                equipment: original.equipment,
-                video_url: mediaUrl,
-                gif_url: mediaUrl,
-                personal_id: session.user.id
-            });
-            if (cloneError) throw cloneError;
-            return { success: true };
+          const { error: cloneError } = await supabase.from('exercises').insert({
+            name: original.name,
+            muscle_group: original.muscle_group || original.primaryMuscle,
+            equipment: original.equipment || 'Geral',
+            video_url: mediaUrl,
+            gif_url: mediaUrl,
+            personal_id: session.user.id
+          });
+          if (cloneError) throw cloneError;
+          return { success: true };
         }
         throw new Error("Erro de permissão ou exercício não encontrado.");
       }
@@ -98,9 +116,9 @@ export class ExerciseService {
       
       const personalId = session.user.id;
       const newExercise = {
-        name: name,
-        muscle_group: muscleGroup,
-        equipment: equipment,
+        name: name.trim(),
+        muscle_group: muscleGroup.trim(),
+        equipment: equipment ? equipment.trim() : 'Geral',
         video_url: mediaUrl || null,
         gif_url: mediaUrl || null,
         personal_id: personalId 

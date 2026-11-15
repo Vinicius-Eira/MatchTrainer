@@ -67,7 +67,7 @@ interface WorkoutCreatorState {
 const createInitialDay = () => ({ id: uuidv4(), name: 'Treino A', exercises: [] });
 const createInitialWeek = () => ({ id: uuidv4(), name: 'Semana 1', generalObservation: '', days: [createInitialDay()] });
 
-export const useWorkoutCreatorStore = create<WorkoutCreatorState>((set, get) => ({
+export const useWorkoutCreatorStore = create<WorkoutCreatorState>((set) => ({
   programId: null,
   programName: '',
   objective: '',
@@ -113,28 +113,34 @@ export const useWorkoutCreatorStore = create<WorkoutCreatorState>((set, get) => 
   }),
 
   removeDay: (weekId, dayId) => set((state) => {
-      const week = state.weeks.find(w => w.id === weekId);
-      if (!week) return state;
-      const newDays = week.days.filter((day) => day.id !== dayId);
-      return { weeks: state.weeks.map(w => w.id === weekId ? { ...w, days: newDays } : w), activeDayId: state.activeDayId === dayId ? (newDays[0]?.id || null) : state.activeDayId };
+    const week = state.weeks.find(w => w.id === weekId);
+    if (!week) return state;
+    const newDays = week.days.filter((day) => day.id !== dayId);
+    return { weeks: state.weeks.map(w => w.id === weekId ? { ...w, days: newDays } : w), activeDayId: state.activeDayId === dayId ? (newDays[0]?.id || null) : state.activeDayId };
   }),
 
   addExerciseToActiveDay: (exerciseFromLibrary) => set((state) => {
     const { activeWeekId, activeDayId, weeks } = state;
     if (!activeWeekId || !activeDayId) return state;
 
-    const isGlobal = !exerciseFromLibrary.personal_id;
-    const realId = exerciseFromLibrary.id;
+    const isFromExercisesTable =
+      exerciseFromLibrary.originTable === 'EXERCISES' || Boolean(exerciseFromLibrary.personal_id);
+
+    const mediaPrincipal =
+      exerciseFromLibrary.gif_url ||
+      exerciseFromLibrary.video_url ||
+      exerciseFromLibrary.thumbnail_url ||
+      '';
 
     const newDraftExercise: DraftExercise = {
       id: uuidv4(),
-      exercise_id: isGlobal ? null : exerciseFromLibrary.id,
-      global_exercise_id: isGlobal ? exerciseFromLibrary.id : null,
+      exercise_id: isFromExercisesTable ? exerciseFromLibrary.id : null,
+      global_exercise_id: isFromExercisesTable ? null : exerciseFromLibrary.id,
       
       exercise_name: exerciseFromLibrary.name || exerciseFromLibrary.exercise_name,
-      thumbnail_url: exerciseFromLibrary.thumbnail_url || exerciseFromLibrary.gif_url || exerciseFromLibrary.video_url || '', 
-      gif_url: exerciseFromLibrary.gif_url || '',
-      video_url: exerciseFromLibrary.video_url || '',
+      thumbnail_url: mediaPrincipal, 
+      gif_url: exerciseFromLibrary.gif_url || mediaPrincipal,
+      video_url: exerciseFromLibrary.video_url || mediaPrincipal,
       group_code: exerciseFromLibrary.primaryMuscle || exerciseFromLibrary.muscle_group || exerciseFromLibrary.group_code || 'Geral',
       sets: '3',
       reps_target: '10-12',
@@ -144,7 +150,7 @@ export const useWorkoutCreatorStore = create<WorkoutCreatorState>((set, get) => 
       public_note: '',
       private_note: '',
       target_rpe: '',
-      custom_media_url: ''
+      custom_media_url: mediaPrincipal
     };
 
     return {

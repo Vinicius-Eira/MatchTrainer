@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, 
   ActivityIndicator, SafeAreaView, StatusBar, RefreshControl
@@ -7,7 +7,6 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video'; 
 import { CreateCustomExerciseModal } from '../../../components/Exercise/CreateCustomExerciseModal';
-import { scale, moderateScale } from '../../../utils/responsive';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useExerciseLibrary, MATCH_COLORS, MUSCLE_FILTERS } from './useExerciseLibrary';
@@ -31,11 +30,26 @@ const ReprodutorVideo = ({ url }: { url: string }) => {
 
 export function ExerciseLibraryScreen({ navigation, route }: any) {
   const { state, actions } = useExerciseLibrary(route, navigation);
+  const [brokenGlobalIds, setBrokenGlobalIds] = useState<Record<string, boolean>>({});
+
+  const visibleExercises = useMemo(() => {
+    return (state.exercises || []).filter((ex: any) => {
+      if (ex.type === 'PERSONAL') return true; 
+      return !brokenGlobalIds[ex.id];
+    });
+  }, [state.exercises, brokenGlobalIds]);
+
+  const handleGlobalMediaError = (exerciseId: string, isPersonal: boolean) => {
+    if (!isPersonal) {
+      setBrokenGlobalIds(prev => (prev[exerciseId] ? prev : { ...prev, [exerciseId]: true }));
+    }
+  };
 
   const renderExerciseCard = ({ item }: any) => {
-    const mediaUrl = item.gif_url || item.video_url || '';
-    const hasMedia = mediaUrl.trim().length > 0;
+    const mediaUrl = (item.gif_url || item.video_url || '').trim();
+    const hasMedia = mediaUrl.length > 0;
     const isVideo = hasMedia && (mediaUrl.toLowerCase().includes('.mp4') || mediaUrl.toLowerCase().includes('.mov'));
+    const isPersonal = item.type === 'PERSONAL';
 
     return (
       <TouchableOpacity
@@ -47,13 +61,14 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
           <View style={StyleSheet.absoluteFill}>
             {hasMedia ? (
               isVideo ? (
-                <ReprodutorVideo url={mediaUrl.trim()} />
+                <ReprodutorVideo url={mediaUrl} />
               ) : (
                 <Image 
-                  source={{ uri: mediaUrl.trim(), headers: { 'User-Agent': 'Mozilla/5.0' } }} 
+                  source={{ uri: mediaUrl, headers: { 'User-Agent': 'Mozilla/5.0' } }} 
                   style={StyleSheet.absoluteFill}
                   contentFit="cover"
                   transition={200}
+                  onError={() => handleGlobalMediaError(item.id, isPersonal)}
                 />
               )
             ) : (
@@ -70,7 +85,7 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
           />
 
           <View style={styles.content}>
-            {item.type === 'PERSONAL' ? (
+            {isPersonal ? (
               <View style={styles.customBadge}>
                 <Feather name="star" size={12} color="#FFF" />
                 <Text style={styles.customBadgeText}>Meu Exercício</Text>
@@ -80,8 +95,15 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
             <View style={styles.bottomSection}>
               <View style={styles.textInfo}>
                 <Text style={styles.title} numberOfLines={2}>{item.name}</Text>
-                <View style={styles.muscleTag}>
-                  <Text style={styles.muscleText}>{item.primaryMuscle || 'Geral'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <View style={styles.muscleTag}>
+                    <Text style={styles.muscleText}>{item.primaryMuscle || 'Geral'}</Text>
+                  </View>
+                  {item.equipment && item.equipment !== 'Geral' && (
+                    <View style={[styles.muscleTag, { backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.15)' }]}>
+                      <Text style={[styles.muscleText, { color: '#D4D4D8' }]}>{item.equipment}</Text>
+                    </View>
+                  )}
                 </View>
               </View>
 
@@ -160,7 +182,7 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
         </View>
       ) : (
         <FlatList
-          data={state.exercises}
+          data={visibleExercises}
           keyExtractor={(item, index) => `${item.id}-${index}`}
           renderItem={renderExerciseCard}
           contentContainerStyle={styles.listContent}
@@ -168,7 +190,11 @@ export function ExerciseLibraryScreen({ navigation, route }: any) {
           onEndReached={actions.handleLoadMore}
           onEndReachedThreshold={0.5}
           refreshControl={<RefreshControl refreshing={state.isRefreshing} onRefresh={actions.handleRefresh} tintColor={MATCH_COLORS.primary} />}
-          ListFooterComponent={state.isLoadingMore ? <ActivityIndicator size="small" color={MATCH_COLORS.primary} style={{ marginVertical: 16 }} /> : null}
+          ListFooterComponent={
+            state.isLoadingMore ? (
+              <ActivityIndicator size="small" color={MATCH_COLORS.primary} style={{ marginVertical: 16 }} />
+            ) : undefined
+          }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconBg}>

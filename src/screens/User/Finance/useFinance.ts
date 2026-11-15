@@ -28,7 +28,7 @@ export function useFinance(navigation: any) {
           .from('conexoes')
           .select('id, personal_id')
           .eq('usuario_id', user.id)
-          .in('status', ['aluno_ativo', 'aguardando_assinatura', 'pendente']) // AJUSTADO AQUI
+          .in('status', ['aluno_ativo', 'aguardando_assinatura', 'pendente']) 
           .order('atualizado_em', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -45,7 +45,7 @@ export function useFinance(navigation: any) {
           .from('planos')
           .select('*')
           .eq('conexao_id', conexao.id)
-          .in('status', ['ativo', 'aguardando_assinatura', 'pendente']) // AJUSTADO AQUI
+          .in('status', ['ativo', 'aguardando_assinatura', 'pendente']) 
           .maybeSingle();
 
         if (errContrato || !contrato || !contrato.valor_mensal) {
