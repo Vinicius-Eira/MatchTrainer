@@ -42,7 +42,6 @@ export function WorkoutCompletion({ route, navigation }: any) {
             <Text style={styles.subtitle}>{treinoNome}</Text>
           </View>
 
-          {/* PAINEL DE ESTATÍSTICAS ÚTEIS PARA O ALUNO */}
           <View style={styles.statsContainer}>
             <LinearGradient colors={["rgba(255, 107, 0, 0.08)", "transparent"]} style={styles.statsGradient} />
             
@@ -69,7 +68,6 @@ export function WorkoutCompletion({ route, navigation }: any) {
             </View>
           </View>
 
-          {/* RESUMO DAS CARGAS & ANOTAÇÕES REGISTRADAS NA SESSÃO */}
           {resumoExercicios && resumoExercicios.length > 0 && (
             <View style={styles.summarySection}>
               <View style={styles.summaryHeaderRow}>
@@ -120,7 +118,6 @@ export function WorkoutCompletion({ route, navigation }: any) {
             </View>
           )}
 
-          {/* SEÇÃO MANTIDA 100%: COMO FOI O SEU TREINO + COMENTÁRIO */}
           <View style={styles.feedbackSection}>
             <Text style={styles.sectionTitle}>Como foi o seu treino?</Text>
             <Text style={styles.sectionSubtitle}>Selecione a intensidade percebida</Text>
