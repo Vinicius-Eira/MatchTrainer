@@ -23,6 +23,12 @@ const MAP_FREQUENCIA: Record<string, string> = {
   "7": "Todos os dias",
 };
 
+const extrairNumero = (val: any): number => {
+  if (val === null || val === undefined) return 0;
+  const match = String(val).replace(",", ".").match(/[0-9]+(\.[0-9]+)?/);
+  return match ? parseFloat(match[0]) : 0;
+};
+
 export function useVisaoAluno(route: any, navigation: any) {
   const { conexaoId, aluno, statusAtual } = route.params;
   const [status, setStatus] = useState<string>(statusAtual);
@@ -87,13 +93,27 @@ export function useVisaoAluno(route: any, navigation: any) {
 
   const calcularMetricasEvolucao = async () => {
     try {
-      const { data: workoutDaysData } = await supabase.from('workout_days').select('id, name');
-
-      const { data: execucoes } = await supabase
-        .from("treinos_execucoes")
-        .select("id, treino_id, data_inicio, sentiu_dor, esforco_rpe, tempo_total_segundos, volume_total_kg, dados_execucao")
-        .eq("conexao_id", conexaoId) 
-        .order("data_inicio", { ascending: false });
+      const [
+        { data: workoutDaysData },
+        { data: weeksData },
+        { data: execucoes },
+        { data: doresData }
+      ] = await Promise.all([
+        supabase.from("workout_days").select("id, name, week_id"),
+        supabase.from("training_weeks").select("id, name"),
+        supabase
+          .from("treinos_execucoes")
+          .select("*")
+          .eq("conexao_id", conexaoId)
+          .order("data_inicio", { ascending: false }),
+        aluno?.id
+          ? supabase
+              .from("treinos_execucoes_dores")
+              .select("*")
+              .eq("aluno_id", aluno.id)
+              .order("id", { ascending: false })
+          : Promise.resolve({ data: [] as any[] })
+      ]);
 
       if (execucoes && execucoes.length > 0) {
         setTotalTreinos(execucoes.length);
@@ -102,17 +122,17 @@ export function useVisaoAluno(route: any, navigation: any) {
         const trintaDiasAtras = new Date();
         trintaDiasAtras.setDate(dataHoje.getDate() - 30);
 
-        const sessoesRecentes = execucoes.filter(s => new Date(s.data_inicio) >= trintaDiasAtras);
+        const sessoesRecentes = execucoes.filter(s => new Date(s.data_inicio || s.created_at) >= trintaDiasAtras);
         setStreak(sessoesRecentes.length); 
         
         let alertaAtivo = null;
         for (const exec of execucoes.slice(0, 5)) {
-           if (exec.sentiu_dor) {
-               const dataFmt = new Date(exec.data_inicio).toLocaleDateString('pt-BR');
-               const nomeTreino = workoutDaysData?.find((wd: any) => wd.id === exec.treino_id)?.name || "Treino";
-               alertaAtivo = `O aluno relatou dor/desconforto na execução do ${nomeTreino} no dia ${dataFmt}.`;
-               break; 
-           }
+          if (exec.sentiu_dor) {
+            const dataFmt = new Date(exec.data_inicio || exec.created_at).toLocaleDateString('pt-BR');
+            const nomeTreino = workoutDaysData?.find((wd: any) => wd.id === exec.treino_id)?.name || "Treino";
+            alertaAtivo = `O aluno relatou dor/desconforto na execução do ${nomeTreino} no dia ${dataFmt}.`;
+            break; 
+          }
         }
         setAlertaTreino(alertaAtivo);
 
@@ -137,35 +157,196 @@ export function useVisaoAluno(route: any, navigation: any) {
 
         setAdesao(adesaoArray);
 
-        const formatarKGs = (pesoTotal: number) => pesoTotal.toLocaleString('pt-BR');
+        const execucoesOrdemCronologica = [...execucoes].reverse();
+        const recordesAteOMomento: Record<string, number> = {};
+        const prsPorExecucaoMap: Record<string, { totalPrs: number; exerciciosComPr: Set<string> }> = {};
 
-        const logsFormatados = execucoes.slice(0, 10).map(exec => {
-            const nomeTreino = workoutDaysData?.find((wd: any) => wd.id === exec.treino_id)?.name || "Treino Concluído";
-            const duracaoSecs = exec.tempo_total_segundos || 0;
-            const mins = Math.floor(duracaoSecs / 60);
+        execucoesOrdemCronologica.forEach((exec: any) => {
+          let prsNestaSessao = 0;
+          const exerciciosPrSet = new Set<string>();
+          const listaEx = Array.isArray(exec.dados_execucao) ? exec.dados_execucao : [];
 
-            let volumeDoTreino = exec.volume_total_kg || 0;
-            if (volumeDoTreino === 0 && exec.dados_execucao && Array.isArray(exec.dados_execucao)) {
-                exec.dados_execucao.forEach((ex: any) => {
-                    if (ex.series && Array.isArray(ex.series)) {
-                        ex.series.forEach((s: any) => {
-                            const reps = Number(s.reps_feitas) || 0;
-                            const carga = Number(s.carga_feita) || 0;
-                            volumeDoTreino += (reps * carga);
-                        });
-                    }
-                });
+          listaEx.forEach((ex: any) => {
+            const chaveEx = String(ex.id || ex.nome || "").toLowerCase().trim();
+            if (!chaveEx) return;
+
+            let maxCargaExNaSessao = 0;
+            if (Array.isArray(ex.series)) {
+              ex.series.forEach((s: any) => {
+                const c = extrairNumero(s.carga_feita);
+                if (c > maxCargaExNaSessao) maxCargaExNaSessao = c;
+              });
             }
 
+            if (maxCargaExNaSessao > 0) {
+              const recordeAnterior = recordesAteOMomento[chaveEx] || 0;
+              if (recordeAnterior > 0 && maxCargaExNaSessao > recordeAnterior) {
+                prsNestaSessao += 1;
+                exerciciosPrSet.add(chaveEx);
+              }
+              if (maxCargaExNaSessao > recordeAnterior) {
+                recordesAteOMomento[chaveEx] = maxCargaExNaSessao;
+              }
+            }
+          });
+
+          prsPorExecucaoMap[exec.id] = {
+            totalPrs: prsNestaSessao,
+            exerciciosComPr: exerciciosPrSet
+          };
+        });
+
+        const formatarKGs = (pesoTotal: number) => Math.round(pesoTotal).toLocaleString('pt-BR');
+        const listaDoresAluno = Array.isArray(doresData) ? doresData : [];
+
+        const logsFormatados = execucoes.slice(0, 15).map(exec => {
+          const diaEncontrado = workoutDaysData?.find((wd: any) => wd.id === exec.treino_id);
+          const nomeTreinoBase = diaEncontrado?.name || "Treino Concluído";
+          let nomeSemana: string | null = null;
+
+          if (diaEncontrado?.week_id) {
+            const semanaEncontrada = weeksData?.find((w: any) => w.id === diaEncontrado.week_id);
+            if (semanaEncontrada?.name) {
+              nomeSemana = semanaEncontrada.name;
+            }
+          }
+
+          const nomeCompleto = nomeSemana ? `${nomeSemana} • ${nomeTreinoBase}` : nomeTreinoBase;
+
+          const duracaoSecs = Number(exec.tempo_total_segundos) || 0;
+          const mins = Math.floor(duracaoSecs / 60);
+          const segs = duracaoSecs % 60;
+          const duracaoFormatada = mins > 0 ? `${mins} min` : `${segs} s`;
+
+          const dataInicioIso = exec.data_inicio || exec.created_at;
+          const dataObj = dataInicioIso ? new Date(dataInicioIso) : null;
+          const horarioExecucao = dataObj
+            ? dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+            : "--:--";
+
+          let volumeDoTreino = Number(exec.volume_total_kg) || 0;
+          let maiorCargaSessao = 0;
+          let totalSeriesPlanejadas = 0;
+          let totalSeriesConcluidas = 0;
+          let qtdObservacoesExercicios = 0;
+
+          const infoPrSessao = prsPorExecucaoMap[exec.id] || { totalPrs: 0, exerciciosComPr: new Set() };
+          const relatosDorSessao: any[] = [];
+
+          const listaExerciciosRaw = Array.isArray(exec.dados_execucao) ? exec.dados_execucao : [];
+          const precisaSomarVolume = volumeDoTreino === 0;
+
+          const exerciciosDetalhados = listaExerciciosRaw.map((ex: any, exIdx: number) => {
+            const seriesRaw = Array.isArray(ex.series) ? ex.series : [];
+            totalSeriesPlanejadas += seriesRaw.length;
+
+            let maiorCargaEx = 0;
+            let seriesConcluidasEx = 0;
+
+            const seriesFormatadas = seriesRaw.map((s: any, sIdx: number) => {
+              const cargaNum = extrairNumero(s.carga_feita);
+              const repsNum = extrairNumero(s.reps_feitas || s.reps_alvo);
+              const isConcluida = Boolean(s.concluida) || cargaNum > 0;
+
+              if (isConcluida) {
+                seriesConcluidasEx += 1;
+                totalSeriesConcluidas += 1;
+                if (precisaSomarVolume) {
+                  volumeDoTreino += (repsNum || 10) * cargaNum;
+                }
+              }
+
+              if (cargaNum > maiorCargaEx) maiorCargaEx = cargaNum;
+              if (cargaNum > maiorCargaSessao) maiorCargaSessao = cargaNum;
+
+              return {
+                id: s.id || `${ex.id}-s-${sIdx + 1}`,
+                numero: s.numero || sIdx + 1,
+                reps: s.reps_feitas && String(s.reps_feitas) !== "0" ? String(s.reps_feitas) : String(s.reps_alvo || "--"),
+                repsAlvo: String(s.reps_alvo || "--"),
+                carga: cargaNum > 0 ? `${cargaNum} kg` : (s.carga_feita ? `${s.carga_feita}` : "--"),
+                cargaNum,
+                descanso: s.tempo_alvo ? `${s.tempo_alvo}s` : `${ex.descanso || 60}s`,
+                concluida: isConcluida
+              };
+            });
+
+            const obsAlunoEx =
+              ex.observacao_aluno && String(ex.observacao_aluno).trim().length > 0
+                ? String(ex.observacao_aluno).trim()
+                : null;
+
+            if (obsAlunoEx) qtdObservacoesExercicios += 1;
+
+            const dorEncontrada = listaDoresAluno.find(
+              (d: any) =>
+                String(d.exercicio_id) === String(ex.id) &&
+                (!d.treino_id || String(d.treino_id) === String(exec.treino_id))
+            );
+
+            const teveDorNesteEx = Boolean(ex.relato_dor) || Boolean(dorEncontrada);
+            let detalheDorEx = null;
+
+            if (teveDorNesteEx) {
+              detalheDorEx = {
+                exercicioNome: ex.nome || `Exercício ${exIdx + 1}`,
+                intensidade: dorEncontrada?.intensidade ?? null,
+                descricao:
+                  dorEncontrada?.descricao && String(dorEncontrada.descricao).trim().length > 0
+                    ? String(dorEncontrada.descricao).trim()
+                    : "O aluno sinalizou desconforto neste exercício durante a sessão."
+              };
+              relatosDorSessao.push(detalheDorEx);
+            }
+
+            const chaveEx = String(ex.id || ex.nome || "").toLowerCase().trim();
+            const bateuPr = infoPrSessao.exerciciosComPr.has(chaveEx);
+
             return {
-                id: exec.id,
-                created_at: exec.data_inicio,
-                nomeTreino: nomeTreino,
-                duracao: `${mins} min`,
-                rpe: exec.esforco_rpe,
-                sentiuDor: exec.sentiu_dor,
-                volumeTotal: volumeDoTreino > 0 ? `${formatarKGs(volumeDoTreino)} kg` : "--"
+              id: ex.id || `ex-${exIdx}`,
+              nome: ex.nome || `Exercício ${exIdx + 1}`,
+              grupoMuscular: ex.grupo_muscular || "Geral",
+              seriesPlanejadas: seriesRaw.length,
+              seriesConcluidas: seriesConcluidasEx,
+              maiorCarga: maiorCargaEx > 0 ? `${maiorCargaEx} kg` : "--",
+              maiorCargaNum: maiorCargaEx,
+              bateuPr,
+              observacaoAluno: obsAlunoEx,
+              observacaoPersonal: ex.observacao_personal || null,
+              teveDor: teveDorNesteEx,
+              detalheDor: detalheDorEx,
+              series: seriesFormatadas
             };
+          });
+
+          const comentarioFinalSessao =
+            exec.observacao_geral || exec.comentario_aluno || exec.observacoes || exec.comentario || null;
+
+          const concluidasDisplay = totalSeriesConcluidas > 0 ? totalSeriesConcluidas : totalSeriesPlanejadas;
+
+          return {
+            id: exec.id,
+            treinoId: exec.treino_id,
+            created_at: dataInicioIso,
+            horario: horarioExecucao,
+            nomeTreino: nomeCompleto,
+            nomeTreinoCurto: nomeTreinoBase,
+            nomeSemana: nomeSemana,
+            duracao: duracaoFormatada,
+            rpe: exec.esforco_rpe,
+            sentiuDor: Boolean(exec.sentiu_dor) || relatosDorSessao.length > 0,
+            relatosDorSessao,
+            volumeTotal: volumeDoTreino > 0 ? `${formatarKGs(volumeDoTreino)} kg` : "--",
+            maiorCargaSessao: maiorCargaSessao > 0 ? `${maiorCargaSessao} kg` : "--",
+            prsCount: infoPrSessao.totalPrs,
+            seriesResumo: totalSeriesPlanejadas > 0 ? `${concluidasDisplay}/${totalSeriesPlanejadas}` : "--",
+            comentarioFinal:
+              comentarioFinalSessao && String(comentarioFinalSessao).trim().length > 0
+                ? String(comentarioFinalSessao).trim()
+                : null,
+            qtdObservacoesExercicios,
+            exerciciosDetalhados
+          };
         });
 
         setUltimosLogs(logsFormatados);
@@ -218,8 +399,8 @@ export function useVisaoAluno(route: any, navigation: any) {
         if (planoAtivo) {
           await supabase.from("planos").update({ status: "cancelado" }).eq("id", planoAtivo.id);
           await supabase.from("historico_financeiro_logs").insert([{
-              personal_id: session?.user.id, aluno_id: aluno.id, referencia_id: planoAtivo.id,
-              tipo_evento: "CONTRATO_CANCELADO", descricao: `Contrato encerrado e parceria movida para inativos.`, metadados: { acao: "cancelamento" },
+            personal_id: session?.user.id, aluno_id: aluno.id, referencia_id: planoAtivo.id,
+            tipo_evento: "CONTRATO_CANCELADO", descricao: `Contrato encerrado e parceria movida para inativos.`, metadados: { acao: "cancelamento" },
           }]);
         }
         Alert.alert("Ciclo Encerrado", "O aluno foi movido para inativos.");

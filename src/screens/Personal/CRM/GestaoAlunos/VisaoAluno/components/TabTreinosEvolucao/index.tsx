@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, ScrollView } from 'react-native';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -35,19 +35,37 @@ const BentoDesempenho = ({ valor, titulo, icone, descricao, corDestaque = "#FFF"
   </View>
 );
 
-const getCorRPE = (rpe: number) => {
-  if (!rpe) return "#00E676";
-  if (rpe <= 5) return "#00E676"; 
-  if (rpe <= 7) return "#FFB300"; 
-  return "#FF5500"; 
-};
+const getAnaliseIntensidade = (rpe?: number | null) => {
+  if (!rpe) {
+    return {
+      label: "Concluído",
+      texto: "Check-in Concluído",
+      sub: "Sessão registrada sem nota de esforço",
+      percentual: 100,
+      cor: "#00E676"
+    };
+  }
 
-const getAnaliseRPE = (rpe?: number) => {
-  if (!rpe) return { texto: "Check-in Concluído", sub: "Sessão registrada sem nota de esforço", percentual: 100 };
-  if (rpe <= 4) return { texto: "Esforço Leve / Recuperação", sub: "Carga confortável, margem para progredir", percentual: rpe * 10 };
-  if (rpe <= 7) return { texto: "Estímulo Ideal (Zona Alvo)", sub: "Boa intensidade e controle de execução", percentual: rpe * 10 };
-  if (rpe <= 8) return { texto: "Treino Intenso", sub: "Próximo à falha, excelente recrutamento", percentual: rpe * 10 };
-  return { texto: "Exigência Máxima / Limite", sub: "Atenção à recuperação para a próxima sessão", percentual: Math.min(100, rpe * 10) };
+  if (rpe === 1) {
+    return { label: "Leve", texto: "Esforço Leve / Recuperação", sub: "Carga confortável, margem para progredir", percentual: 40, cor: "#00E676" };
+  }
+  if (rpe === 2) {
+    return { label: "Moderado", texto: "Estímulo Moderado (Zona Alvo)", sub: "Boa intensidade e controle de execução", percentual: 70, cor: "#FFB300" };
+  }
+  if (rpe === 3) {
+    return { label: "Intenso", texto: "Treino Intenso", sub: "Alto recrutamento e foco muscular", percentual: 85, cor: "#FF6B00" };
+  }
+
+  if (rpe <= 4) {
+    return { label: "Leve", texto: "Esforço Leve / Recuperação", sub: "Carga confortável, margem para progredir", percentual: 40, cor: "#00E676" };
+  }
+  if (rpe <= 7) {
+    return { label: "Moderado", texto: "Estímulo Moderado (Zona Alvo)", sub: "Boa intensidade e controle de execução", percentual: 70, cor: "#FFB300" };
+  }
+  if (rpe <= 8) {
+    return { label: "Intenso", texto: "Treino Intenso", sub: "Próximo à falha, excelente recrutamento", percentual: 85, cor: "#FF6B00" };
+  }
+  return { label: "Máximo", texto: "Exigência Máxima / Limite", sub: "Atenção à recuperação para a próxima sessão", percentual: 100, cor: "#EF4444" };
 };
 
 export function TabTreinosEvolucao({ 
@@ -71,6 +89,9 @@ export function TabTreinosEvolucao({
   const [dataUltimoRecado, setDataUltimoRecado] = useState<string | null>(null);
   const [editorFeedbackAberto, setEditorFeedbackAberto] = useState(false);
   const [salvandoRecado, setSalvandoRecado] = useState(false);
+
+  const [treinoSelecionado, setTreinoSelecionado] = useState<any | null>(null);
+  const [exercicioExpandidoId, setExercicioExpandidoId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -142,6 +163,21 @@ export function TabTreinosEvolucao({
     }
   };
 
+  const abrirDetalhesExecucao = (log: any) => {
+    setTreinoSelecionado(log);
+    const primeiroExId = log?.exerciciosDetalhados?.[0]?.id || null;
+    setExercicioExpandidoId(primeiroExId);
+  };
+
+  const fecharDetalhesExecucao = () => {
+    setTreinoSelecionado(null);
+    setExercicioExpandidoId(null);
+  };
+
+  const alternarExercicioExpandido = (exId: string) => {
+    setExercicioExpandidoId(prev => (prev === exId ? null : exId));
+  };
+
   let prefs: any = {};
   try { prefs = typeof aluno?.preferencias === 'string' ? JSON.parse(aluno.preferencias) : aluno?.preferencias || {}; } catch(e){}
   const metaDePeso = prefs?.meta_peso || "--";
@@ -150,6 +186,11 @@ export function TabTreinosEvolucao({
     gordura: "--", massa: "--", agua: "--", visceral: "--", tmb: "--",
     segmentar: { bracoDir: "--", bracoEsq: "--", tronco: "--", pernaDir: "--", pernaEsq: "--" }
   };
+
+  const analiseModal = treinoSelecionado ? getAnaliseIntensidade(treinoSelecionado.rpe) : null;
+  const dataModalFormatada = treinoSelecionado?.created_at
+    ? new Date(treinoSelecionado.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : '--/--/----';
 
   return (
     <View style={styles.sectionContainer}>
@@ -373,29 +414,37 @@ export function TabTreinosEvolucao({
                   )}
               </View>
 
-              <Text style={localStyles.sectionTitle}>Últimos Treinos Concluídos</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginTop: 8 }}>
+                <Text style={[localStyles.sectionTitle, { marginBottom: 0, marginTop: 0 }]}>Últimos Treinos Concluídos</Text>
+                {ultimosLogs?.length > 0 && (
+                  <Text style={{ color: '#888', fontSize: 11, fontWeight: '700' }}>Toque para ver detalhes</Text>
+                )}
+              </View>
+
               <View>
                   {ultimosLogs?.length > 0 ? (
                       ultimosLogs.map((hist: any) => {
-                        const corRpe = getCorRPE(hist.rpe);
-                        const analise = getAnaliseRPE(hist.rpe);
+                        const analise = getAnaliseIntensidade(hist.rpe);
                         const dataObj = hist.created_at ? new Date(hist.created_at) : null;
                         const dataFormatada = dataObj ? dataObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : '--/--/----';
+                        const temComentarios = Boolean(hist.comentarioFinal) || (hist.qtdObservacoesExercicios || 0) > 0;
 
                         return (
-                          <View 
+                          <TouchableOpacity 
                             key={hist.id} 
+                            activeOpacity={0.82}
+                            onPress={() => abrirDetalhesExecucao(hist)}
                             style={[
                               localStyles.bentoCard, 
                               { 
                                 padding: 16, 
                                 borderWidth: 1, 
-                                borderColor: '#222226',
+                                borderColor: hist.sentiuDor ? 'rgba(239, 68, 68, 0.45)' : '#222226',
                                 marginBottom: 12 
                               }
                             ]}
                           >
-                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}>
                                       <View style={[localStyles.tmbIconBg, { backgroundColor: 'rgba(255, 107, 0, 0.12)', borderWidth: 1, borderColor: 'rgba(255, 107, 0, 0.25)' }]}>
                                           <Ionicons name="checkmark-done" size={18} color="#FF6B00" />
@@ -407,46 +456,83 @@ export function TabTreinosEvolucao({
                                           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
                                             <Ionicons name="calendar-outline" size={11} color="#888" style={{ marginRight: 4 }} />
                                             <Text style={{ color: '#888', fontSize: 11, fontWeight: '600' }}>
-                                              Concluído em {dataFormatada}
+                                              {dataFormatada} às {hist.horario}
                                             </Text>
                                           </View>
                                       </View>
                                   </View>
 
-                                  {hist.rpe ? (
-                                      <View style={{ backgroundColor: corRpe + '18', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: corRpe + '45', flexDirection: 'row', alignItems: 'center' }}>
-                                          <Ionicons name="flame" size={13} color={corRpe} />
-                                          <Text style={{ color: corRpe, fontSize: 11, fontWeight: '900', marginLeft: 4 }}>RPE {hist.rpe}/10</Text>
-                                      </View>
-                                  ) : (
-                                      <View style={{ backgroundColor: 'rgba(0, 230, 118, 0.12)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(0, 230, 118, 0.3)' }}>
-                                          <Text style={{ color: '#00E676', fontSize: 10, fontWeight: '900' }}>FINALIZADO</Text>
-                                      </View>
+                                  <View style={{ backgroundColor: analise.cor + '18', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: analise.cor + '45', flexDirection: 'row', alignItems: 'center' }}>
+                                      <Ionicons name="flame" size={13} color={analise.cor} />
+                                      <Text style={{ color: analise.cor, fontSize: 11, fontWeight: '900', marginLeft: 4 }}>
+                                        {analise.label}
+                                      </Text>
+                                  </View>
+                              </View>
+
+                              <View style={localStyles.logQuickPillsRow}>
+                                  <View style={localStyles.logQuickPill}>
+                                    <Ionicons name="time-outline" size={12} color="#FF6B00" style={{ marginRight: 4 }} />
+                                    <Text style={localStyles.logQuickPillText}>{hist.duracao}</Text>
+                                  </View>
+
+                                  {hist.volumeTotal && hist.volumeTotal !== "--" && (
+                                    <View style={localStyles.logQuickPill}>
+                                      <MaterialCommunityIcons name="weight-kilogram" size={13} color="#FF6B00" style={{ marginRight: 4 }} />
+                                      <Text style={localStyles.logQuickPillText}>{hist.volumeTotal}</Text>
+                                    </View>
+                                  )}
+
+                                  {hist.prsCount > 0 && (
+                                    <View style={[localStyles.logQuickPill, { backgroundColor: 'rgba(0, 230, 118, 0.1)', borderColor: 'rgba(0, 230, 118, 0.3)' }]}>
+                                      <Ionicons name="trophy" size={11} color="#00E676" style={{ marginRight: 4 }} />
+                                      <Text style={[localStyles.logQuickPillText, { color: '#00E676' }]}>{hist.prsCount} PR</Text>
+                                    </View>
+                                  )}
+
+                                  {temComentarios && (
+                                    <View style={[localStyles.logQuickPill, { backgroundColor: 'rgba(255, 107, 0, 0.1)', borderColor: 'rgba(255, 107, 0, 0.3)' }]}>
+                                      <Ionicons name="chatbox-ellipses-outline" size={11} color="#FF6B00" style={{ marginRight: 4 }} />
+                                      <Text style={[localStyles.logQuickPillText, { color: '#FF6B00' }]}>Comentário</Text>
+                                    </View>
+                                  )}
+
+                                  {hist.sentiuDor && (
+                                    <View style={[localStyles.logQuickPill, { backgroundColor: 'rgba(239, 68, 68, 0.12)', borderColor: 'rgba(239, 68, 68, 0.35)' }]}>
+                                      <Ionicons name="warning" size={11} color="#EF4444" style={{ marginRight: 4 }} />
+                                      <Text style={[localStyles.logQuickPillText, { color: '#EF4444' }]}>Relato de Dor</Text>
+                                    </View>
                                   )}
                               </View>
 
                               <View style={{ backgroundColor: '#121215', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#1F1F24' }}>
                                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                          <Ionicons name="pulse" size={14} color={corRpe} style={{ marginRight: 6 }} />
+                                          <Ionicons name="pulse" size={14} color={analise.cor} style={{ marginRight: 6 }} />
                                           <Text style={{ color: '#E4E4E7', fontSize: 12, fontWeight: '800' }}>
                                             {analise.texto}
                                           </Text>
                                       </View>
                                       <Text style={{ color: '#71717A', fontSize: 10, fontWeight: '800' }}>
-                                        INTENSIDADE {analise.percentual}%
+                                        SÉRIES {hist.seriesResumo || "--"}
                                       </Text>
                                   </View>
 
                                   <View style={{ height: 5, backgroundColor: '#1F1F24', borderRadius: 3, overflow: 'hidden', marginBottom: 6 }}>
-                                      <View style={{ width: `${analise.percentual}%`, height: '100%', backgroundColor: corRpe, borderRadius: 3 }} />
+                                      <View style={{ width: `${analise.percentual}%`, height: '100%', backgroundColor: analise.cor, borderRadius: 3 }} />
                                   </View>
 
-                                  <Text style={{ color: '#71717A', fontSize: 11 }}>
-                                    {analise.sub}
-                                  </Text>
+                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                                      <Text style={{ color: '#71717A', fontSize: 11, flex: 1 }} numberOfLines={1}>
+                                        {hist.comentarioFinal ? `"${hist.comentarioFinal}"` : analise.sub}
+                                      </Text>
+                                      <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
+                                        <Text style={{ color: '#FF6B00', fontSize: 11, fontWeight: '800' }}>Ver execução</Text>
+                                        <Ionicons name="chevron-forward" size={13} color="#FF6B00" style={{ marginLeft: 2 }} />
+                                      </View>
+                                  </View>
                               </View>
-                          </View>
+                          </TouchableOpacity>
                         );
                       })
                   ) : (
@@ -525,6 +611,281 @@ export function TabTreinosEvolucao({
               </View>
           </View>
       )}
+
+      <Modal
+        visible={Boolean(treinoSelecionado)}
+        transparent
+        animationType="slide"
+        onRequestClose={fecharDetalhesExecucao}
+      >
+        <View style={localStyles.modalOverlay}>
+          <View style={localStyles.modalContainer}>
+            <View style={localStyles.modalHeader}>
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <View style={localStyles.modalBadgeRow}>
+                  <View style={localStyles.modalTagSemana}>
+                    <Ionicons name="barbell" size={11} color="#FF6B00" style={{ marginRight: 4 }} />
+                    <Text style={localStyles.modalTagSemanaText}>
+                      {treinoSelecionado?.nomeSemana ? treinoSelecionado.nomeSemana.toUpperCase() : "RELATÓRIO DE EXECUÇÃO"}
+                    </Text>
+                  </View>
+                  {analiseModal && (
+                    <View style={[localStyles.modalIntensityBadge, { backgroundColor: analiseModal.cor + '18', borderColor: analiseModal.cor + '45' }]}>
+                      <Ionicons name="flame" size={11} color={analiseModal.cor} style={{ marginRight: 4 }} />
+                      <Text style={[localStyles.modalIntensityText, { color: analiseModal.cor }]}>
+                        Esforço: {analiseModal.label}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <Text style={localStyles.modalTitle} numberOfLines={1}>
+                  {treinoSelecionado?.nomeTreinoCurto || treinoSelecionado?.nomeTreino || "Treino Realizado"}
+                </Text>
+                <Text style={localStyles.modalSubDate}>
+                  Realizado em {dataModalFormatada} às {treinoSelecionado?.horario}
+                </Text>
+              </View>
+
+              <TouchableOpacity style={localStyles.modalCloseBtn} onPress={fecharDetalhesExecucao}>
+                <Ionicons name="close" size={22} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={localStyles.modalScrollContent}>
+              <View style={localStyles.modalStatsGrid}>
+                <View style={localStyles.modalStatBox}>
+                  <Ionicons name="time-outline" size={18} color="#FF6B00" style={{ marginBottom: 4 }} />
+                  <Text style={localStyles.modalStatValue}>{treinoSelecionado?.duracao || "--"}</Text>
+                  <Text style={localStyles.modalStatLabel}>Duração</Text>
+                </View>
+
+                <View style={localStyles.modalStatBox}>
+                  <MaterialCommunityIcons name="weight-kilogram" size={18} color="#FF6B00" style={{ marginBottom: 4 }} />
+                  <Text style={localStyles.modalStatValue}>{treinoSelecionado?.volumeTotal || "--"}</Text>
+                  <Text style={localStyles.modalStatLabel}>Volume Total</Text>
+                </View>
+
+                <View style={localStyles.modalStatBox}>
+                  <Ionicons name="checkmark-done-circle-outline" size={18} color="#00E676" style={{ marginBottom: 4 }} />
+                  <Text style={localStyles.modalStatValue}>{treinoSelecionado?.seriesResumo || "--"}</Text>
+                  <Text style={localStyles.modalStatLabel}>Séries Feitas</Text>
+                </View>
+
+                <View style={localStyles.modalStatBox}>
+                  <Ionicons name="trophy-outline" size={18} color="#FFD700" style={{ marginBottom: 4 }} />
+                  <Text style={localStyles.modalStatValue}>
+                    {treinoSelecionado?.prsCount > 0 ? `${treinoSelecionado.prsCount} PRs` : (treinoSelecionado?.maiorCargaSessao || "--")}
+                  </Text>
+                  <Text style={localStyles.modalStatLabel}>
+                    {treinoSelecionado?.prsCount > 0 ? "Recordes" : "Maior Carga"}
+                  </Text>
+                </View>
+              </View>
+
+              {(treinoSelecionado?.sentiuDor || treinoSelecionado?.comentarioFinal) && (
+                <View style={localStyles.modalFeedbackSection}>
+                  <Text style={localStyles.modalSectionTitle}>Feedback & Alertas do Aluno</Text>
+
+                  {treinoSelecionado?.sentiuDor && (
+                    <View style={localStyles.modalPainAlertCard}>
+                      <View style={localStyles.modalPainHeader}>
+                        <View style={localStyles.modalPainIconBox}>
+                          <Ionicons name="warning" size={18} color="#EF4444" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={localStyles.modalPainTitle}>Alerta de Dor / Desconforto na Sessão</Text>
+                          <Text style={localStyles.modalPainSubtitle}>
+                            Verifique a carga e a amplitude nos exercícios sinalizados abaixo.
+                          </Text>
+                        </View>
+                      </View>
+
+                      {treinoSelecionado?.relatosDorSessao?.length > 0 && (
+                        <View style={localStyles.modalPainList}>
+                          {treinoSelecionado.relatosDorSessao.map((dor: any, dIdx: number) => (
+                            <View key={dIdx} style={localStyles.modalPainItem}>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={localStyles.modalPainExName}>{dor.exercicioNome}</Text>
+                                {dor.intensidade !== null && dor.intensidade !== undefined && (
+                                  <View style={localStyles.modalPainLevelBadge}>
+                                    <Text style={localStyles.modalPainLevelText}>Nível {dor.intensidade}/10</Text>
+                                  </View>
+                                )}
+                              </View>
+                              <Text style={localStyles.modalPainDesc}>{dor.descricao}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {treinoSelecionado?.comentarioFinal && (
+                    <View style={localStyles.modalStudentCommentCard}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                        <Ionicons name="chatbubble-ellipses" size={15} color="#FF6B00" style={{ marginRight: 6 }} />
+                        <Text style={localStyles.modalStudentCommentLabel}>COMENTÁRIO FINAL DO ALUNO:</Text>
+                      </View>
+                      <Text style={localStyles.modalStudentCommentText}>
+                        {treinoSelecionado.comentarioFinal}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              <View style={{ marginTop: 6 }}>
+                <Text style={localStyles.modalSectionTitle}>
+                  Exercícios Realizados ({treinoSelecionado?.exerciciosDetalhados?.length || 0})
+                </Text>
+
+                {treinoSelecionado?.exerciciosDetalhados?.length > 0 ? (
+                  treinoSelecionado.exerciciosDetalhados.map((ex: any, index: number) => {
+                    const isExpanded = exercicioExpandidoId === ex.id;
+
+                    return (
+                      <View
+                        key={ex.id || index}
+                        style={[
+                          localStyles.modalExerciseCard,
+                          isExpanded && localStyles.modalExerciseCardExpanded,
+                          ex.teveDor && { borderColor: 'rgba(239, 68, 68, 0.45)' }
+                        ]}
+                      >
+                        <TouchableOpacity
+                          style={localStyles.modalExerciseHeader}
+                          activeOpacity={0.75}
+                          onPress={() => alternarExercicioExpandido(ex.id)}
+                        >
+                          <View style={localStyles.modalExerciseIndexBadge}>
+                            <Text style={localStyles.modalExerciseIndexText}>{index + 1}</Text>
+                          </View>
+
+                          <View style={{ flex: 1, marginRight: 8 }}>
+                            <Text style={localStyles.modalExerciseName} numberOfLines={1}>
+                              {ex.nome}
+                            </Text>
+                            <View style={localStyles.modalExerciseMetaRow}>
+                              <Text style={localStyles.modalExerciseMetaText}>
+                                {ex.seriesConcluidas}/{ex.seriesPlanejadas} séries
+                              </Text>
+                              <View style={localStyles.modalMetaDot} />
+                              <Text style={[localStyles.modalExerciseMetaText, { color: '#FF6B00', fontWeight: '800' }]}>
+                                Máx: {ex.maiorCarga}
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View style={localStyles.modalExerciseBadgesRight}>
+                            {ex.bateuPr && (
+                              <View style={localStyles.miniBadgePr}>
+                                <Ionicons name="trophy" size={11} color="#00E676" />
+                                <Text style={localStyles.miniBadgePrText}>PR</Text>
+                              </View>
+                            )}
+                            {ex.observacaoAluno && (
+                              <View style={localStyles.miniBadgeNote}>
+                                <Ionicons name="document-text" size={12} color="#FF6B00" />
+                              </View>
+                            )}
+                            {ex.teveDor && (
+                              <View style={localStyles.miniBadgePain}>
+                                <Ionicons name="warning" size={12} color="#EF4444" />
+                              </View>
+                            )}
+                            <Ionicons
+                              name={isExpanded ? "chevron-up" : "chevron-down"}
+                              size={18}
+                              color="#888"
+                              style={{ marginLeft: 4 }}
+                            />
+                          </View>
+                        </TouchableOpacity>
+
+                        {isExpanded && (
+                          <View style={localStyles.modalExerciseBody}>
+                            <View style={localStyles.seriesTableHeader}>
+                              <Text style={[localStyles.seriesTableHeaderCell, { flex: 0.8 }]}>SÉRIE</Text>
+                              <Text style={[localStyles.seriesTableHeaderCell, { flex: 1.2, textAlign: 'center' }]}>REPS</Text>
+                              <Text style={[localStyles.seriesTableHeaderCell, { flex: 1.2, textAlign: 'center' }]}>CARGA</Text>
+                              <Text style={[localStyles.seriesTableHeaderCell, { flex: 0.8, textAlign: 'right' }]}>STATUS</Text>
+                            </View>
+
+                            {ex.series && ex.series.length > 0 ? (
+                              ex.series.map((s: any) => (
+                                <View key={s.id} style={localStyles.seriesTableRow}>
+                                  <View style={{ flex: 0.8, flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={[localStyles.serieNumBadge, s.concluida && { backgroundColor: 'rgba(0, 230, 118, 0.12)', borderColor: 'rgba(0, 230, 118, 0.3)' }]}>
+                                      <Text style={[localStyles.serieNumText, s.concluida && { color: '#00E676' }]}>
+                                        S{s.numero}
+                                      </Text>
+                                    </View>
+                                  </View>
+
+                                  <Text style={[localStyles.seriesTableCellText, { flex: 1.2, textAlign: 'center' }]}>
+                                    {s.reps}
+                                  </Text>
+
+                                  <Text style={[localStyles.seriesTableCellLoad, { flex: 1.2, textAlign: 'center' }]}>
+                                    {s.carga}
+                                  </Text>
+
+                                  <View style={{ flex: 0.8, alignItems: 'flex-end' }}>
+                                    {s.concluida ? (
+                                      <View style={localStyles.statusCheckDone}>
+                                        <Ionicons name="checkmark" size={12} color="#000" />
+                                      </View>
+                                    ) : (
+                                      <Text style={{ color: '#666', fontSize: 10, fontWeight: '700' }}>Pendente</Text>
+                                    )}
+                                  </View>
+                                </View>
+                              ))
+                            ) : (
+                              <Text style={{ color: '#666', fontSize: 12, paddingVertical: 8 }}>
+                                Nenhuma série detalhada registrada.
+                              </Text>
+                            )}
+
+                            {ex.observacaoAluno && (
+                              <View style={localStyles.exerciseObsAlunoBox}>
+                                <Ionicons name="chatbox-ellipses-outline" size={14} color="#FF6B00" style={{ marginRight: 8, marginTop: 1 }} />
+                                <View style={{ flex: 1 }}>
+                                  <Text style={localStyles.exerciseObsAlunoLabel}>ANOTAÇÃO DO ALUNO NESTE EXERCÍCIO:</Text>
+                                  <Text style={localStyles.exerciseObsAlunoText}>{ex.observacaoAluno}</Text>
+                                </View>
+                              </View>
+                            )}
+
+                            {ex.teveDor && ex.detalheDor && (
+                              <View style={localStyles.exercisePainDetailBox}>
+                                <Ionicons name="warning" size={14} color="#EF4444" style={{ marginRight: 8, marginTop: 1 }} />
+                                <View style={{ flex: 1 }}>
+                                  <Text style={localStyles.exercisePainDetailLabel}>
+                                    RELATO DE DOR {ex.detalheDor.intensidade !== null ? `(NÍVEL ${ex.detalheDor.intensidade}/10)` : ""}:
+                                  </Text>
+                                  <Text style={localStyles.exercisePainDetailText}>{ex.detalheDor.descricao}</Text>
+                                </View>
+                              </View>
+                            )}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })
+                ) : (
+                  <View style={localStyles.emptyCard}>
+                    <Text style={{ color: '#888', fontSize: 12, textAlign: 'center' }}>
+                      Os detalhes por série não estão disponíveis para este registro antigo.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
