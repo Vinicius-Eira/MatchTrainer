@@ -27,10 +27,22 @@ export interface MappedWeek {
   dias: MappedDay[];
 }
 
+export interface MappedProgramHistory {
+  id: string;
+  nome: string;
+  objetivo: string;
+  criado_em_formatado: string;
+  is_active: boolean;
+  total_treinos: number;
+  treinos_concluidos: number;
+  semanas: MappedWeek[];
+}
+
 export function useWorkoutList(navigation: any, routeConexaoId?: string) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
+  const [programIdAtual, setProgramIdAtual] = useState<string | null>(null);
   const [programName, setProgramName] = useState<string>("");
   const [programObjective, setProgramObjective] = useState<string>("Buscando...");
   const [programLevel, setProgramLevel] = useState<string>("Intermediário");
@@ -38,6 +50,11 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
   const [semanas, setSemanas] = useState<MappedWeek[]>([]);
   const [totalTreinos, setTotalTreinos] = useState<number>(0);
   const [treinosConcluidosGeral, setTreinosConcluidosGeral] = useState<number>(0);
+
+  const [todosProgramasMapeados, setTodosProgramasMapeados] = useState<MappedProgramHistory[]>([]);
+  const [programasAnteriores, setProgramasAnteriores] = useState<MappedProgramHistory[]>([]);
+  const [historicoModalVisivel, setHistoricoModalVisivel] = useState<boolean>(false);
+  const [visualizandoProgramaAntigo, setVisualizandoProgramaAntigo] = useState<boolean>(false);
   
   const [conexaoId, setConexaoId] = useState<string | null>(routeConexaoId || null);
   const [selectedWeekId, setSelectedWeekId] = useState<string | null>(null);
@@ -88,10 +105,10 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
       if (conexao) cid = conexao.id;
     }
 
-    const { data: programas, error: errTreinos } = await supabase
+    const { data: listaProgramas, error: errTreinos } = await supabase
       .from('training_programs')
       .select(`
-        id, name, objective, general_observation, created_at,
+        id, name, objective, general_observation, is_active, created_at,
         training_weeks (
           id, name, general_notes, start_date, end_date,
           workout_days ( id, name, order_index, planned_exercises ( id, public_note ) )
@@ -102,15 +119,12 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
         )
       `)
       .eq('student_id', user.id)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .order('created_at', { ascending: false });
 
     if (errTreinos && errTreinos.code !== 'PGRST116') throw errTreinos;
     
     let execucoes: any[] = [];
-    if (programas && cid) {
+    if (cid) {
       const { data: historico } = await supabase
         .from('treinos_execucoes')
         .select('treino_id')
@@ -118,7 +132,7 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
       if (historico) execucoes = historico;
     }
 
-    return { cid, programa: programas, execucoes };
+    return { cid, listaProgramas: listaProgramas || [], execucoes };
   };
 
   const processarDados = (programa: any, execucoes: any[]) => {
@@ -131,7 +145,7 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
 
     if (weeksSource.length === 0 && legacyDays.length > 0) {
       weeksSource = [{
-        id: 'legacy-week-1',
+        id: `legacy-week-${programa.id}`,
         name: 'Semana 1',
         start_date: null,
         end_date: null,
@@ -247,27 +261,82 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
     return { semanasMapeadas, total: sumTreinos, concluidosTotais: sumConcluidosGeral, semanaAtualCalculada: weekAtualDetectada, programNameTratado: nomeRotina };
   };
 
+  const aplicarProgramaNaTela = (progRaw: any, execucoes: any[], isAntigo: boolean) => {
+    const dbObjective = progRaw.objective || "Hipertrofia e Evolução";
+    setProgramIdAtual(progRaw.id);
+    setProgramObjective(dbObjective);
+    setProgramLevel("Intermediário");
+    setVisualizandoProgramaAntigo(isAntigo);
+
+    const { semanasMapeadas, total, concluidosTotais, semanaAtualCalculada, programNameTratado } = processarDados(progRaw, execucoes);
+    setProgramName(programNameTratado);
+    setSemanas(semanasMapeadas);
+    setTotalTreinos(total);
+    setTreinosConcluidosGeral(concluidosTotais);
+    setCurrentAutoWeekId(semanaAtualCalculada);
+    setSelectedWeekId(null);
+  };
+
   const fetchDadosEAtualizarEstado = async () => {
     const result = await buscarDadosNoSupabase(conexaoId);
     setConexaoId(result.cid);
     
-    if (result.programa) {
-      const dbObjective = result.programa.objective || "Hipertrofia e Evolução";
-      setProgramObjective(dbObjective);
-      setProgramLevel("Intermediário"); 
-      
-      const { semanasMapeadas, total, concluidosTotais, semanaAtualCalculada, programNameTratado } = processarDados(result.programa, result.execucoes);
-      setProgramName(programNameTratado);
-      setSemanas(semanasMapeadas);
-      setTotalTreinos(total);
-      setTreinosConcluidosGeral(concluidosTotais);
-      setCurrentAutoWeekId(semanaAtualCalculada);
+    const todosRaw = result.listaProgramas || [];
+
+    if (todosRaw.length > 0) {
+      const principalRaw = todosRaw.find((p: any) => p.is_active !== false) || todosRaw[0];
+      aplicarProgramaNaTela(principalRaw, result.execucoes, false);
+
+      const mapeadosHistorico: MappedProgramHistory[] = todosRaw.map((p: any) => {
+        const proc = processarDados(p, result.execucoes);
+        return {
+          id: p.id,
+          nome: proc.programNameTratado,
+          objetivo: p.objective || "Hipertrofia e Evolução",
+          criado_em_formatado: formatarDataBR(p.created_at) || "--/--/----",
+          is_active: p.is_active !== false,
+          total_treinos: proc.total,
+          treinos_concluidos: proc.concluidosTotais,
+          semanas: proc.semanasMapeadas
+        };
+      });
+
+      setTodosProgramasMapeados(mapeadosHistorico);
+      setProgramasAnteriores(mapeadosHistorico.filter(p => p.id !== principalRaw.id && p.total_treinos > 0));
     } else {
       setProgramName("Meus Treinos");
       setProgramObjective("Aguardando Rotina");
       setProgramLevel("");
       setSemanas([]);
+      setProgramasAnteriores([]);
     }
+  };
+
+  const selecionarProgramaDoHistorico = (programaHist: MappedProgramHistory) => {
+    setProgramIdAtual(programaHist.id);
+    setProgramName(programaHist.nome);
+    setProgramObjective(programaHist.objetivo);
+    setSemanas(programaHist.semanas);
+    setTotalTreinos(programaHist.total_treinos);
+    setTreinosConcluidosGeral(programaHist.treinos_concluidos);
+    setCurrentAutoWeekId(programaHist.semanas[0]?.id || null);
+    setSelectedWeekId(null);
+    setVisualizandoProgramaAntigo(true);
+    setHistoricoModalVisivel(false);
+  };
+
+  const voltarParaProgramaAtual = () => {
+    if (todosProgramasMapeados.length === 0) return;
+    const principal = todosProgramasMapeados.find(p => p.is_active) || todosProgramasMapeados[0];
+    setProgramIdAtual(principal.id);
+    setProgramName(principal.nome);
+    setProgramObjective(principal.objetivo);
+    setSemanas(principal.semanas);
+    setTotalTreinos(principal.total_treinos);
+    setTreinosConcluidosGeral(principal.treinos_concluidos);
+    setCurrentAutoWeekId(principal.semanas[0]?.id || null);
+    setSelectedWeekId(null);
+    setVisualizandoProgramaAntigo(false);
   };
 
   useEffect(() => {
@@ -295,11 +364,13 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
   };
 
   const openWorkoutList = (treinoId: string) => {
+    setHistoricoModalVisivel(false);
     navigation.navigate("WorkoutPreview", { treinoId, conexaoId });
   };
 
   const handleBack = () => {
     if (selectedWeekId) setSelectedWeekId(null);
+    else if (visualizandoProgramaAntigo) voltarParaProgramaAtual();
     else navigation.goBack();
   };
 
@@ -308,9 +379,11 @@ export function useWorkoutList(navigation: any, routeConexaoId?: string) {
 
   return {
     loading, refreshing, onRefresh,
-    programName, programObjective, programLevel, semanas, totalTreinos, treinosConcluidosGeral, progressoPercentual,
+    programIdAtual, programName, programObjective, programLevel, semanas, totalTreinos, treinosConcluidosGeral, progressoPercentual,
     selectedWeekId, setSelectedWeekId, activeWeek, currentAutoWeekId,
     expandedFeedbackId, toggleFeedback,
+    programasAnteriores, historicoModalVisivel, setHistoricoModalVisivel,
+    visualizandoProgramaAntigo, selecionarProgramaDoHistorico, voltarParaProgramaAtual,
     openWorkoutList, voltar: handleBack
   };
 }

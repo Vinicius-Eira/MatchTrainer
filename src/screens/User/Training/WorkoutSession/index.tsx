@@ -61,6 +61,7 @@ export function WorkoutSession({ route, navigation }: any) {
           {exercicios.map((ex, index) => {
             const isExpanded = expandedIndex === index;
             const isCompleted = ex.series.length > 0 && ex.series.every((s: any) => s.concluida);
+            const temTecnicaEspecial = ex.tecnica && ex.tecnica !== "Normal";
 
             return (
               <View key={ex.id} style={[styles.cardContainer, isExpanded && styles.cardContainerExpanded, isCompleted && !isExpanded && styles.cardContainerCompleted]}>
@@ -83,7 +84,10 @@ export function WorkoutSession({ route, navigation }: any) {
                     <Text style={[styles.cardTitle, isCompleted && !isExpanded && { textDecorationLine: "line-through", color: "#888" }]} numberOfLines={1}>
                       {ex.nome}
                     </Text>
-                    <Text style={styles.cardSubtitle}>{ex.series.length} séries • {ex.grupo_muscular}</Text>
+                    <Text style={styles.cardSubtitle}>
+                      {ex.series.length} séries • {ex.grupo_muscular}
+                      {temTecnicaEspecial ? <Text style={{ color: "#FF6B00", fontWeight: "bold" }}> • {ex.tecnica}</Text> : null}
+                    </Text>
                   </View>
 
                   <View style={styles.cardIconBox}>
@@ -184,7 +188,7 @@ export function WorkoutSession({ route, navigation }: any) {
                       <Text style={styles.alunoAcoesTitle}>Detalhes da Execução (Opcional)</Text>
                       <TextInput
                         style={styles.alunoObsInput}
-                        placeholder="Deixe um comentário sobre esse exercício (ex: ajuste do banco, pegada)..."
+                        placeholder="Deixe um comentário sobre esse exercício..."
                         placeholderTextColor="#555"
                         value={ex.observacao_aluno}
                         onChangeText={(v) => atualizarObservacaoAluno(index, v)}

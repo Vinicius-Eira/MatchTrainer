@@ -1,12 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, LayoutAnimation, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, LayoutAnimation, Alert, ActivityIndicator } from 'react-native';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image'; 
 import { useVideoPlayer, VideoView } from 'expo-video'; 
-import { scale, verticalScale } from '../../utils/responsive';
-import { useWorkoutCreatorStore } from '../../store/useWorkoutCreatorStore';
-import { ExerciseService } from '../../services/ExerciseService'; 
+import { useWorkoutCreatorStore } from '../../../store/useWorkoutCreatorStore';
+import { ExerciseService } from '../../../services/ExerciseService'; 
+import { styles } from './styles';
+
+const TECHNIQUE_OPTIONS = ['Normal', 'Bi-Set', 'Drop-Set', 'Superset', 'Rest-Pause'];
 
 export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: any) => {
   const store = useWorkoutCreatorStore((state: any) => state);
@@ -14,10 +16,18 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: any) => {
   const [isUploading, setIsUploading] = useState(false);
   const videoViewRef = useRef(null);
 
+  const currentTechnique = exercise.technique || 'Normal';
+
   const handleUpdate = (field: string, value: string | number) => {
     if (store.activeWeekId && dayId) {
       store.updateExercise(store.activeWeekId, dayId, exercise.id, field, value);
     }
+  };
+
+  const handleCycleTechnique = () => {
+    const idx = TECHNIQUE_OPTIONS.indexOf(currentTechnique);
+    const nextTech = TECHNIQUE_OPTIONS[(idx + 1) % TECHNIQUE_OPTIONS.length];
+    handleUpdate('technique', nextTech);
   };
 
   const handleRemove = () => {
@@ -100,9 +110,13 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: any) => {
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{exercise.group_code || 'Geral'}</Text>
             </View>
-            <View style={[styles.badge, { backgroundColor: 'rgba(255, 81, 0, 0.1)' }]}>
-              <Text style={[styles.badgeText, { color: '#FF5100' }]}>{exercise.technique || 'Normal'}</Text>
-            </View>
+            <TouchableOpacity
+              onPress={handleCycleTechnique}
+              activeOpacity={0.7}
+              style={[styles.badge, { backgroundColor: 'rgba(255, 81, 0, 0.1)', borderColor: 'rgba(255, 81, 0, 0.35)' }]}
+            >
+              <Text style={[styles.badgeText, { color: '#FF5100' }]}>{currentTechnique}</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -201,35 +215,56 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: any) => {
       {isExpanded && (
         <View style={styles.expandedArea}>
           <View style={styles.detailGroup}>
-             <View style={styles.detailHeader}>
-               <Ionicons name="eye" size={16} color="#00E676" />
-               <Text style={[styles.detailLabel, { color: '#00E676' }]}>Nota Pública (O Aluno vê no treino)</Text>
-             </View>
-             <TextInput 
-               style={[styles.textArea, { borderColor: 'rgba(0, 230, 118, 0.3)' }]} 
-               placeholder="Ex: Foque na descida lenta. Mantenha o abdômen contraído." 
-               placeholderTextColor="#555" 
-               multiline
-               textAlignVertical="top"
-               value={exercise.public_note} 
-               onChangeText={(text) => handleUpdate('public_note', text)} 
-             />
+            <View style={styles.detailHeader}>
+              <Ionicons name="flash" size={16} color="#FF5100" />
+              <Text style={[styles.detailLabel, { color: '#FF5100' }]}>Técnica (Bi-Set / Drop-Set / Superset)</Text>
+            </View>
+            <View style={styles.techniqueRow}>
+              {TECHNIQUE_OPTIONS.map((tech) => {
+                const selected = currentTechnique === tech;
+                return (
+                  <TouchableOpacity
+                    key={tech}
+                    onPress={() => handleUpdate('technique', tech)}
+                    style={[styles.techPill, selected && styles.techPillActive]}
+                  >
+                    <Text style={[styles.techPillText, selected && styles.techPillTextActive]}>{tech}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.detailGroup}>
+            <View style={styles.detailHeader}>
+              <Ionicons name="eye" size={16} color="#00E676" />
+              <Text style={[styles.detailLabel, { color: '#00E676' }]}>Nota Pública (O Aluno vê no treino)</Text>
+            </View>
+            <TextInput 
+              style={[styles.textArea, { borderColor: 'rgba(0, 230, 118, 0.3)' }]} 
+              placeholder="Ex: Foque na descida lenta. Mantenha o abdômen contraído." 
+              placeholderTextColor="#555" 
+              multiline
+              textAlignVertical="top"
+              value={exercise.public_note} 
+              onChangeText={(text) => handleUpdate('public_note', text)} 
+            />
           </View>
           
           <View style={styles.detailGroup}>
-             <View style={styles.detailHeader}>
-               <Ionicons name="lock-closed" size={16} color="#FFD700" />
-               <Text style={[styles.detailLabel, { color: '#FFD700' }]}>Nota Privada (Só você vê)</Text>
-             </View>
-             <TextInput 
-               style={[styles.textArea, { borderColor: 'rgba(255, 215, 0, 0.3)' }]} 
-               placeholder="Ex: Aluno sente desconforto no ombro. Acompanhar." 
-               placeholderTextColor="#555" 
-               multiline
-               textAlignVertical="top"
-               value={exercise.private_note} 
-               onChangeText={(text) => handleUpdate('private_note', text)} 
-             />
+            <View style={styles.detailHeader}>
+              <Ionicons name="lock-closed" size={16} color="#FFD700" />
+              <Text style={[styles.detailLabel, { color: '#FFD700' }]}>Nota Privada (Só você vê)</Text>
+            </View>
+            <TextInput 
+              style={[styles.textArea, { borderColor: 'rgba(255, 215, 0, 0.3)' }]} 
+              placeholder="Ex: Aluno sente desconforto no ombro. Acompanhar." 
+              placeholderTextColor="#555" 
+              multiline
+              textAlignVertical="top"
+              value={exercise.private_note} 
+              onChangeText={(text) => handleUpdate('private_note', text)} 
+            />
           </View>
         </View>
       )}
@@ -237,45 +272,3 @@ export const DraftExerciseCard = ({ dayId, exercise, drag, isActive }: any) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  card: { backgroundColor: '#0A0A0C', borderRadius: scale(16), padding: scale(14), marginBottom: verticalScale(12), borderWidth: 1, borderColor: '#1A1A20', marginHorizontal: scale(16) },
-  activeCard: { borderColor: '#FF5100', backgroundColor: '#121214', transform: [{ scale: 1.02 }], shadowColor: '#FF5100', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 10, zIndex: 999 },
-  
-  header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: verticalScale(14) },
-  dragHandle: { paddingRight: scale(10), paddingVertical: scale(2), justifyContent: 'center', alignItems: 'center' },
-  titleContainer: { flex: 1, paddingRight: scale(10) },
-  title: { color: '#FFFFFF', fontSize: scale(15), fontWeight: '900', letterSpacing: 0.5, marginBottom: verticalScale(4) },
-  
-  badgeRow: { flexDirection: 'row', gap: scale(6), flexWrap: 'wrap' },
-  badge: { backgroundColor: '#121214', paddingHorizontal: scale(8), paddingVertical: verticalScale(2), borderRadius: scale(6), borderWidth: 1, borderColor: '#1E1E24' },
-  badgeText: { color: '#A0A0A5', fontSize: scale(10), fontWeight: '700', textTransform: 'uppercase' },
-  
-  deleteBtn: { padding: scale(6), backgroundColor: 'rgba(255, 59, 48, 0.05)', borderRadius: scale(10), borderWidth: 1, borderColor: 'rgba(255, 59, 48, 0.2)' },
-  
-  body: { flexDirection: 'row', gap: scale(12) },
-  
-  mediaColumn: { width: scale(95), height: verticalScale(120), borderRadius: scale(12), backgroundColor: '#121214', overflow: 'hidden', borderWidth: 1, borderColor: '#1E1E24', justifyContent: 'center', alignItems: 'center' },
-  image: { width: '100%', height: '100%' },
-  
-  playOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 5 },
-  editMediaBadge: { position: 'absolute', bottom: 6, right: 6, backgroundColor: 'rgba(255, 81, 0, 0.9)', padding: 6, borderRadius: 12, zIndex: 10 },
-  
-  imagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', borderStyle: 'dashed', borderWidth: 1, borderColor: '#333', borderRadius: scale(12) },
-  noMediaText: { color: '#777', fontSize: scale(10), fontWeight: 'bold', textTransform: 'uppercase' },
-  
-  inputsColumn: { flex: 1, justifyContent: 'space-between' },
-  inputRow: { flexDirection: 'row', gap: scale(8), marginBottom: verticalScale(8) },
-  inputGroup: { flex: 1 },
-  label: { color: '#888', fontSize: scale(10), marginBottom: verticalScale(4), fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
-  input: { backgroundColor: '#121214', borderWidth: 1, borderColor: '#1E1E24', borderRadius: scale(10), color: '#FFFFFF', fontSize: scale(14), paddingVertical: verticalScale(10), paddingHorizontal: scale(8), textAlign: 'center', fontWeight: 'bold' },
-  
-  expandButton: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(16), paddingTop: verticalScale(14), borderTopWidth: 1, borderTopColor: '#1A1A20' },
-  expandButtonText: { color: '#FF5100', fontSize: scale(12), fontWeight: '900', marginRight: scale(6), letterSpacing: 0.5 },
-  
-  expandedArea: { marginTop: verticalScale(16), gap: verticalScale(16) },
-  detailGroup: { flex: 1 },
-  detailHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: verticalScale(6), gap: scale(6) },
-  detailLabel: { fontSize: scale(11), fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
-  textArea: { backgroundColor: '#050505', borderWidth: 1, borderRadius: scale(12), color: '#FFF', fontSize: scale(13), padding: scale(12), minHeight: verticalScale(70) }
-});

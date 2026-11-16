@@ -124,7 +124,7 @@ export const styles = StyleSheet.create({
     elevation: 5,
   },
   macroStatsGradient: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   macroStat: {
     flex: 1,
@@ -361,7 +361,7 @@ export const styles = StyleSheet.create({
     paddingTop: verticalScale(16),
   },
   footerGradient: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   premiumBtnStartOutline: {
     flexDirection: "row",
