@@ -83,84 +83,96 @@ export function WorkoutPreview({ route, navigation }: any) {
         <Text style={styles.sectionTitle}>Plano de Execução</Text>
         
         <View style={styles.listaContainer}>
-          {exercicios.map((ex: any) => (
-            <View key={ex.id} style={styles.exercicioCard}>
-              
-              <View style={styles.exercicioRow}>
-                <View style={styles.videoContainer}>
-                  {ex.imagem_url ? (
-                    <Image source={{ uri: ex.imagem_url }} style={styles.videoThumbnail} />
-                  ) : (
-                    <View style={styles.videoPlaceholder}>
-                      <MaterialCommunityIcons name="weight-lifter" size={38} color="#444" />
-                    </View>
-                  )}
-                  <View style={styles.playOverlay}>
-                    <Ionicons name="play" size={22} color="#FFF" style={{ marginLeft: 3 }} />
-                  </View>
-                </View>
+          {exercicios.map((ex: any) => {
+            const temTecnicaEspecial = ex.tecnica && ex.tecnica !== "Normal";
 
-                <View style={styles.exercicioMainInfo}>
-                  <View>
-                    <Text style={styles.exercicioNome} numberOfLines={2}>{ex.nome}</Text>
-                    {ex.grupo_muscular ? (
-                      <Text style={styles.grupoMuscularText}>{ex.grupo_muscular}</Text>
-                    ) : null}
-                  </View>
-
-                  <View style={styles.premiumMetricsBlock}>
-                    <View style={styles.premiumMetricRow}>
-                      <Text style={styles.premiumMetricLabel}>Séries / Reps</Text>
-                      <Text style={styles.premiumMetricValue}>
-                        {ex.series} <Text style={styles.metricSubText}>×</Text> {ex.reps_alvo}
-                      </Text>
-                    </View>
-
-                    <View style={styles.premiumMetricRowHighlight}>
-                      <Text style={styles.premiumMetricLabelDestaque}>Carga Alvo</Text>
-                      <Text style={styles.premiumMetricValueDestaque}>{ex.carga_alvo || '--'}</Text>
-                    </View>
-
-                    <View style={styles.premiumMetricRow}>
-                      <Text style={styles.premiumMetricLabel}>Descanso</Text>
-                      <Text style={styles.premiumMetricValue}>
-                        {ex.descanso} <Text style={styles.metricSubText}>s</Text>
-                      </Text>
+            return (
+              <View key={ex.id} style={styles.exercicioCard}>
+                
+                <View style={styles.exercicioRow}>
+                  <View style={styles.videoContainer}>
+                    {ex.imagem_url ? (
+                      <Image source={{ uri: ex.imagem_url }} style={styles.videoThumbnail} />
+                    ) : (
+                      <View style={styles.videoPlaceholder}>
+                        <MaterialCommunityIcons name="weight-lifter" size={38} color="#444" />
+                      </View>
+                    )}
+                    <View style={styles.playOverlay}>
+                      <Ionicons name="play" size={22} color="#FFF" style={{ marginLeft: 3 }} />
                     </View>
                   </View>
-                </View>
-              </View>
 
-              {ex.series_historico && ex.series_historico.length > 0 && (
-                <View style={styles.seriesHistoryBox}>
-                  <Text style={styles.seriesHistoryLabel}>ÚLTIMAS CARGAS POR SÉRIE:</Text>
-                  <View style={styles.seriesPillsRow}>
-                    {ex.series_historico.map((s: any, idx: number) => (
-                      <View key={idx} style={[styles.serieChip, s.isMax && styles.serieChipMax]}>
-                        <Text style={styles.serieChipNumber}>S{s.numero}:</Text>
-                        <Text style={[styles.serieChipValue, s.isMax && { color: '#FF6B00' }]}>
-                          {s.carga} kg
+                  <View style={styles.exercicioMainInfo}>
+                    <View>
+                      <Text style={styles.exercicioNome} numberOfLines={2}>{ex.nome}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 3 }}>
+                        {ex.grupo_muscular ? (
+                          <Text style={[styles.grupoMuscularText, { marginTop: 0 }]}>{ex.grupo_muscular}</Text>
+                        ) : null}
+
+                        {temTecnicaEspecial && (
+                          <Text style={{ color: '#FF6B00', fontSize: 10.5, fontWeight: '900', textTransform: 'uppercase' }}>
+                            • {ex.tecnica}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+
+                    <View style={styles.premiumMetricsBlock}>
+                      <View style={styles.premiumMetricRow}>
+                        <Text style={styles.premiumMetricLabel}>Séries / Reps</Text>
+                        <Text style={styles.premiumMetricValue}>
+                          {ex.series} <Text style={styles.metricSubText}>×</Text> {ex.reps_alvo}
                         </Text>
                       </View>
-                    ))}
+
+                      <View style={styles.premiumMetricRowHighlight}>
+                        <Text style={styles.premiumMetricLabelDestaque}>Carga Alvo</Text>
+                        <Text style={styles.premiumMetricValueDestaque}>{ex.carga_alvo || '--'}</Text>
+                      </View>
+
+                      <View style={styles.premiumMetricRow}>
+                        <Text style={styles.premiumMetricLabel}>Descanso</Text>
+                        <Text style={styles.premiumMetricValue}>
+                          {ex.descanso} <Text style={styles.metricSubText}>s</Text>
+                        </Text>
+                      </View>
+                    </View>
                   </View>
                 </View>
-              )}
 
-              {ex.observacao ? (
-                <View style={styles.trainerNoteBox}>
-                  <View style={styles.trainerNoteIcon}>
-                    <Ionicons name="chatbubble-ellipses" size={16} color="#FF6B00" />
+                {ex.series_historico && ex.series_historico.length > 0 && (
+                  <View style={styles.seriesHistoryBox}>
+                    <Text style={styles.seriesHistoryLabel}>ÚLTIMAS CARGAS POR SÉRIE:</Text>
+                    <View style={styles.seriesPillsRow}>
+                      {ex.series_historico.map((s: any, idx: number) => (
+                        <View key={idx} style={[styles.serieChip, s.isMax && styles.serieChipMax]}>
+                          <Text style={styles.serieChipNumber}>S{s.numero}:</Text>
+                          <Text style={[styles.serieChipValue, s.isMax && { color: '#FF6B00' }]}>
+                            {s.carga} kg
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.trainerNoteTitle}>Observação do Personal</Text>
-                    <Text style={styles.trainerNoteText}>{ex.observacao}</Text>
-                  </View>
-                </View>
-              ) : null}
+                )}
 
-            </View>
-          ))}
+                {ex.observacao ? (
+                  <View style={styles.trainerNoteBox}>
+                    <View style={styles.trainerNoteIcon}>
+                      <Ionicons name="chatbubble-ellipses" size={16} color="#FF6B00" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.trainerNoteTitle}>Observação do Personal</Text>
+                      <Text style={styles.trainerNoteText}>{ex.observacao}</Text>
+                    </View>
+                  </View>
+                ) : null}
+
+              </View>
+            );
+          })}
         </View>
       </ScrollView>
 

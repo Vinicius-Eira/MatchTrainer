@@ -37,7 +37,6 @@ export function useWorkoutPreview(navigation: any, route: any) {
           .maybeSingle();
         if (con) {
           cid = con.id;
-          setRealConexaoId(con.id);
         }
       }
     }
@@ -81,19 +80,21 @@ export function useWorkoutPreview(navigation: any, route: any) {
     if (cid) {
       const { data: execs } = await supabase
         .from("treinos_execucoes")
-        .select("dados_execucao, data_inicio")
-        .eq("treino_id", treinoId)
+        .select("treino_id, dados_execucao, data_inicio")
         .eq("conexao_id", cid)
         .order("data_inicio", { ascending: false })
-        .limit(10);
+        .limit(20);
           
       if (execs && execs.length > 0) {
         historicoExecucoes = execs;
-        ultimaData = execs[0].data_inicio;
+        const execDesteTreino = execs.find((e: any) => String(e.treino_id) === String(treinoId));
+        if (execDesteTreino) {
+          ultimaData = execDesteTreino.data_inicio;
+        }
       }
     }
 
-    return { diaTreino, dicionarioCustom, historicoExecucoes, ultimaData };
+    return { cid, diaTreino, dicionarioCustom, historicoExecucoes, ultimaData };
   };
 
   const formatarDadosDoTreino = (
@@ -117,7 +118,7 @@ export function useWorkoutPreview(navigation: any, route: any) {
         ex.exercise_name || ex.name || "Exercício Customizado";
 
       const mediaUrl =
-        globalData.gif_url || customData.gif_url || customData.video_url ||
+        ex.custom_media_url || globalData.gif_url || customData.gif_url || customData.video_url ||
         customData.thumbnail_url || customData.media_url || customData.image_url || null;
 
       const grupoMuscular =
@@ -130,7 +131,9 @@ export function useWorkoutPreview(navigation: any, route: any) {
         if (!exec.dados_execucao || !Array.isArray(exec.dados_execucao)) continue;
 
         const exHist = exec.dados_execucao.find(
-          (he: any) => String(he.id) === String(ex.id) || he.nome === nomeExercicio
+          (he: any) =>
+            String(he.id) === String(ex.id) ||
+            (he.nome && String(he.nome).toLowerCase().trim() === String(nomeExercicio).toLowerCase().trim())
         );
 
         if (exHist && Array.isArray(exHist.series) && exHist.series.length > 0) {
@@ -158,6 +161,15 @@ export function useWorkoutPreview(navigation: any, route: any) {
         }
       }
 
+      if (seriesUltimaExecucao.length === 0 && ex.weight_target && extrairNumeroCarga(ex.weight_target) > 0 && numSeries > 0) {
+        const cargaAlvoNum = extrairNumeroCarga(ex.weight_target);
+        seriesUltimaExecucao = Array.from({ length: numSeries }).map((_, idx) => ({
+          numero: idx + 1,
+          carga: String(cargaAlvoNum),
+          isMax: false
+        }));
+      }
+
       let cargaFinal = "--";
       if (maiorCargaHistorico > 0) {
         cargaFinal = `${maiorCargaHistorico} kg`;
@@ -170,6 +182,7 @@ export function useWorkoutPreview(navigation: any, route: any) {
         id: ex.id,
         nome: nomeExercicio,
         grupo_muscular: grupoMuscular,
+        tecnica: ex.technique || "Normal",
         imagem_url: mediaUrl,
         series: numSeries,
         reps_alvo: ex.reps_target || "--",
@@ -216,31 +229,29 @@ export function useWorkoutPreview(navigation: any, route: any) {
   useEffect(() => {
     let isMounted = true;
 
-    const carregarInicial = async () => {
-      try {
-        const { diaTreino, dicionarioCustom, historicoExecucoes, ultimaData } = await buscarDetalhesDoTreino();
-        if (diaTreino && isMounted) {
-          const { treinoFormatado, exerciciosFormatados } = formatarDadosDoTreino(
-            diaTreino,
-            dicionarioCustom,
-            historicoExecucoes,
-            ultimaData
-          );
-          setTreino(treinoFormatado);
-          setExercicios(exerciciosFormatados);
-        }
-      } catch (error: any) {
+    buscarDetalhesDoTreino()
+      .then(({ cid, diaTreino, dicionarioCustom, historicoExecucoes, ultimaData }) => {
+        if (!isMounted || !diaTreino) return;
+        if (cid) setRealConexaoId(cid);
+        const { treinoFormatado, exerciciosFormatados } = formatarDadosDoTreino(
+          diaTreino,
+          dicionarioCustom,
+          historicoExecucoes,
+          ultimaData
+        );
+        setTreino(treinoFormatado);
+        setExercicios(exerciciosFormatados);
+      })
+      .catch((error: any) => {
         console.log("Erro ao buscar detalhes do treino:", error);
         if (isMounted) {
           Alert.alert("Erro", "Não foi possível carregar os detalhes do treino.");
           navigation.goBack();
         }
-      } finally {
+      })
+      .finally(() => {
         if (isMounted) setLoading(false);
-      }
-    };
-
-    carregarInicial();
+      });
 
     return () => {
       isMounted = false;
@@ -250,7 +261,8 @@ export function useWorkoutPreview(navigation: any, route: any) {
   const onRefresh = async () => {
     try {
       setRefreshing(true);
-      const { diaTreino, dicionarioCustom, historicoExecucoes, ultimaData } = await buscarDetalhesDoTreino();
+      const { cid, diaTreino, dicionarioCustom, historicoExecucoes, ultimaData } = await buscarDetalhesDoTreino();
+      if (cid) setRealConexaoId(cid);
       if (diaTreino) {
         const { treinoFormatado, exerciciosFormatados } = formatarDadosDoTreino(
           diaTreino,
