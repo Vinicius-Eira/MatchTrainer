@@ -1,6 +1,6 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ActivityIndicator, Image, Modal, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { supabase } from "../../../services/supabase"; 
 import { CONSTANTS } from "./constants";
@@ -11,17 +11,19 @@ export function AlunoDashboard({ route, navigation }: any) {
   const { conexaoId } = route.params || { conexaoId: "1" };
   const {
     loading, refreshing, aluno, personal, conexao, diasTreino, progressoBarra, estaNoPeriodoTeste,
-    semanaAtual, temTreinosNaSemana, treinoHoje, statusTreinoDia, recadoPersonal, dataRecadoPersonal, anamnesePendente, jaAvaliou,
-    onRefresh, handleLogout, handleWhatsApp, featureBloqueada,
+    semanaAtual, temTreinosNaSemana, treinoHoje, statusTreinoDia, recadoPersonal, dataRecadoPersonal, anamnesePendente,
+    onRefresh, handleLogout, handleWhatsApp,
     handleAcaoEncerramento, verPerfilPersonal, irParaMeuPerfil, irParaChat
   } = useDashboard(navigation, conexaoId);
 
   const realConexaoId = conexao?.id || conexaoId;
 
   const [financeiroInfo, setFinanceiroInfo] = useState({
+    temContrato: false,
     status: 'em_dia' as 'em_dia' | 'pendente' | 'atrasado',
     valor: 'R$ 0,00',
-    vencimento: '--/--'
+    vencimento: '--/--',
+    mensagemDetalhe: 'Sincronizando status...'
   });
 
   const [imgErroAluno, setImgErroAluno] = useState(false);
@@ -30,49 +32,97 @@ export function AlunoDashboard({ route, navigation }: any) {
 
   useEffect(() => {
     let isMounted = true;
+
     const carregarResumoFinanceiro = async () => {
       if (!realConexaoId || realConexaoId === "1") return;
       try {
         const { data: contrato } = await supabase
           .from('planos')
-          .select('valor_mensal, dia_vencimento')
+          .select('id, valor_mensal, dia_vencimento, status')
           .eq('conexao_id', realConexaoId)
           .in('status', ['ativo', 'aguardando_assinatura', 'pendente'])
           .maybeSingle();
 
-        if (contrato && isMounted) {
-          const valorFloat = contrato.valor_mensal || 0;
-          const diaVencimento = contrato.dia_vencimento || 10;
-          
-          const hoje = new Date();
-          let mesVencimento = hoje.getMonth();
-          let anoVencimento = hoje.getFullYear();
+        if (!contrato || !contrato.valor_mensal) {
+          if (isMounted) {
+            setFinanceiroInfo({
+              temContrato: false,
+              status: 'em_dia',
+              valor: 'Sem cobrança',
+              vencimento: '--/--',
+              mensagemDetalhe: 'Nenhuma mensalidade configurada pelo seu Personal.'
+            });
+          }
+          return;
+        }
 
-          if (hoje.getDate() > diaVencimento + 5) {
-            mesVencimento += 1;
-            if (mesVencimento > 11) {
-              mesVencimento = 0;
-              anoVencimento += 1;
+        const { data: ultimoPagamento } = await supabase
+          .from('historico_financeiro_logs')
+          .select('criado_em')
+          .eq('referencia_id', contrato.id)
+          .eq('tipo_evento', 'PAGAMENTO_CONFIRMADO')
+          .order('criado_em', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (isMounted) {
+          const valorFloat = Number(contrato.valor_mensal) || 0;
+          const diaVencimento = Number(contrato.dia_vencimento) || 10;
+
+          const hoje = new Date();
+          hoje.setHours(0, 0, 0, 0);
+
+          const mesAtual = hoje.getMonth();
+          const anoAtual = hoje.getFullYear();
+
+          let pagouNoCicloAtual = false;
+          if (ultimoPagamento?.criado_em) {
+            const dataPag = new Date(ultimoPagamento.criado_em);
+            if (dataPag.getMonth() === mesAtual && dataPag.getFullYear() === anoAtual) {
+              pagouNoCicloAtual = true;
             }
           }
 
-          const dataVenc = new Date(anoVencimento, mesVencimento, diaVencimento);
+          let dataVenc = new Date(anoAtual, mesAtual, diaVencimento, 0, 0, 0, 0);
+          if (pagouNoCicloAtual && hoje.getDate() >= diaVencimento - 5) {
+            dataVenc = new Date(anoAtual, mesAtual + 1, diaVencimento, 0, 0, 0, 0);
+          }
+
           const diffDias = Math.ceil((dataVenc.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+          const dataVencFormatada = dataVenc.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+          const valorFormatado = `R$ ${valorFloat.toFixed(2).replace('.', ',')}`;
 
           let novoStatus: 'em_dia' | 'pendente' | 'atrasado' = 'em_dia';
-          if (diffDias < 0) novoStatus = 'atrasado';
-          else if (diffDias <= 5) novoStatus = 'pendente';
+          let msg = `Próximo vencimento em ${dataVencFormatada} • ${valorFormatado}`;
+
+          if (pagouNoCicloAtual) {
+            novoStatus = 'em_dia';
+            msg = `Pagamento confirmado! Próximo: ${dataVencFormatada} • ${valorFormatado}`;
+          } else if (diffDias < 0) {
+            novoStatus = 'atrasado';
+            const diasAtraso = Math.abs(diffDias);
+            msg = `Venceu em ${dataVencFormatada} (${diasAtraso} ${diasAtraso === 1 ? 'dia' : 'dias'} atrás) • ${valorFormatado}`;
+          } else if (diffDias === 0) {
+            novoStatus = 'pendente';
+            msg = `Sua mensalidade vence hoje (${dataVencFormatada}) • ${valorFormatado}`;
+          } else if (diffDias <= 5) {
+            novoStatus = 'pendente';
+            msg = `Vence em ${diffDias} ${diffDias === 1 ? 'dia' : 'dias'} (Dia ${dataVencFormatada}) • ${valorFormatado}`;
+          }
 
           setFinanceiroInfo({
+            temContrato: true,
             status: novoStatus,
-            valor: `R$ ${valorFloat.toFixed(2).replace('.', ',')}`,
-            vencimento: dataVenc.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+            valor: valorFormatado,
+            vencimento: dataVencFormatada,
+            mensagemDetalhe: msg
           });
         }
       } catch (error) {
         console.log("Erro ao carregar widget financeiro:", error);
       }
     };
+
     carregarResumoFinanceiro();
     return () => { isMounted = false; };
   }, [realConexaoId, refreshing]);
@@ -88,9 +138,34 @@ export function AlunoDashboard({ route, navigation }: any) {
 
   const getFinanceiroProps = () => {
     switch (financeiroInfo.status) {
-      case 'em_dia': return { cor: "#00E676", bg: "rgba(0, 230, 118, 0.08)", border: "rgba(0, 230, 118, 0.4)", icone: "checkmark-circle", titulo: "Tudo em dia" };
-      case 'atrasado': return { cor: "#FF3B30", bg: "rgba(255, 59, 48, 0.08)", border: "rgba(255, 59, 48, 0.4)", icone: "alert-circle", titulo: "Pagamento Atrasado" };
-      case 'pendente': default: return { cor: "#FF6B00", bg: "rgba(255, 107, 0, 0.08)", border: "rgba(255, 107, 0, 0.4)", icone: "time", titulo: "Vence em breve" };
+      case 'em_dia':
+        return {
+          cor: "#00E676",
+          bg: "rgba(0, 230, 118, 0.08)",
+          border: "rgba(0, 230, 118, 0.4)",
+          icone: "checkmark-circle",
+          titulo: "Mensalidade em Dia",
+          badgeTexto: "EM DIA"
+        };
+      case 'atrasado':
+        return {
+          cor: "#FF3B30",
+          bg: "rgba(255, 59, 48, 0.08)",
+          border: "rgba(255, 59, 48, 0.45)",
+          icone: "alert-circle",
+          titulo: "Mensalidade em Atraso",
+          badgeTexto: "ATRASADO"
+        };
+      case 'pendente':
+      default:
+        return {
+          cor: "#FFD700",
+          bg: "rgba(255, 215, 0, 0.08)",
+          border: "rgba(255, 215, 0, 0.45)",
+          icone: "notifications",
+          titulo: "Vencimento Próximo",
+          badgeTexto: "A VENCER"
+        };
     }
   };
   const finProps = getFinanceiroProps();
@@ -383,22 +458,38 @@ export function AlunoDashboard({ route, navigation }: any) {
             </View>
           )}
 
-          <Text style={[styles.sectionTitle, { marginTop: 20, marginBottom: 10 }]}>Financeiro</Text>
-          <TouchableOpacity style={[styles.financeiroCard, { backgroundColor: finProps.bg, borderColor: finProps.border, overflow: 'hidden' }]} activeOpacity={0.8} onPress={() => navigation.navigate("Finance")}>
+          <Text style={[styles.sectionTitle, { marginTop: 20, marginBottom: 10 }]}>Status da Assinatura</Text>
+          <View style={[styles.financeiroCard, { backgroundColor: finProps.bg, borderColor: finProps.border, overflow: 'hidden' }]}>
             <LinearGradient colors={[finProps.bg, "transparent"]} style={styles.absoluteFill} />
             <View style={[styles.financeiroIconBox, { backgroundColor: finProps.cor + '20' }]}>
-              <Ionicons name={finProps.icone as any} size={20} color={finProps.cor} style={{ textShadowColor: finProps.cor, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 }} />
+              <Ionicons
+                name={finProps.icone as any}
+                size={22}
+                color={finProps.cor}
+                style={{ textShadowColor: finProps.cor, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 }}
+              />
             </View>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.financeiroTitle}>Assinatura do Contrato</Text>
-              <Text style={[styles.financeiroSub, { color: finProps.cor, fontWeight: 'bold' }]}>
-                {finProps.titulo} • Dia {financeiroInfo.vencimento} • {financeiroInfo.valor}
+            <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={styles.financeiroTitle}>{finProps.titulo}</Text>
+                <View style={{
+                  backgroundColor: finProps.cor + '22',
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: 6,
+                  borderWidth: 1,
+                  borderColor: finProps.cor + '55'
+                }}>
+                  <Text style={{ color: finProps.cor, fontSize: 9.5, fontWeight: '900', letterSpacing: 0.5 }}>
+                    {finProps.badgeTexto}
+                  </Text>
+                </View>
+              </View>
+              <Text style={[styles.financeiroSub, { color: finProps.cor, fontWeight: 'bold', marginTop: 5 }]}>
+                {financeiroInfo.mensagemDetalhe}
               </Text>
             </View>
-            <View style={{ backgroundColor: '#1A1A20', padding: 6, borderRadius: 12 }}>
-              <Ionicons name="chevron-forward" size={16} color="#FFF" />
-            </View>
-          </TouchableOpacity>
+          </View>
 
           <View style={styles.gridActionsPremium}>
             <TouchableOpacity style={styles.actionCardPremium} activeOpacity={0.8} onPress={() => navigation.navigate("Progress", { conexaoId: realConexaoId })}>
