@@ -1,8 +1,8 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState, useEffect } from "react";
-import { ActivityIndicator, Image, Modal, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
-import { supabase } from "../../../services/supabase"; 
+import { ActivityIndicator, Alert, Image, Modal, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { supabase } from "../../../services/supabase";
 import { CONSTANTS } from "./constants";
 import { styles } from "./styles";
 import { useDashboard } from "./useDashboard";
@@ -20,10 +20,11 @@ export function AlunoDashboard({ route, navigation }: any) {
 
   const [financeiroInfo, setFinanceiroInfo] = useState({
     temContrato: false,
-    status: 'em_dia' as 'em_dia' | 'pendente' | 'atrasado',
-    valor: 'R$ 0,00',
-    vencimento: '--/--',
-    mensagemDetalhe: 'Sincronizando status...'
+    status: "em_dia" as "em_dia" | "pendente" | "atrasado" | "bloqueado" | "congelado",
+    valor: "R$ 0,00",
+    vencimento: "--/--",
+    mensagemDetalhe: "Sincronizando status...",
+    acessoBloqueado: false,
   });
 
   const [imgErroAluno, setImgErroAluno] = useState(false);
@@ -37,37 +38,55 @@ export function AlunoDashboard({ route, navigation }: any) {
       if (!realConexaoId || realConexaoId === "1") return;
       try {
         const { data: contrato } = await supabase
-          .from('planos')
-          .select('id, valor_mensal, dia_vencimento, status')
-          .eq('conexao_id', realConexaoId)
-          .in('status', ['ativo', 'aguardando_assinatura', 'pendente'])
+          .from("planos")
+          .select("id, valor_mensal, dia_vencimento, status, acesso_bloqueado, data_retorno_previsto")
+          .eq("conexao_id", realConexaoId)
+          .in("status", ["ativo", "aguardando_assinatura", "pendente", "congelado"])
           .maybeSingle();
 
         if (!contrato || !contrato.valor_mensal) {
           if (isMounted) {
             setFinanceiroInfo({
               temContrato: false,
-              status: 'em_dia',
-              valor: 'Sem cobrança',
-              vencimento: '--/--',
-              mensagemDetalhe: 'Nenhuma mensalidade configurada pelo seu Personal.'
+              status: "em_dia",
+              valor: "Sem cobrança",
+              vencimento: "--/--",
+              mensagemDetalhe: "Nenhuma mensalidade configurada pelo seu Personal.",
+              acessoBloqueado: false,
+            });
+          }
+          return;
+        }
+
+        if (contrato.status === "congelado") {
+          if (isMounted) {
+            setFinanceiroInfo({
+              temContrato: true,
+              status: "congelado",
+              valor: `R$ ${Number(contrato.valor_mensal).toFixed(2).replace(".", ",")}`,
+              vencimento: contrato.data_retorno_previsto || "--/--",
+              mensagemDetalhe: contrato.data_retorno_previsto
+                ? `Seu plano está pausado. Retorno previsto: ${contrato.data_retorno_previsto.split("-").reverse().join("/")}.`
+                : "Seu plano está congelado temporariamente pelo seu treinador.",
+              acessoBloqueado: false,
             });
           }
           return;
         }
 
         const { data: ultimoPagamento } = await supabase
-          .from('historico_financeiro_logs')
-          .select('criado_em')
-          .eq('referencia_id', contrato.id)
-          .eq('tipo_evento', 'PAGAMENTO_CONFIRMADO')
-          .order('criado_em', { ascending: false })
+          .from("historico_financeiro_logs")
+          .select("criado_em")
+          .eq("referencia_id", contrato.id)
+          .eq("tipo_evento", "PAGAMENTO_CONFIRMADO")
+          .order("criado_em", { ascending: false })
           .limit(1)
           .maybeSingle();
 
         if (isMounted) {
           const valorFloat = Number(contrato.valor_mensal) || 0;
           const diaVencimento = Number(contrato.dia_vencimento) || 10;
+          const bloqueado = Boolean(contrato.acesso_bloqueado);
 
           const hoje = new Date();
           hoje.setHours(0, 0, 0, 0);
@@ -89,25 +108,28 @@ export function AlunoDashboard({ route, navigation }: any) {
           }
 
           const diffDias = Math.ceil((dataVenc.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-          const dataVencFormatada = dataVenc.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-          const valorFormatado = `R$ ${valorFloat.toFixed(2).replace('.', ',')}`;
+          const dataVencFormatada = dataVenc.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+          const valorFormatado = `R$ ${valorFloat.toFixed(2).replace(".", ",")}`;
 
-          let novoStatus: 'em_dia' | 'pendente' | 'atrasado' = 'em_dia';
+          let novoStatus: "em_dia" | "pendente" | "atrasado" | "bloqueado" = "em_dia";
           let msg = `Próximo vencimento em ${dataVencFormatada} • ${valorFormatado}`;
 
-          if (pagouNoCicloAtual) {
-            novoStatus = 'em_dia';
+          if (bloqueado) {
+            novoStatus = "bloqueado";
+            msg = `Acesso aos treinos suspenso por pendência financeira (${valorFormatado}). Fale com seu Personal.`;
+          } else if (pagouNoCicloAtual) {
+            novoStatus = "em_dia";
             msg = `Pagamento confirmado! Próximo: ${dataVencFormatada} • ${valorFormatado}`;
           } else if (diffDias < 0) {
-            novoStatus = 'atrasado';
+            novoStatus = "atrasado";
             const diasAtraso = Math.abs(diffDias);
-            msg = `Venceu em ${dataVencFormatada} (${diasAtraso} ${diasAtraso === 1 ? 'dia' : 'dias'} atrás) • ${valorFormatado}`;
+            msg = `Venceu em ${dataVencFormatada} (${diasAtraso} ${diasAtraso === 1 ? "dia" : "dias"} atrás) • ${valorFormatado}`;
           } else if (diffDias === 0) {
-            novoStatus = 'pendente';
+            novoStatus = "pendente";
             msg = `Sua mensalidade vence hoje (${dataVencFormatada}) • ${valorFormatado}`;
           } else if (diffDias <= 5) {
-            novoStatus = 'pendente';
-            msg = `Vence em ${diffDias} ${diffDias === 1 ? 'dia' : 'dias'} (Dia ${dataVencFormatada}) • ${valorFormatado}`;
+            novoStatus = "pendente";
+            msg = `Vence em ${diffDias} ${diffDias === 1 ? "dia" : "dias"} (Dia ${dataVencFormatada}) • ${valorFormatado}`;
           }
 
           setFinanceiroInfo({
@@ -115,7 +137,8 @@ export function AlunoDashboard({ route, navigation }: any) {
             status: novoStatus,
             valor: valorFormatado,
             vencimento: dataVencFormatada,
-            mensagemDetalhe: msg
+            mensagemDetalhe: msg,
+            acessoBloqueado: bloqueado,
           });
         }
       } catch (error) {
@@ -136,27 +159,56 @@ export function AlunoDashboard({ route, navigation }: any) {
     );
   }
 
+  const avisarBloqueio = () => {
+    Alert.alert(
+      "Treinos Bloqueados",
+      "Seu acesso aos treinos foi temporariamente suspenso pelo seu Personal. Entre em contato pelo Chat ou WhatsApp para regularizar.",
+      [
+        { text: "Falar no Chat", onPress: irParaChat },
+        { text: "Fechar", style: "cancel" },
+      ]
+    );
+  };
+
   const getFinanceiroProps = () => {
     switch (financeiroInfo.status) {
-      case 'em_dia':
+      case "bloqueado":
+        return {
+          cor: "#FF3B30",
+          bg: "rgba(255, 59, 48, 0.12)",
+          border: "rgba(255, 59, 48, 0.55)",
+          icone: "lock-closed",
+          titulo: "Acesso Bloqueado",
+          badgeTexto: "BLOQUEADO",
+        };
+      case "congelado":
+        return {
+          cor: "#0A84FF",
+          bg: "rgba(10, 132, 255, 0.1)",
+          border: "rgba(10, 132, 255, 0.45)",
+          icone: "snow",
+          titulo: "Plano Congelado",
+          badgeTexto: "PAUSADO",
+        };
+      case "em_dia":
         return {
           cor: "#00E676",
           bg: "rgba(0, 230, 118, 0.08)",
           border: "rgba(0, 230, 118, 0.4)",
           icone: "checkmark-circle",
           titulo: "Mensalidade em Dia",
-          badgeTexto: "EM DIA"
+          badgeTexto: "EM DIA",
         };
-      case 'atrasado':
+      case "atrasado":
         return {
           cor: "#FF3B30",
           bg: "rgba(255, 59, 48, 0.08)",
           border: "rgba(255, 59, 48, 0.45)",
           icone: "alert-circle",
           titulo: "Mensalidade em Atraso",
-          badgeTexto: "ATRASADO"
+          badgeTexto: "ATRASADO",
         };
-      case 'pendente':
+      case "pendente":
       default:
         return {
           cor: "#FFD700",
@@ -164,17 +216,17 @@ export function AlunoDashboard({ route, navigation }: any) {
           border: "rgba(255, 215, 0, 0.45)",
           icone: "notifications",
           titulo: "Vencimento Próximo",
-          badgeTexto: "A VENCER"
+          badgeTexto: "A VENCER",
         };
     }
   };
   const finProps = getFinanceiroProps();
 
   const renderEstadoSemTreino = () => {
-    if (statusTreinoDia === 'fim_ciclo') {
+    if (statusTreinoDia === "fim_ciclo") {
       return (
         <View style={styles.premiumEmptyWorkout}>
-          <View style={[styles.emptyWorkoutIconBg, { backgroundColor: 'rgba(0, 230, 118, 0.1)', borderColor: 'rgba(0, 230, 118, 0.3)', borderWidth: 1 }]}>
+          <View style={[styles.emptyWorkoutIconBg, { backgroundColor: "rgba(0, 230, 118, 0.1)", borderColor: "rgba(0, 230, 118, 0.3)", borderWidth: 1 }]}>
             <Ionicons name="trophy-outline" size={30} color="#00E676" />
           </View>
           <Text style={styles.emptyWorkoutTitle}>Ciclo Concluído!</Text>
@@ -185,7 +237,7 @@ export function AlunoDashboard({ route, navigation }: any) {
       );
     }
 
-    if (statusTreinoDia === 'descanso') {
+    if (statusTreinoDia === "descanso") {
       return (
         <View style={styles.premiumEmptyWorkout}>
           <View style={styles.emptyWorkoutIconBg}>
@@ -219,18 +271,18 @@ export function AlunoDashboard({ route, navigation }: any) {
       <View style={styles.studentHeader}>
         <View style={styles.studentHeaderLeft}>
           {aluno.foto_url && !imgErroAluno ? (
-            <Image 
-              source={{ uri: aluno.foto_url }} 
-              style={styles.studentAvatar} 
-              onError={() => setImgErroAluno(true)} 
+            <Image
+              source={{ uri: aluno.foto_url }}
+              style={styles.studentAvatar}
+              onError={() => setImgErroAluno(true)}
             />
           ) : (
-            <View style={[styles.studentAvatar, { backgroundColor: '#1A1A1A', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#333' }]}>
+            <View style={[styles.studentAvatar, { backgroundColor: "#1A1A1A", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#333" }]}>
               <Ionicons name="person" size={20} color="#666" />
             </View>
           )}
           <View style={{ marginLeft: 12 }}>
-            <Text style={styles.studentGreeting}>Olá, <Text style={{ color: "#FFF" }}>{aluno.nome?.split(' ')[0]}</Text></Text>
+            <Text style={styles.studentGreeting}>Olá, <Text style={{ color: "#FFF" }}>{aluno.nome?.split(" ")[0]}</Text></Text>
             <Text style={styles.studentSub}>Pronto para o treino de hoje?</Text>
           </View>
         </View>
@@ -238,26 +290,25 @@ export function AlunoDashboard({ route, navigation }: any) {
           <TouchableOpacity style={styles.btnIcon} onPress={irParaMeuPerfil}>
             <Ionicons name="person-outline" size={22} color="#FF6B00" />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.btnIcon, { marginLeft: 10, backgroundColor: 'rgba(255, 59, 48, 0.1)' }]} onPress={handleLogout}>
+          <TouchableOpacity style={[styles.btnIcon, { marginLeft: 10, backgroundColor: "rgba(255, 59, 48, 0.1)" }]} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={22} color="#FF3B30" />
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B00" />}>
-        
         <View style={styles.dashboardSection}>
           <Text style={styles.sectionTitle}>{CONSTANTS.TITLE_TREINADOR}</Text>
-          <View style={[styles.trainerPremiumCard, { overflow: 'hidden', borderWidth: 1, borderColor: '#1A1A20' }]}>
+          <View style={[styles.trainerPremiumCard, { overflow: "hidden", borderWidth: 1, borderColor: "#1A1A20" }]}>
             <LinearGradient colors={["rgba(255,107,0,0.1)", "transparent"]} style={styles.absoluteFill} />
-            
+
             <View style={styles.trainerRow}>
               <View style={styles.trainerAvatarLarge}>
                 {personal.foto_url && !imgErroPersonal ? (
-                  <Image 
-                    source={{ uri: personal.foto_url }} 
-                    style={{ width: "100%", height: "100%" }} 
-                    resizeMode="cover" 
+                  <Image
+                    source={{ uri: personal.foto_url }}
+                    style={{ width: "100%", height: "100%" }}
+                    resizeMode="cover"
                     onError={() => setImgErroPersonal(true)}
                   />
                 ) : (
@@ -290,28 +341,27 @@ export function AlunoDashboard({ route, navigation }: any) {
         </View>
 
         <View style={styles.dashboardSection}>
-          
           <Text style={styles.sectionTitle}>Sua Consistência</Text>
           <View style={styles.calendarRow}>
             {semanaAtual.map((dia, i) => {
-              const isConcluido = dia.status === 'concluido';
-              const isHoje = dia.status === 'hoje';
+              const isConcluido = dia.status === "concluido";
+              const isHoje = dia.status === "hoje";
 
               return (
                 <View key={i} style={[
-                  styles.dayBox, 
+                  styles.dayBox,
                   isHoje && styles.dayBoxHoje,
-                  isConcluido && { borderColor: 'rgba(0, 230, 118, 0.4)', backgroundColor: 'rgba(0, 230, 118, 0.08)' }
+                  isConcluido && { borderColor: "rgba(0, 230, 118, 0.4)", backgroundColor: "rgba(0, 230, 118, 0.08)" }
                 ]}>
-                  <Text style={[styles.dayLabel, isHoje && {color: '#FF6B00'}, isConcluido && {color: '#00E676', fontWeight: 'bold'}]}>{dia.dia}</Text>
-                  <Text style={[styles.dayDate, isHoje && {color: '#FFF'}, isConcluido && {color: '#00E676', fontWeight: 'bold'}]}>{dia.data}</Text>
-                  
+                  <Text style={[styles.dayLabel, isHoje && { color: "#FF6B00" }, isConcluido && { color: "#00E676", fontWeight: "bold" }]}>{dia.dia}</Text>
+                  <Text style={[styles.dayDate, isHoje && { color: "#FFF" }, isConcluido && { color: "#00E676", fontWeight: "bold" }]}>{dia.data}</Text>
+
                   {isConcluido ? (
-                    <View style={[styles.statusDot, { backgroundColor: '#00E676', shadowColor: '#00E676', shadowOpacity: 0.8, shadowRadius: 6, justifyContent: 'center', alignItems: 'center' }]}>
+                    <View style={[styles.statusDot, { backgroundColor: "#00E676", shadowColor: "#00E676", shadowOpacity: 0.8, shadowRadius: 6, justifyContent: "center", alignItems: "center" }]}>
                       <Ionicons name="checkmark-sharp" size={10} color="#000" />
                     </View>
                   ) : (
-                    <View style={[styles.statusDot, isHoje ? {backgroundColor: '#FF6B00', shadowColor: '#FF6B00', shadowOpacity: 0.8, shadowRadius: 5} : {backgroundColor: 'transparent'}]} />
+                    <View style={[styles.statusDot, isHoje ? { backgroundColor: "#FF6B00", shadowColor: "#FF6B00", shadowOpacity: 0.8, shadowRadius: 5 } : { backgroundColor: "transparent" }]} />
                   )}
                 </View>
               );
@@ -323,8 +373,8 @@ export function AlunoDashboard({ route, navigation }: any) {
 
           <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Acompanhamento</Text>
           {anamnesePendente ? (
-            <TouchableOpacity style={[styles.checkinCardPendente, { overflow: 'hidden' }]} activeOpacity={0.9} onPress={() => navigation.navigate("Anamnese")}>
-              <LinearGradient colors={["rgba(255,107,0,0.15)", "transparent"]} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.absoluteFill} />
+            <TouchableOpacity style={[styles.checkinCardPendente, { overflow: "hidden" }]} activeOpacity={0.9} onPress={() => navigation.navigate("Anamnese")}>
+              <LinearGradient colors={["rgba(255,107,0,0.15)", "transparent"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.absoluteFill} />
               <View style={styles.checkinIconBox}>
                 <Ionicons name="document-text" size={24} color="#FF6B00" />
                 <View style={styles.checkinAlertDot} />
@@ -334,7 +384,7 @@ export function AlunoDashboard({ route, navigation }: any) {
                 <Text style={styles.checkinDesc}>Responda o questionário para atualizar seu planejamento.</Text>
                 <View style={styles.checkinBtn}>
                   <Text style={styles.checkinBtnText}>Responder Agora</Text>
-                  <Ionicons name="arrow-forward" size={14} color="#000" style={{marginLeft: 4}} />
+                  <Ionicons name="arrow-forward" size={14} color="#000" style={{ marginLeft: 4 }} />
                 </View>
               </View>
             </TouchableOpacity>
@@ -348,18 +398,38 @@ export function AlunoDashboard({ route, navigation }: any) {
             </View>
           )}
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 25, marginBottom: 15 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 25, marginBottom: 15 }}>
             <Text style={[styles.sectionTitle, { marginTop: 0, marginBottom: 0 }]}>Treino do Dia</Text>
-            <TouchableOpacity style={styles.btnVerTodos} onPress={() => navigation.navigate("WorkoutList", { conexaoId: realConexaoId })}>
+            <TouchableOpacity
+              style={styles.btnVerTodos}
+              onPress={() => (financeiroInfo.acessoBloqueado ? avisarBloqueio() : navigation.navigate("WorkoutList", { conexaoId: realConexaoId }))}
+            >
               <Text style={styles.btnVerTodosText}>Ver todos</Text>
-              <Ionicons name="chevron-forward" size={14} color="#FF6B00" />
+              <Ionicons name={financeiroInfo.acessoBloqueado ? "lock-closed" : "chevron-forward"} size={14} color="#FF6B00" />
             </TouchableOpacity>
           </View>
 
-          {treinoHoje ? (
+          {financeiroInfo.acessoBloqueado ? (
+            <View style={[styles.premiumEmptyWorkout, { borderColor: "rgba(255, 59, 48, 0.45)", backgroundColor: "rgba(255, 59, 48, 0.05)" }]}>
+              <View style={[styles.emptyWorkoutIconBg, { backgroundColor: "rgba(255, 59, 48, 0.14)", borderColor: "rgba(255, 59, 48, 0.35)", borderWidth: 1 }]}>
+                <Ionicons name="lock-closed" size={28} color="#FF3B30" />
+              </View>
+              <Text style={styles.emptyWorkoutTitle}>Acesso aos Treinos Suspenso</Text>
+              <Text style={styles.emptyWorkoutDesc}>
+                Regularize sua mensalidade com seu treinador para liberar sua ficha de treinos novamente.
+              </Text>
+              <TouchableOpacity
+                style={[styles.premiumBtnStartOutline, { marginTop: 18, width: "100%", borderColor: "#FF3B30", backgroundColor: "rgba(255, 59, 48, 0.1)" }]}
+                onPress={irParaChat}
+              >
+                <Ionicons name="chatbubbles" size={16} color="#FF3B30" style={{ marginRight: 8 }} />
+                <Text style={[styles.premiumBtnStartTextOutline, { color: "#FF3B30" }]}>FALAR COM PERSONAL</Text>
+              </TouchableOpacity>
+            </View>
+          ) : treinoHoje ? (
             <TouchableOpacity style={styles.premiumWorkoutCard} activeOpacity={0.9} onPress={() => navigation.navigate("WorkoutPreview", { treinoId: treinoHoje.id, conexaoId: realConexaoId })}>
               <LinearGradient colors={["#1A0B02", "#0A0A0C"]} style={styles.absoluteFill} />
-              
+
               <View style={styles.premiumWorkoutHeader}>
                 <View style={{ flex: 1 }}>
                   <View style={styles.premiumWorkoutBadge}>
@@ -399,13 +469,13 @@ export function AlunoDashboard({ route, navigation }: any) {
           )}
 
           {recadoPersonal ? (
-            <TouchableOpacity 
-              style={styles.feedbackBubble} 
-              activeOpacity={0.85} 
+            <TouchableOpacity
+              style={styles.feedbackBubble}
+              activeOpacity={0.85}
               onPress={() => setModalRecadoVisivel(true)}
             >
               <LinearGradient colors={["rgba(255, 107, 0, 0.12)", "transparent"]} style={styles.absoluteFill} />
-              
+
               <View style={styles.feedbackHeaderRow}>
                 <View style={styles.feedbackTitleRow}>
                   <View style={styles.feedbackIconBadge}>
@@ -414,7 +484,7 @@ export function AlunoDashboard({ route, navigation }: any) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.feedbackLabelUpper}>FEEDBACK DO TREINADOR</Text>
                     <Text style={styles.feedbackTitle} numberOfLines={1}>
-                      Prof. {personal.nome?.split(' ')[0] || "Treinador"}
+                      Prof. {personal.nome?.split(" ")[0] || "Treinador"}
                     </Text>
                   </View>
                 </View>
@@ -459,9 +529,9 @@ export function AlunoDashboard({ route, navigation }: any) {
           )}
 
           <Text style={[styles.sectionTitle, { marginTop: 20, marginBottom: 10 }]}>Status da Assinatura</Text>
-          <View style={[styles.financeiroCard, { backgroundColor: finProps.bg, borderColor: finProps.border, overflow: 'hidden' }]}>
+          <View style={[styles.financeiroCard, { backgroundColor: finProps.bg, borderColor: finProps.border, overflow: "hidden" }]}>
             <LinearGradient colors={[finProps.bg, "transparent"]} style={styles.absoluteFill} />
-            <View style={[styles.financeiroIconBox, { backgroundColor: finProps.cor + '20' }]}>
+            <View style={[styles.financeiroIconBox, { backgroundColor: finProps.cor + "20" }]}>
               <Ionicons
                 name={finProps.icone as any}
                 size={22}
@@ -470,22 +540,22 @@ export function AlunoDashboard({ route, navigation }: any) {
               />
             </View>
             <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                 <Text style={styles.financeiroTitle}>{finProps.titulo}</Text>
                 <View style={{
-                  backgroundColor: finProps.cor + '22',
+                  backgroundColor: finProps.cor + "22",
                   paddingHorizontal: 8,
                   paddingVertical: 3,
                   borderRadius: 6,
                   borderWidth: 1,
-                  borderColor: finProps.cor + '55'
+                  borderColor: finProps.cor + "55",
                 }}>
-                  <Text style={{ color: finProps.cor, fontSize: 9.5, fontWeight: '900', letterSpacing: 0.5 }}>
+                  <Text style={{ color: finProps.cor, fontSize: 9.5, fontWeight: "900", letterSpacing: 0.5 }}>
                     {finProps.badgeTexto}
                   </Text>
                 </View>
               </View>
-              <Text style={[styles.financeiroSub, { color: finProps.cor, fontWeight: 'bold', marginTop: 5 }]}>
+              <Text style={[styles.financeiroSub, { color: finProps.cor, fontWeight: "bold", marginTop: 5 }]}>
                 {financeiroInfo.mensagemDetalhe}
               </Text>
             </View>
@@ -560,13 +630,13 @@ export function AlunoDashboard({ route, navigation }: any) {
               <View style={styles.feedbackModalStatBox}>
                 <Text style={styles.feedbackModalStatLabel}>TREINADOR</Text>
                 <Text style={styles.feedbackModalStatValue} numberOfLines={1}>
-                  Prof. {personal.nome?.split(' ')[0] || "Personal"}
+                  Prof. {personal.nome?.split(" ")[0] || "Personal"}
                 </Text>
               </View>
               {dataRecadoPersonal ? (
                 <View style={styles.feedbackModalStatBox}>
                   <Text style={styles.feedbackModalStatLabel}>DATA</Text>
-                  <Text style={[styles.feedbackModalStatValue, { color: '#FF6B00' }]}>
+                  <Text style={[styles.feedbackModalStatValue, { color: "#FF6B00" }]}>
                     {dataRecadoPersonal}
                   </Text>
                 </View>
@@ -579,8 +649,8 @@ export function AlunoDashboard({ route, navigation }: any) {
             </View>
 
             <View style={styles.feedbackModalActionsRow}>
-              <TouchableOpacity 
-                style={styles.feedbackModalBtnSecondary} 
+              <TouchableOpacity
+                style={styles.feedbackModalBtnSecondary}
                 onPress={() => {
                   setModalRecadoVisivel(false);
                   navigation.navigate("Progress", { conexaoId: realConexaoId });
@@ -590,8 +660,8 @@ export function AlunoDashboard({ route, navigation }: any) {
                 <Text style={styles.feedbackModalBtnSecondaryText}>SUA EVOLUÇÃO</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.feedbackModalBtnPrimary} 
+              <TouchableOpacity
+                style={styles.feedbackModalBtnPrimary}
                 onPress={() => setModalRecadoVisivel(false)}
               >
                 <Text style={styles.feedbackModalBtnPrimaryText}>FECHAR</Text>
