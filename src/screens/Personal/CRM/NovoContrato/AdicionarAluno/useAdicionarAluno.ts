@@ -1,59 +1,137 @@
-import { useState } from "react";
-import { Alert, LayoutAnimation, UIManager, Platform } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, LayoutAnimation, Platform, UIManager } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
-import * as ImagePicker from "expo-image-picker";
 import * as Clipboard from "expo-clipboard";
 import { supabase } from "../../../../../services/supabase";
-import { useOnboarding } from "../../../../../hooks/useOnboarding";
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-type Modalidade = "Consultoria" | "Presencial" | "Híbrido" | string;
+type ModalidadeEfetiva = "Consultoria" | "Presencial";
 type Frequencia = "Avulso" | "Mensal" | "Trimestral" | "Semestral" | "Anual" | string;
 
+export interface ConviteGeradoInfo {
+  nome: string;
+  email: string;
+  codigo: string;
+  expiraEm: string;
+}
+
+async function carregarRegraModalidadePersonal() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { exibirSeletor: false, padrao: "Consultoria" as ModalidadeEfetiva };
+  }
+
+  const { data: personal } = await supabase
+    .from("personals")
+    .select("servicos_oferecidos")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const raw = personal?.servicos_oferecidos;
+  let lista: string[] = [];
+  if (Array.isArray(raw)) {
+    lista = raw;
+  } else if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) lista = parsed;
+    } catch {}
+  }
+
+  const normalizados = lista.map((s) => String(s).toLowerCase());
+  const temConsultoria = normalizados.some((s) => s.includes("consultoria") || s.includes("online"));
+  const temPresencial = normalizados.some((s) => s.includes("presencial"));
+  const temAmbos = normalizados.some((s) => s.includes("ambos") || s.includes("hibrid") || s.includes("híbrid"));
+
+  if ((temConsultoria && temPresencial) || temAmbos) {
+    return { exibirSeletor: true, padrao: "Consultoria" as ModalidadeEfetiva };
+  }
+
+  if (temPresencial && !temConsultoria) {
+    return { exibirSeletor: false, padrao: "Presencial" as ModalidadeEfetiva };
+  }
+
+  return { exibirSeletor: false, padrao: "Consultoria" as ModalidadeEfetiva };
+}
+
 export function useAdicionarAluno(route: any, navigation: any) {
-  const { completarMissao } = useOnboarding();
   const { leadInjetado, planoAtivo } = route?.params || {};
 
   let prefs: any = {};
   try {
-    prefs = typeof leadInjetado?.preferencias === 'string' 
-      ? JSON.parse(leadInjetado.preferencias) 
-      : (leadInjetado?.preferencias || {});
-  } catch(e) {}
+    prefs =
+      typeof leadInjetado?.preferencias === "string"
+        ? JSON.parse(leadInjetado.preferencias)
+        : leadInjetado?.preferencias || {};
+  } catch {}
 
-  let servicoDesejado: Modalidade = "Consultoria";
-  if (planoAtivo?.servicos_inclusos?.[0]) {
-    servicoDesejado = planoAtivo.servicos_inclusos[0];
-  } else if (prefs?.servicos_buscados?.length > 0) {
-    const buscado = prefs.servicos_buscados[0];
-    if (buscado === "Presencial") servicoDesejado = "Presencial";
-    else if (buscado === "Consultoria") servicoDesejado = "Consultoria";
+  let servicoInicial: ModalidadeEfetiva = "Consultoria";
+  const modalidadeSalva = planoAtivo?.modalidade || planoAtivo?.servicos_inclusos?.[0];
+  if (modalidadeSalva && String(modalidadeSalva).toLowerCase().includes("presencial")) {
+    servicoInicial = "Presencial";
+  } else if (prefs?.servicos_buscados?.some((s: string) => String(s).toLowerCase().includes("presencial"))) {
+    servicoInicial = "Presencial";
   }
 
   const diaInicial = planoAtivo?.dia_vencimento?.toString() || "10";
-  const isDiaPadrao = ["05", "10", "20"].includes(diaInicial);
   const diaFormatado = diaInicial.length === 1 ? `0${diaInicial}` : diaInicial;
+  const isDiaPadrao = ["05", "10", "20"].includes(diaFormatado);
+
+  const valorInicial = planoAtivo?.valor_mensal
+    ? Number(planoAtivo.valor_mensal).toFixed(2).replace(".", ",")
+    : "";
+
+  const termosIniciais =
+    planoAtivo?.termos_contrato ||
+    (planoAtivo?.observacoes && !String(planoAtivo.observacoes).startsWith("[CONGELADO]")
+      ? planoAtivo.observacoes
+      : "");
 
   const [modalUploadVisivel, setModalUploadVisivel] = useState(false);
+  const [modalConviteVisivel, setModalConviteVisivel] = useState(false);
+  const [codigoCopiado, setCodigoCopiado] = useState(false);
+  const [conviteGerado, setConviteGerado] = useState<ConviteGeradoInfo | null>(null);
+
+  const [exibirSeletorModalidade, setExibirSeletorModalidade] = useState(false);
   const [nome, setNome] = useState(leadInjetado?.nome || "");
   const [email, setEmail] = useState(leadInjetado?.email || "");
-  const [modalidade, setModalidade] = useState<Modalidade>(servicoDesejado);
+  const [modalidade, setModalidade] = useState<ModalidadeEfetiva>(servicoInicial);
   const [frequencia, setFrequencia] = useState<Frequencia>(planoAtivo?.frequencia || "Mensal");
-  const [mensalidade, setMensalidade] = useState(planoAtivo?.valor_mensal?.toString() || "");
+  const [mensalidade, setMensalidade] = useState(valorInicial);
   const [vencimento, setVencimento] = useState(isDiaPadrao ? diaFormatado : "Outro");
   const [vencimentoOutro, setVencimentoOutro] = useState(isDiaPadrao ? "" : diaFormatado);
-  const [observacoes, setObservacoes] = useState(planoAtivo?.observacoes || "");
-  
+  const [observacoes, setObservacoes] = useState(termosIniciais);
+
   const [inputFocado, setInputFocado] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isProcessandoTexto, setIsProcessandoTexto] = useState(false);
-  const [statusProcessamento, setStatusProcessamento] = useState("");
+  const [isProcessandoTexto] = useState(false);
+  const [statusProcessamento] = useState("");
+
+  useEffect(() => {
+    let ativo = true;
+
+    carregarRegraModalidadePersonal()
+      .then((res) => {
+        if (!ativo) return;
+        setExibirSeletorModalidade(res.exibirSeletor);
+        if (!res.exibirSeletor) {
+          setModalidade(res.padrao);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   const handleMoneyChange = (text: string) => {
-    let numericValue = text.replace(/[^0-9]/g, "");
+    const numericValue = text.replace(/[^0-9]/g, "");
     if (numericValue) {
       const parsedValue = (parseInt(numericValue, 10) / 100).toFixed(2);
       setMensalidade(parsedValue.replace(".", ","));
@@ -70,174 +148,137 @@ export function useAdicionarAluno(route: any, navigation: any) {
   const mostrarAjudaFinanceiro = () => {
     Alert.alert(
       "Como funciona o Fechamento?",
-      "O valor definido aqui será a base do seu contrato.\n\nO aluno só terá acesso às planilhas de treino após o app confirmar o aceite deste valor.\nO ciclo de cobrança (Mensal, Trimestral) determinará quando ele será avisado da renovação.",
+      "O valor definido aqui será a base do seu contrato.\n\nO aluno só terá acesso às planilhas de treino após aceitar formalmente os termos no aplicativo.\nO ciclo de cobrança determina a periodicidade das renovações.",
       [{ text: "Entendi", style: "default" }]
     );
   };
 
-  const extrairTextoDaImagem = async (base64Image: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsProcessandoTexto(true);
-    setStatusProcessamento("Extraindo texto da imagem...");
-
-    try {
-      let formData = new FormData();
-      formData.append('base64Image', `data:image/jpg;base64,${base64Image}`);
-      formData.append('language', 'por');
-
-      const response = await fetch('https://api.ocr.space/parse/image', {
-        method: 'POST',
-        headers: { 'apikey': 'helloworld' }, 
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (data.ParsedResults && data.ParsedResults.length > 0) {
-        const textoReal = data.ParsedResults[0].ParsedText;
-        if (!textoReal || textoReal.trim() === "") {
-          Alert.alert("Ops", "Não consegui identificar nenhuma letra nesta imagem.");
-        } else {
-          setObservacoes((prev: string) => prev + "\n" + textoReal);
-        }
-      } else {
-        Alert.alert("Erro", "Falha ao ler a imagem. Tente uma foto mais nítida.");
-      }
-    } catch (error) {
-      Alert.alert("Erro na Conexão", "Não foi possível conectar ao servidor de leitura.");
-    } finally {
-      setIsProcessandoTexto(false);
-      setStatusProcessamento("");
-    }
-  };
-  
   const handlePickDocument = async () => {
     setModalUploadVisivel(false);
     setTimeout(async () => {
       try {
-        const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+        const result = await DocumentPicker.getDocumentAsync({
+          type: "application/pdf",
+          copyToCacheDirectory: true,
+        });
         if (!result.canceled && result.assets && result.assets.length > 0) {
-           Alert.alert("PDF Anexado", `O arquivo PDF será vinculado à ficha do aluno.`);
+          Alert.alert(
+            "Em atualização",
+            "O armazenamento seguro de PDF e a leitura por IA serão ativados na Etapa 4."
+          );
         }
       } catch (err: any) {
         Alert.alert("Erro no Documento", err.message);
       }
-    }, 800); 
+    }, 500);
   };
 
   const handlePickImage = async () => {
     setModalUploadVisivel(false);
-    setTimeout(async () => {
-      try {
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (permissionResult.granted === false) return Alert.alert('Permissão Bloqueada', 'Precisamos de acesso à Galeria.');
-        const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.5, base64: true });
-        if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0].base64) {
-            extrairTextoDaImagem(result.assets[0].base64);
-        }
-      } catch (err: any) {
-        Alert.alert("Erro na Galeria", err.message);
-      }
-    }, 800);
+    Alert.alert(
+      "Em atualização",
+      "A leitura de imagens por IA segura (via servidor) será ativada na Etapa 4."
+    );
   };
 
   const handleTakePicture = async () => {
     setModalUploadVisivel(false);
-    setTimeout(async () => {
-      try {
-        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-        if (permissionResult.granted === false) return Alert.alert("Permissão Bloqueada", "Precisamos de acesso à Câmera.");
-        const result = await ImagePicker.launchCameraAsync({ quality: 0.5, base64: true });
-        if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0].base64) {
-            extrairTextoDaImagem(result.assets[0].base64);
-        }
-      } catch (err: any) {
-        Alert.alert("Erro na Câmera", err.message);
-      }
-    }, 800);
+    Alert.alert(
+      "Em atualização",
+      "A leitura de fotos por IA segura (via servidor) será ativada na Etapa 4."
+    );
   };
 
   const handleMelhorarTextoManual = () => {
-    if (!observacoes.trim()) return Alert.alert("Atenção", "Escreva ou importe algo primeiro.");
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsProcessandoTexto(true);
-    setStatusProcessamento("Organizando juridicamente com IA...");
-    
-    setTimeout(() => {
-      const textoBase = observacoes.trim();
-      const textoFormatado = `TERMOS E CONDIÇÕES DO ACOMPANHAMENTO\n\nEscopo de Trabalho:\n${textoBase}\n\nO aluno compromete-se a seguir as diretrizes prescritas no aplicativo.\n2. Os pagamentos devem ocorrer até a data de vencimento acordada.\n3. O suporte para dúvidas será realizado via chat com SLA de resposta em até 24h.`;
-      
-      setObservacoes(textoFormatado);
-      setIsProcessandoTexto(false);
-      setStatusProcessamento("");
-    }, 2000);
+    Alert.alert(
+      "Em atualização",
+      "A organização assistida por IA real será ativada na Etapa 4."
+    );
+  };
+
+  const handleCopiarCodigo = async () => {
+    if (!conviteGerado?.codigo) return;
+    await Clipboard.setStringAsync(conviteGerado.codigo);
+    setCodigoCopiado(true);
+  };
+
+  const handleFecharModalConvite = () => {
+    setModalConviteVisivel(false);
+    navigation.goBack();
   };
 
   const handleAdicionarAluno = async () => {
-    if (!nome || !email || !mensalidade) {
-      return Alert.alert("Atenção", "Nome, e-mail e valor são obrigatórios para gerar o convite.");
+    const nomeLimpo = nome.trim();
+    const emailLimpo = email.trim().toLowerCase();
+
+    if (!nomeLimpo || !emailLimpo || !mensalidade) {
+      return Alert.alert("Atenção", "Nome, e-mail e valor são obrigatórios para continuar.");
     }
 
-    let diaFinal = vencimento === "Outro" ? vencimentoOutro : vencimento;
-    let diaInt = parseInt(diaFinal, 10);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailLimpo)) {
+      return Alert.alert("E-mail Inválido", "Digite um e-mail válido para vincular o convite.");
+    }
+
+    const valorFloat = parseFloat(mensalidade.replace(",", "."));
+    if (isNaN(valorFloat) || valorFloat <= 0) {
+      return Alert.alert("Atenção", "Informe um valor maior que zero.");
+    }
+
+    const diaFinal = vencimento === "Outro" ? vencimentoOutro : vencimento;
+    const diaInt = parseInt(diaFinal, 10);
     if (isNaN(diaInt) || diaInt < 1 || diaInt > 31) {
       return Alert.alert("Atenção", "Insira um dia de vencimento válido (1 a 31).");
     }
 
     setLoading(true);
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Sessão do profissional não encontrada.");
-
-      const valorFloat = parseFloat(mensalidade.replace(",", "."));
-      
       if (leadInjetado && planoAtivo) {
-        await supabase.from("planos").update({
-          servicos_inclusos: [modalidade],
-          frequencia: frequencia,
-          valor_mensal: valorFloat,
-          dia_vencimento: diaInt,
-          observacoes: observacoes.trim(),
-        }).eq("id", planoAtivo.id);
+        const { error: errUpdate } = await supabase
+          .from("planos")
+          .update({
+            modalidade,
+            servicos_inclusos: [modalidade],
+            frequencia,
+            valor_mensal: valorFloat,
+            dia_vencimento: diaInt,
+            termos_contrato: observacoes.trim() || null,
+          })
+          .eq("id", planoAtivo.id);
+
+        if (errUpdate) throw errUpdate;
 
         Alert.alert("Sucesso!", "O contrato do aluno foi atualizado.");
         navigation.goBack();
       } else {
-        const codigoGerado = Math.floor(100000 + Math.random() * 900000).toString();
+        const { data: conviteRes, error: rpcError } = await supabase.rpc("gerar_convite_aluno", {
+          p_nome: nomeLimpo,
+          p_email: emailLimpo,
+          p_valor: valorFloat,
+          p_frequencia: frequencia,
+          p_dia_vencimento: diaInt,
+          p_modalidade: modalidade,
+          p_termos_contrato: observacoes.trim() || null,
+        });
 
-        const { error: insertError } = await supabase.from("convites_alunos").insert([{
-          email: email.trim().toLowerCase(),
-          codigo_convite: codigoGerado,
-          personal_id: user.id,
-          nome: nome.trim(),
-          servicos_inclusos: [modalidade],
-          frequencia_pagamento: frequencia,
-          valor_mensalidade: valorFloat,
-          dia_vencimento: diaInt,
-          observacoes: observacoes.trim(),
-          status: "pendente",
-        }]);
+        if (rpcError) throw rpcError;
 
-        if (insertError) throw insertError;
+        const codigoGerado = conviteRes?.codigo_convite;
+        const expiraEm = conviteRes?.expires_at
+          ? new Date(conviteRes.expires_at).toLocaleDateString("pt-BR")
+          : "7 dias";
 
-        await completarMissao("primeiro_aluno");
-        await completarMissao("primeiro_contrato");
-
-        const copiarEVoltar = async () => {
-          const mensagem = `Fala ${nome.split(" ")[0]}! Baixe o MatchTrainer e clique em "Já tenho um Personal".\n\nUse o código VIP abaixo para ativar nosso contrato:\n🎟️ Código: ${codigoGerado}`;
-          await Clipboard.setStringAsync(mensagem);
-          navigation.goBack();
-        };
-
-        Alert.alert(
-          "Contrato Digital Gerado! 🎉",
-          `O aluno foi pré-cadastrado.\n\nCódigo: ${codigoGerado}`,
-          [{ text: "Copiar e Enviar", onPress: copiarEVoltar }, { text: "Sair", onPress: () => navigation.goBack(), style: "cancel" }]
-        );
+        setCodigoCopiado(false);
+        setConviteGerado({
+          nome: nomeLimpo,
+          email: emailLimpo,
+          codigo: codigoGerado,
+          expiraEm,
+        });
+        setModalConviteVisivel(true);
       }
-
     } catch (error: any) {
-      Alert.alert("Erro", error.message);
+      Alert.alert("Erro", error.message || "Não foi possível concluir a operação.");
     } finally {
       setLoading(false);
     }
@@ -245,15 +286,45 @@ export function useAdicionarAluno(route: any, navigation: any) {
 
   return {
     state: {
-      nome, email, modalidade, frequencia, mensalidade, vencimento, vencimentoOutro, observacoes,
-      inputFocado, loading, isProcessandoTexto, statusProcessamento, modalUploadVisivel,
-      leadInjetado, planoAtivo
+      nome,
+      email,
+      modalidade,
+      exibirSeletorModalidade,
+      frequencia,
+      mensalidade,
+      vencimento,
+      vencimentoOutro,
+      observacoes,
+      inputFocado,
+      loading,
+      isProcessandoTexto,
+      statusProcessamento,
+      modalUploadVisivel,
+      modalConviteVisivel,
+      conviteGerado,
+      codigoCopiado,
+      leadInjetado,
+      planoAtivo,
     },
     actions: {
-      setNome, setEmail, setModalidade, setFrequencia, setObservacoes, setVencimentoOutro,
-      setInputFocado, setModalUploadVisivel, handleMoneyChange, handleVencimentoSelect,
-      handlePickDocument, handlePickImage, handleTakePicture, handleMelhorarTextoManual, handleAdicionarAluno,
-      mostrarAjudaFinanceiro
-    }
+      setNome,
+      setEmail,
+      setModalidade,
+      setFrequencia,
+      setObservacoes,
+      setVencimentoOutro,
+      setInputFocado,
+      setModalUploadVisivel,
+      handleMoneyChange,
+      handleVencimentoSelect,
+      handlePickDocument,
+      handlePickImage,
+      handleTakePicture,
+      handleMelhorarTextoManual,
+      handleAdicionarAluno,
+      handleCopiarCodigo,
+      handleFecharModalConvite,
+      mostrarAjudaFinanceiro,
+    },
   };
 }

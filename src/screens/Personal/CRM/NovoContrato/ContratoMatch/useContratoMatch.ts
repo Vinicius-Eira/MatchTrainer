@@ -1,31 +1,89 @@
-import { useState } from "react";
-import { Alert, LayoutAnimation, UIManager, Platform } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, LayoutAnimation, Platform, UIManager } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import { supabase } from "../../../../../services/supabase"; 
+import { supabase } from "../../../../../services/supabase";
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+type ModalidadeEfetiva = "Consultoria" | "Presencial";
+
+async function carregarModalidadesPersonal() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { opcoes: ["Consultoria"] as ModalidadeEfetiva[], padrao: "Consultoria" as ModalidadeEfetiva };
+
+  const { data: personal } = await supabase
+    .from("personals")
+    .select("servicos_oferecidos")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const raw = personal?.servicos_oferecidos;
+  let lista: string[] = [];
+  if (Array.isArray(raw)) {
+    lista = raw;
+  } else if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) lista = parsed;
+    } catch {}
+  }
+
+  const normalizados = lista.map((s) => String(s).toLowerCase());
+  const temConsultoria = normalizados.some((s) => s.includes("consultoria") || s.includes("online"));
+  const temPresencial = normalizados.some((s) => s.includes("presencial"));
+  const temAmbos = normalizados.some((s) => s.includes("ambos") || s.includes("hibrid") || s.includes("híbrid"));
+
+  if ((temConsultoria && temPresencial) || temAmbos) {
+    return { opcoes: ["Consultoria", "Presencial"] as ModalidadeEfetiva[], padrao: "Consultoria" as ModalidadeEfetiva };
+  }
+
+  if (temPresencial && !temConsultoria) {
+    return { opcoes: ["Presencial"] as ModalidadeEfetiva[], padrao: "Presencial" as ModalidadeEfetiva };
+  }
+
+  return { opcoes: ["Consultoria"] as ModalidadeEfetiva[], padrao: "Consultoria" as ModalidadeEfetiva };
 }
 
 export function useCriarContratoMatch(route: any, navigation: any) {
   const { conexaoId, nomeAluno } = route?.params || {};
+
+  const [modalidadesDisponiveis, setModalidadesDisponiveis] = useState<ModalidadeEfetiva[]>(["Consultoria", "Presencial"]);
+  const [modalidade, setModalidade] = useState<ModalidadeEfetiva>("Consultoria");
 
   const [frequencia, setFrequencia] = useState("Mensal");
   const [mensalidade, setMensalidade] = useState("");
   const [vencimento, setVencimento] = useState("10");
   const [vencimentoOutro, setVencimentoOutro] = useState("");
   const [observacoes, setObservacoes] = useState("");
-  
+
   const [inputFocado, setInputFocado] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  
+
   const [modalUploadVisivel, setModalUploadVisivel] = useState(false);
   const [isProcessandoTexto, setIsProcessandoTexto] = useState(false);
   const [statusProcessamento, setStatusProcessamento] = useState("");
 
+  useEffect(() => {
+    let ativo = true;
+
+    carregarModalidadesPersonal()
+      .then((res) => {
+        if (!ativo) return;
+        setModalidadesDisponiveis(res.opcoes);
+        setModalidade(res.padrao);
+      })
+      .catch(() => {});
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
   const handleMoneyChange = (text: string) => {
-    let numericValue = text.replace(/[^0-9]/g, "");
+    const numericValue = text.replace(/[^0-9]/g, "");
     if (numericValue) {
       const parsedValue = (parseInt(numericValue, 10) / 100).toFixed(2);
       setMensalidade(parsedValue.replace(".", ","));
@@ -39,158 +97,122 @@ export function useCriarContratoMatch(route: any, navigation: any) {
     setVencimento(val);
   };
 
-  const extrairTextoDaImagem = async (base64Image: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsProcessandoTexto(true);
-    setStatusProcessamento("Extraindo texto da imagem...");
-
-    try {
-      let formData = new FormData();
-      formData.append('base64Image', `data:image/jpg;base64,${base64Image}`);
-      formData.append('language', 'por');
-
-      const response = await fetch('https://api.ocr.space/parse/image', {
-        method: 'POST',
-        headers: { 'apikey': 'helloworld' }, 
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (data.ParsedResults && data.ParsedResults.length > 0) {
-        const textoReal = data.ParsedResults[0].ParsedText;
-        if (!textoReal || textoReal.trim() === "") {
-          Alert.alert("Ops", "Não consegui identificar nenhuma letra nesta imagem.");
-        } else {
-          setObservacoes((prev: string) => prev + "\n" + textoReal);
-        }
-      } else {
-        Alert.alert("Erro", "Falha ao ler a imagem. Tente uma foto mais nítida.");
-      }
-    } catch (error) {
-      Alert.alert("Erro na Conexão", "Não foi possível conectar ao servidor de leitura.");
-    } finally {
-      setIsProcessandoTexto(false);
-      setStatusProcessamento("");
-    }
-  };
-  
   const handlePickDocument = async () => {
     setModalUploadVisivel(false);
     setTimeout(async () => {
       try {
-        const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+        const result = await DocumentPicker.getDocumentAsync({ type: "application/pdf", copyToCacheDirectory: true });
         if (!result.canceled && result.assets && result.assets.length > 0) {
-           Alert.alert("PDF Anexado", `O arquivo PDF será vinculado à ficha do aluno.`);
+          Alert.alert(
+            "Em atualização",
+            "O armazenamento seguro de PDF e a leitura por IA serão ativados na próxima etapa. Por enquanto, digite os termos diretamente no editor."
+          );
         }
       } catch (err: any) {
         Alert.alert("Erro no Documento", err.message);
       }
-    }, 800); 
+    }, 500);
   };
 
   const handlePickImage = async () => {
     setModalUploadVisivel(false);
-    setTimeout(async () => {
-      try {
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (permissionResult.granted === false) return Alert.alert('Permissão Bloqueada', 'Precisamos de acesso à Galeria.');
-        const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.5, base64: true });
-        if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0].base64) {
-            extrairTextoDaImagem(result.assets[0].base64);
-        }
-      } catch (err: any) {
-        Alert.alert("Erro na Galeria", err.message);
-      }
-    }, 800);
+    Alert.alert(
+      "Em atualização",
+      "A leitura de imagens por IA segura (via servidor) será ativada na Etapa 4."
+    );
   };
 
   const handleTakePicture = async () => {
     setModalUploadVisivel(false);
-    setTimeout(async () => {
-      try {
-        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-        if (permissionResult.granted === false) return Alert.alert("Permissão Bloqueada", "Precisamos de acesso à Câmera.");
-        const result = await ImagePicker.launchCameraAsync({ quality: 0.5, base64: true });
-        if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0].base64) {
-            extrairTextoDaImagem(result.assets[0].base64);
-        }
-      } catch (err: any) {
-        Alert.alert("Erro na Câmera", err.message);
-      }
-    }, 800);
+    Alert.alert(
+      "Em atualização",
+      "A leitura de fotos por IA segura (via servidor) será ativada na Etapa 4."
+    );
   };
 
   const handleMelhorarTextoManual = () => {
-    if (!observacoes.trim()) return Alert.alert("Atenção", "Escreva ou importe algo primeiro.");
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsProcessandoTexto(true);
-    setStatusProcessamento("Organizando juridicamente com IA...");
-    
-    setTimeout(() => {
-      const textoFormatado = `TERMOS LEGAIS E COMERCIAIS\n\n1. Escopo de Trabalho:\n${observacoes.trim()}\n\n2. Obrigações: O aluno compromete-se a seguir as diretrizes prescritas no aplicativo.\n3. Pagamentos: Os pagamentos devem ocorrer até a data de vencimento acordada.\n4. Suporte: O suporte para dúvidas será realizado via chat com SLA de resposta em até 24h.`;
-      setObservacoes(textoFormatado);
-      setIsProcessandoTexto(false);
-      setStatusProcessamento("");
-    }, 2000);
+    Alert.alert(
+      "Em atualização",
+      "A assistência real de IA para organização contratual será ativada na Etapa 4."
+    );
   };
 
   const handleEnviarProposta = async () => {
-    if (!mensalidade) return Alert.alert("Atenção", "O valor da proposta é obrigatório.");
+    if (!conexaoId) {
+      return Alert.alert("Erro", "Conexão não identificada.");
+    }
+    if (!mensalidade) {
+      return Alert.alert("Atenção", "O valor da proposta é obrigatório.");
+    }
 
-    let diaFinal = vencimento === "Outro" ? vencimentoOutro : vencimento;
-    let diaInt = parseInt(diaFinal, 10);
+    const valorFloat = parseFloat(mensalidade.replace(",", "."));
+    if (isNaN(valorFloat) || valorFloat <= 0) {
+      return Alert.alert("Atenção", "Informe um valor maior que zero.");
+    }
+
+    const diaFinal = vencimento === "Outro" ? vencimentoOutro : vencimento;
+    const diaInt = parseInt(diaFinal, 10);
     if (isNaN(diaInt) || diaInt < 1 || diaInt > 31) {
       return Alert.alert("Atenção", "Insira um dia de vencimento válido (1 a 31).");
     }
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Sessão inválida.");
+      const { error } = await supabase.rpc("enviar_proposta_match", {
+        p_conexao_id: conexaoId,
+        p_valor: valorFloat,
+        p_frequencia: frequencia,
+        p_dia_vencimento: diaInt,
+        p_modalidade: modalidade,
+        p_termos_contrato: observacoes.trim() || null,
+      });
 
-      const { data: conn } = await supabase.from("conexoes").select("usuario_id").eq("id", conexaoId).single();
-      if (!conn || !conn.usuario_id) throw new Error("Conexão com o aluno não encontrada.");
+      if (error) throw error;
 
-      const valorFloat = parseFloat(mensalidade.replace(",", "."));
-
-      const { data: novoPlano, error: erroPlano } = await supabase.from("planos").insert([{
-        aluno_id: conn.usuario_id,
-        personal_id: user.id,
-        conexao_id: conexaoId,
-        frequencia: frequencia,
-        valor_mensal: valorFloat,
-        dia_vencimento: diaInt,
-        observacoes: observacoes.trim(),
-        status: "aguardando_assinatura" 
-      }]).select().single();
-      
-      if (erroPlano) throw erroPlano;
-
-      await supabase.from("historico_financeiro_logs").insert([{
-        personal_id: user.id, aluno_id: conn.usuario_id, referencia_id: novoPlano.id,
-        tipo_evento: "PROPOSTA_ENVIADA", descricao: `Proposta comercial de R$ ${valorFloat} enviada ao aluno.`, metadados: { valor: valorFloat }
-      }]);
-      
-      await supabase.from("conexoes").update({ status: "aguardando_aluno" }).eq("id", conexaoId);
-      
-      Alert.alert("Proposta Enviada!", "O aluno será notificado para assinar o contrato.");
-      navigation.goBack(); 
+      Alert.alert(
+        "Proposta Enviada!",
+        "O aluno já pode visualizar as condições no chat para revisar e assinar o contrato."
+      );
+      navigation.goBack();
     } catch (error: any) {
-      Alert.alert("Erro ao Enviar", error.message);
+      Alert.alert("Erro ao Enviar", error.message || "Não foi possível enviar a proposta.");
     } finally {
       setLoading(false);
     }
   };
 
   return {
-    state: { 
-      nomeAluno, frequencia, mensalidade, vencimento, vencimentoOutro, observacoes, 
-      inputFocado, loading, isProcessandoTexto, statusProcessamento, modalUploadVisivel 
+    state: {
+      nomeAluno,
+      modalidadesDisponiveis,
+      modalidade,
+      frequencia,
+      mensalidade,
+      vencimento,
+      vencimentoOutro,
+      observacoes,
+      inputFocado,
+      loading,
+      isProcessandoTexto,
+      statusProcessamento,
+      modalUploadVisivel,
     },
-    actions: { 
-      setFrequencia, setMensalidade, setVencimento, setVencimentoOutro, setObservacoes, 
-      setInputFocado, setModalUploadVisivel, handleMoneyChange, handleVencimentoSelect,
-      handlePickDocument, handlePickImage, handleTakePicture, handleMelhorarTextoManual, handleEnviarProposta 
-    }
+    actions: {
+      setModalidade,
+      setFrequencia,
+      setMensalidade,
+      setVencimento,
+      setVencimentoOutro,
+      setObservacoes,
+      setInputFocado,
+      setModalUploadVisivel,
+      handleMoneyChange,
+      handleVencimentoSelect,
+      handlePickDocument,
+      handlePickImage,
+      handleTakePicture,
+      handleMelhorarTextoManual,
+      handleEnviarProposta,
+    },
   };
 }

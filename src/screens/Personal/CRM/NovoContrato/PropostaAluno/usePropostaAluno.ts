@@ -1,9 +1,51 @@
-import { useState, useEffect } from "react";
-import { Alert, LayoutAnimation, UIManager, Platform } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, LayoutAnimation, Platform, UIManager } from "react-native";
 import { supabase } from "../../../../../services/supabase";
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+async function buscarPropostaPorConexao(conexaoId: string) {
+  const { data: conexao, error: errConn } = await supabase
+    .from("conexoes")
+    .select("usuario_id, personal_id, status")
+    .eq("id", conexaoId)
+    .single();
+
+  if (errConn || !conexao) {
+    throw new Error("Não foi possível encontrar este vínculo.");
+  }
+
+  const [{ data: personal }, { data: contrato, error: errContrato }] = await Promise.all([
+    supabase
+      .from("personals")
+      .select("nome, foto_url, cref_verificado")
+      .eq("id", conexao.personal_id)
+      .maybeSingle(),
+    supabase
+      .from("planos")
+      .select("*")
+      .eq("conexao_id", conexaoId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  if (errContrato) {
+    throw new Error(errContrato.message);
+  }
+
+  if (!contrato) {
+    throw new Error("Nenhuma proposta comercial encontrada para esta conexão.");
+  }
+
+  return {
+    personalNome: personal?.nome || "Treinador",
+    personalFoto: personal?.foto_url || null,
+    personalVerificado: Boolean(personal?.cref_verificado),
+    proposta: contrato,
+  };
 }
 
 export function usePropostaAluno(route: any, navigation: any) {
@@ -12,128 +54,112 @@ export function usePropostaAluno(route: any, navigation: any) {
   const [proposta, setProposta] = useState<any>(null);
   const [personalNome, setPersonalNome] = useState<string>("Treinador");
   const [personalFoto, setPersonalFoto] = useState<string | null>(null);
-  const [regrasExpandidas, setRegrasExpandidas] = useState<boolean>(false);
+  const [personalVerificado, setPersonalVerificado] = useState<boolean>(false);
+  const [regrasExpandidas, setRegrasExpandidas] = useState<boolean>(true);
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [modalSucessoVisivel, setModalSucessoVisivel] = useState<boolean>(false);
 
-  const regrasPadrao = "✅ **1. Atrasos**\nA tolerância para os treinos ou avaliações é de 15 minutos.\n\n✅ **2. Pagamentos**\nO seu acesso ao planejamento só será liberado/atualizado após a confirmação financeira.\n\n✅ **3. Suporte e Dúvidas**\nO canal oficial é o WhatsApp. Respostas em até 24h úteis.";
+  useEffect(() => {
+    let ativo = true;
 
-  const carregarDadosDaProposta = async () => {
-    try {
-      const { data: conexao, error: errConn } = await supabase
-        .from('conexoes')
-        .select('aluno_id, personal_id') 
-        .eq('id', conexaoId)
-        .single();
-      
-      if (errConn) {
-        Alert.alert("Erro na Conexão", "Não foi possível encontrar este vínculo.");
-        return navigation.goBack();
-      }
-
-      const { data: personal } = await supabase
-        .from('perfis')
-        .select('nome, foto_url')
-        .eq('id', conexao.personal_id)
-        .single();
-      
-      if (personal) {
-        setPersonalNome(personal.nome);
-        setPersonalFoto(personal.foto_url);
-      }
-
-      const { data: contrato, error: errContrato } = await supabase
-        .from('planos')
-        .select('*')
-        .eq('conexao_id', conexaoId)
-        .order('criado_em', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (errContrato) {
-        Alert.alert("Erro ao buscar proposta", errContrato.message);
-        setLoadingData(false);
-        return;
-      }
-
-      if (contrato) {
-        setProposta(contrato);
-      } else {
-        Alert.alert("Plano não encontrado", "Houve um problema ao buscar a proposta digital.");
+    if (!conexaoId) {
+      Alert.alert("Erro de Rota", "Nenhuma conexão encontrada.");
+      if (navigation.canGoBack()) {
         navigation.goBack();
       }
-    } catch (error: any) {
-      Alert.alert("Erro Fatal", error.message);
-      navigation.goBack();
-    } finally {
-      setLoadingData(false);
+      return;
     }
-  };
 
-  useEffect(() => {
-    let isMounted = true;
-    
-    if (conexaoId) {
-      Promise.resolve().then(() => {
-        if (isMounted) carregarDadosDaProposta();
-      });
-    } else {
-      Alert.alert("Erro de Rota", "Nenhuma conexão encontrada.");
-      navigation.goBack();
-    }
+    const carregar = () => {
+      buscarPropostaPorConexao(conexaoId)
+        .then((res) => {
+          if (!ativo) return;
+          setPersonalNome(res.personalNome);
+          setPersonalFoto(res.personalFoto);
+          setPersonalVerificado(res.personalVerificado);
+          setProposta(res.proposta);
+        })
+        .catch((error: any) => {
+          if (!ativo) return;
+          Alert.alert(
+            "Proposta Indisponível",
+            error.message || "Houve um problema ao carregar o contrato."
+          );
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          }
+        })
+        .finally(() => {
+          if (ativo) setLoadingData(false);
+        });
+    };
+
+    carregar();
+    const unsubscribe = navigation.addListener("focus", carregar);
 
     return () => {
-      isMounted = false;
+      ativo = false;
+      unsubscribe();
     };
-  }, [conexaoId]);
+  }, [conexaoId, navigation]);
 
   const toggleRegras = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setRegrasExpandidas(!regrasExpandidas);
+    setRegrasExpandidas((prev) => !prev);
   };
 
   const handleAceitarProposta = async () => {
+    if (!proposta?.id || !conexaoId) return;
+
     setLoading(true);
     try {
-      await supabase.from('conexoes').update({ status: 'aluno_ativo' }).eq('id', conexaoId);
-      
-      if (proposta?.id) {
-        await supabase.from('planos').update({ status: 'ativo' }).eq('id', proposta.id);
-        
-        await supabase.from('historico_financeiro_logs').insert([{
-          personal_id: proposta.personal_id,
-          aluno_id: proposta.aluno_id,
-          referencia_id: proposta.id,
-          tipo_evento: "CONTRATO_ASSINADO",
-          descricao: `O aluno assinou o contrato de R$ ${proposta.valor_mensal}.`,
-          metadados: { valor: proposta.valor_mensal }
-        }]);
-      }
+      const { error } = await supabase.rpc("aceitar_contrato_aluno", {
+        p_conexao_id: conexaoId,
+        p_plano_id: proposta.id,
+      });
 
-      setLoading(false);
+      if (error) throw error;
+
+      setProposta((prev: any) => (prev ? { ...prev, status: "ativo" } : prev));
       setModalSucessoVisivel(true);
-    } catch (error) {
+    } catch (error: any) {
+      Alert.alert(
+        "Erro ao Assinar",
+        error.message || "Tivemos um problema ao oficializar a assinatura. Tente novamente."
+      );
+    } finally {
       setLoading(false);
-      Alert.alert("Erro", "Tivemos um problema ao oficializar a assinatura. Tente novamente.");
     }
   };
 
   const handleNegociar = () => {
     navigation.navigate("Chat", {
-      conexaoId: conexaoId,
+      conexaoId,
       nomeOutro: personalNome,
+      fotoOutro: personalFoto,
       tipoUsuarioLogado: "aluno",
     });
   };
 
   return {
     state: {
-      proposta, personalNome, personalFoto, regrasExpandidas,
-      loadingData, loading, modalSucessoVisivel, regrasPadrao, conexaoId
+      proposta,
+      personalNome,
+      personalFoto,
+      personalVerificado,
+      regrasExpandidas,
+      loadingData,
+      loading,
+      modalSucessoVisivel,
+      conexaoId,
     },
     actions: {
-      toggleRegras, handleAceitarProposta, handleNegociar, setModalSucessoVisivel, navigation
-    }
+      toggleRegras,
+      handleAceitarProposta,
+      handleNegociar,
+      setModalSucessoVisivel,
+      navigation,
+    },
   };
 }

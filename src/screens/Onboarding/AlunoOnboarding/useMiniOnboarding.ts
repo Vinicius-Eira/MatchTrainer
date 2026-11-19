@@ -1,105 +1,128 @@
-import { useState, useEffect } from "react";
-import { Alert, LayoutAnimation, UIManager, Platform } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, LayoutAnimation, Platform, UIManager } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { supabase } from "../../../services/supabase"; 
+import { supabase } from "../../../services/supabase";
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export const OBJETIVOS = [
-  { id: "Emagrecimento", titulo: "Emagrecimento", desc: "Secar, definir e perder gordura.", icon: "fire" },
-  { id: "Hipertrofia", titulo: "Hipertrofia", desc: "Ganhar volume e massa muscular.", icon: "dumbbell" },
-  { id: "Saude", titulo: "Saúde e Bem-estar", desc: "Qualidade de vida e longevidade.", icon: "heartbeat" },
-  { id: "Performance", titulo: "Performance", desc: "Condicionamento e força bruta.", icon: "bolt" },
-];
+function base64ParaUint8Array(base64: string): Uint8Array {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  const limpo = base64.replace(/[^A-Za-z0-9+/=]/g, "");
+  const output: number[] = [];
 
-export const NIVEIS = [
-  { id: "Iniciante", titulo: "Iniciante", desc: "Nunca treinei ou estou parado.", icon: "seedling" },
-  { id: "Intermediario", titulo: "Intermediário", desc: "Treino com certa regularidade.", icon: "running" },
-  { id: "Avancado", titulo: "Avançado", desc: "Treino pesado e conheço as execuções.", icon: "rocket" },
-];
+  for (let i = 0; i < limpo.length; i += 4) {
+    const enc1 = chars.indexOf(limpo.charAt(i));
+    const enc2 = chars.indexOf(limpo.charAt(i + 1));
+    const enc3 = chars.indexOf(limpo.charAt(i + 2));
+    const enc4 = chars.indexOf(limpo.charAt(i + 3));
 
-export const FREQUENCIAS = [
-  { id: "1-2", titulo: "1 a 2 dias", icon: "calendar-outline" },
-  { id: "3-4", titulo: "3 a 4 dias", icon: "calendar-outline" },
-  { id: "5-6", titulo: "5 a 6 dias", icon: "flame-outline" },
-  { id: "7", titulo: "Todos os dias", icon: "flash-outline" },
-];
+    const chr1 = (enc1 << 2) | (enc2 >> 4);
+    const chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+    const chr3 = ((enc3 & 3) << 6) | enc4;
+
+    output.push(chr1);
+    if (limpo.charAt(i + 2) !== "=" && enc3 !== -1) output.push(chr2);
+    if (limpo.charAt(i + 3) !== "=" && enc4 !== -1) output.push(chr3);
+  }
+
+  return new Uint8Array(output);
+}
+
+async function carregarContextoMiniOnboarding(conexaoId: string) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: conexao } = await supabase
+    .from("conexoes")
+    .select("personal_id")
+    .eq("id", conexaoId)
+    .maybeSingle();
+
+  let personal = null;
+  if (conexao?.personal_id) {
+    const { data: pData } = await supabase
+      .from("personals")
+      .select("id, nome, foto_url")
+      .eq("id", conexao.personal_id)
+      .maybeSingle();
+    personal = pData;
+  }
+
+  return {
+    alunoId: user?.id || null,
+    personalId: conexao?.personal_id || null,
+    personal,
+  };
+}
 
 export function useMiniOnboarding(route: any, navigation: any) {
   const { conexaoId } = route.params || {};
 
-  const totalPassos = 5;
+  const totalPassos = 3;
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [personalInfo, setPersonalInfo] = useState<any>(null);
+  const [personalId, setPersonalId] = useState<string | null>(null);
   const [alunoIdAuth, setAlunoIdAuth] = useState<string | null>(null);
 
   const [telefone, setTelefone] = useState("");
-  const [cidade, setCidade] = useState(""); 
+  const [cidade, setCidade] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
   const [peso, setPeso] = useState("");
-  const [metaPeso, setMetaPeso] = useState("");
   const [altura, setAltura] = useState("");
 
-  const [objetivo, setObjetivo] = useState<string | null>(null);
-  const [nivel, setNivel] = useState<string | null>(null);
-  const [diasTreino, setDiasTreino] = useState<string | null>(null);
   const [temRestricao, setTemRestricao] = useState<boolean | null>(null);
   const [detalhes, setDetalhes] = useState("");
-  
+
   const [fotoAluno, setFotoAluno] = useState<string | null>(null);
+  const [fotoBase64, setFotoBase64] = useState<string | null>(null);
   const [inputFocado, setInputFocado] = useState<string | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-    
-    async function carregarDadosIniciais() {
-      if (!conexaoId) {
-        Alert.alert("Erro", "Conexão VIP não encontrada. Solicite um novo link.");
-        return navigation.goBack();
-      }
+    let ativo = true;
 
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user && isMounted) setAlunoIdAuth(user.id);
-
-        const { data: conexao } = await supabase.from("conexoes").select("personal_id").eq("id", conexaoId).single();
-
-        if (conexao?.personal_id) {
-          const { data: personal } = await supabase.from("perfis").select("id, nome, foto_url").eq("id", conexao.personal_id).single();
-          if (personal && isMounted) setPersonalInfo(personal);
-        }
-      } catch (error) {
-        console.log("Erro ao buscar dados:", error);
-      }
+    if (!conexaoId) {
+      Alert.alert("Erro", "Conexão não encontrada. Tente validar o convite novamente.");
+      navigation.goBack();
+      return;
     }
 
-    Promise.resolve().then(() => {
-      if (isMounted) carregarDadosIniciais();
-    });
+    carregarContextoMiniOnboarding(conexaoId)
+      .then((res) => {
+        if (!ativo) return;
+        if (res.alunoId) setAlunoIdAuth(res.alunoId);
+        if (res.personalId) setPersonalId(res.personalId);
+        if (res.personal) setPersonalInfo(res.personal);
+      })
+      .catch((error) => {
+        console.log("Erro ao buscar dados do MiniOnboarding:", error);
+      });
 
-    return () => { isMounted = false; };
-  }, [conexaoId]);
+    return () => {
+      ativo = false;
+    };
+  }, [conexaoId, navigation]);
 
   const handlePickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        return Alert.alert('Permissão Negada', 'Precisamos de acesso à galeria para selecionar a foto.');
+      if (status !== "granted") {
+        return Alert.alert("Permissão Negada", "Precisamos de acesso à galeria para selecionar a foto.");
       }
-      
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.3, 
+        quality: 0.5,
         base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setFotoAluno(`data:image/jpeg;base64,${result.assets[0].base64}`);
+        setFotoAluno(result.assets[0].uri);
+        setFotoBase64(result.assets[0].base64 || null);
       }
     } catch (error) {
       Alert.alert("Erro", "Não foi possível carregar a foto.");
@@ -121,35 +144,34 @@ export function useMiniOnboarding(route: any, navigation: any) {
   };
 
   const formatarPeso = (t: string) => setPeso(t.replace(/[^0-9.,]/g, "").replace(",", "."));
-  const formatarMetaPeso = (t: string) => setMetaPeso(t.replace(/[^0-9.,]/g, "").replace(",", "."));
   const formatarAltura = (t: string) => setAltura(t.replace(/[^0-9]/g, ""));
 
   const handleNext = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    
+
     if (step === 1) {
       setStep(2);
     } else if (step === 2) {
-      if (!telefone || !dataNascimento || !peso || !altura || !metaPeso || !cidade) {
-        return Alert.alert("Atenção", "Preencha todos os campos, incluindo sua cidade, para o cálculo de IMC e metas.");
+      if (!telefone || !dataNascimento || !peso || !altura || !cidade) {
+        return Alert.alert(
+          "Atenção",
+          "Preencha cidade, data de nascimento, WhatsApp, altura e peso para continuar."
+        );
       }
       setStep(3);
-    } else if (step === 3) {
-      if (!objetivo || !nivel) {
-        return Alert.alert("Atenção", "Selecione seu objetivo principal e seu nível de experiência.");
-      }
-      setStep(4);
-    } else if (step === 4) {
-      if (!diasTreino) {
-        return Alert.alert("Atenção", "Defina quantos dias por semana pretende treinar.");
-      }
-      setStep(5);
     }
   };
 
   const handleFinalizar = async () => {
-    if (temRestricao === null) return Alert.alert("Atenção", "Informe sua condição de saúde.");
-    if (temRestricao && detalhes.trim() === "") return Alert.alert("Atenção", "Por favor, detalhe sua restrição médica para a sua segurança.");
+    if (temRestricao === null) {
+      return Alert.alert("Atenção", "Informe se possui alguma restrição física ou médica.");
+    }
+    if (temRestricao && detalhes.trim() === "") {
+      return Alert.alert("Atenção", "Por favor, detalhe sua restrição para a sua segurança.");
+    }
+    if (!alunoIdAuth) {
+      return Alert.alert("Sessão Inválida", "Faça login novamente para concluir seu perfil.");
+    }
 
     setLoading(true);
     try {
@@ -159,7 +181,30 @@ export function useMiniOnboarding(route: any, navigation: any) {
         dataBanco = `${parts[2]}-${parts[1]}-${parts[0]}`;
       }
 
-      const { data: userAtual } = await supabase.from("usuarios").select("preferencias").eq("id", alunoIdAuth).single();
+      let fotoUrlPublica: string | null = null;
+      if (fotoBase64) {
+        try {
+          const caminho = `alunos/${alunoIdAuth}_${Date.now()}.jpg`;
+          const bytes = base64ParaUint8Array(fotoBase64);
+          const { error: errUpload } = await supabase.storage
+            .from("avatars")
+            .upload(caminho, bytes, { contentType: "image/jpeg", upsert: true });
+
+          if (!errUpload) {
+            const { data: pubData } = supabase.storage.from("avatars").getPublicUrl(caminho);
+            fotoUrlPublica = pubData?.publicUrl || null;
+          }
+        } catch (upErr) {
+          console.log("Aviso upload avatar:", upErr);
+        }
+      }
+
+      const { data: userAtual } = await supabase
+        .from("usuarios")
+        .select("preferencias")
+        .eq("id", alunoIdAuth)
+        .maybeSingle();
+
       const preferenciasAntigas = userAtual?.preferencias || {};
 
       const payloadUsuario: any = {
@@ -168,39 +213,40 @@ export function useMiniOnboarding(route: any, navigation: any) {
         data_nascimento: dataBanco,
         peso: peso ? parseFloat(peso) : null,
         altura: altura ? parseFloat(altura) : null,
-        setup_completo: true, 
+        setup_completo: true,
         preferencias: {
           ...preferenciasAntigas,
-          frequencia_semanal: diasTreino,
-          meta_peso: metaPeso ? parseFloat(metaPeso) : null,
-          origem_setup: "convite_direto" 
-        }
+          origem_setup: "convite_direto",
+        },
       };
 
-      if (fotoAluno) payloadUsuario.foto_url = fotoAluno;
+      if (fotoUrlPublica) payloadUsuario.foto_url = fotoUrlPublica;
 
-      const { error: errorUser } = await supabase.from("usuarios").update(payloadUsuario).eq("id", alunoIdAuth);
+      const { error: errorUser } = await supabase
+        .from("usuarios")
+        .update(payloadUsuario)
+        .eq("id", alunoIdAuth);
       if (errorUser) throw errorUser;
 
-      const { error: errorAnamnese } = await supabase.from("anamneses").insert([{
-        usuario_id: alunoIdAuth,
-        personal_id: personalInfo.id,
-        objetivo: objetivo,
-        nivel_experiencia: nivel,
-        tem_restricao: temRestricao,
-        detalhes_restricao: temRestricao ? detalhes.trim() : null,
-      }]);
+      const idPersonalFinal = personalInfo?.id || personalId;
+      if (idPersonalFinal) {
+        const { error: errorAnamnese } = await supabase.from("anamneses").insert([
+          {
+            usuario_id: alunoIdAuth,
+            personal_id: idPersonalFinal,
+            objetivo: "Alinhado com o Personal",
+            nivel_experiencia: "Definido pelo Personal",
+            tem_restricao: temRestricao,
+            detalhes_restricao: temRestricao ? detalhes.trim() : null,
+          },
+        ]);
+        if (errorAnamnese) throw errorAnamnese;
+      }
 
-      if (errorAnamnese) throw errorAnamnese;
-
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "PropostaAluno", params: { conexaoId: conexaoId } }],
-      });
-      
-    } catch (error) {
+      navigation.navigate("PropostaAluno", { conexaoId });
+    } catch (error: any) {
       console.log(error);
-      Alert.alert("Erro", "Falha ao salvar seus dados. Tente novamente.");
+      Alert.alert("Erro", error.message || "Falha ao salvar seus dados. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -208,14 +254,33 @@ export function useMiniOnboarding(route: any, navigation: any) {
 
   return {
     state: {
-      step, totalPassos, loading, personalInfo,
-      telefone, cidade, dataNascimento, peso, metaPeso, altura,
-      objetivo, nivel, diasTreino, temRestricao, detalhes, fotoAluno, inputFocado
+      step,
+      totalPassos,
+      loading,
+      personalInfo,
+      telefone,
+      cidade,
+      dataNascimento,
+      peso,
+      altura,
+      temRestricao,
+      detalhes,
+      fotoAluno,
+      inputFocado,
     },
     actions: {
-      setStep, setCidade, setObjetivo, setNivel, setDiasTreino, setTemRestricao, setDetalhes, setInputFocado,
-      handlePickImage, formatarWhatsApp, formatarData, formatarPeso, formatarMetaPeso, formatarAltura,
-      handleNext, handleFinalizar
-    }
+      setStep,
+      setCidade,
+      setTemRestricao,
+      setDetalhes,
+      setInputFocado,
+      handlePickImage,
+      formatarWhatsApp,
+      formatarData,
+      formatarPeso,
+      formatarAltura,
+      handleNext,
+      handleFinalizar,
+    },
   };
 }

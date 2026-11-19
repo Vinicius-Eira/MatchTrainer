@@ -1,7 +1,41 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
-import { supabase } from "../../../services/supabase"; 
 import { useFocusEffect } from "@react-navigation/native";
+import { supabase } from "../../../services/supabase";
+
+async function buscarStatusConexao(conexaoId: string) {
+  const { data } = await supabase.from("conexoes").select("status").eq("id", conexaoId).maybeSingle();
+  return data?.status || null;
+}
+
+async function buscarDadosIniciaisChat(conexaoId: string) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const status = await buscarStatusConexao(conexaoId);
+
+  const { data: msgs, error } = await supabase
+    .from("mensagens")
+    .select("*")
+    .eq("conexao_id", conexaoId)
+    .order("criado_em", { ascending: false })
+    .limit(50);
+
+  if (error) throw error;
+
+  if (msgs && msgs.length > 0 && user) {
+    const naoLidas = msgs.filter((m) => !m.lida && m.remetente_id !== user.id);
+    naoLidas.forEach((m) => {
+      supabase
+        .from("mensagens")
+        .update({ lida: true })
+        .eq("id", m.id)
+        .then(() => {});
+    });
+  }
+
+  return { userId: user?.id || null, status, msgs: msgs || [] };
+}
 
 export function useChat(route: any, navigation: any) {
   const { conexaoId, nomeOutro, fotoOutro, tipoUsuarioLogado } = route.params;
@@ -12,56 +46,78 @@ export function useChat(route: any, navigation: any) {
   const [myUserId, setMyUserId] = useState<string | null>(null);
   const [statusConexao, setStatusConexao] = useState("em_contato");
 
+  const [modalParceriaVisivel, setModalParceriaVisivel] = useState(false);
+  const [solicitandoParceria, setSolicitandoParceria] = useState(false);
+
   const flatListRef = useRef<any>(null);
-
-  const marcarComoLida = async (msgId: string) => {
-    await supabase.from("mensagens").update({ lida: true }).eq("id", msgId);
-  };
-
-  const checarStatusAtualizado = async () => {
-    try {
-      const { data } = await supabase.from("conexoes").select("status").eq("id", conexaoId).single();
-      if (data && data.status) {
-        setStatusConexao(data.status);
-      }
-    } catch (error) {
-      console.log("Erro ao checar status da conexão no foco:", error);
-    }
-  };
 
   useFocusEffect(
     useCallback(() => {
-      checarStatusAtualizado();
+      let ativo = true;
+      buscarStatusConexao(conexaoId)
+        .then((status) => {
+          if (ativo && status) setStatusConexao(status);
+        })
+        .catch(() => {});
+      return () => {
+        ativo = false;
+      };
     }, [conexaoId])
   );
 
-  const iniciarChat = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) setMyUserId(user.id);
+  useEffect(() => {
+    let ativo = true;
 
-      await checarStatusAtualizado();
+    buscarDadosIniciaisChat(conexaoId)
+      .then((res) => {
+        if (!ativo) return;
+        if (res.userId) setMyUserId(res.userId);
+        if (res.status) setStatusConexao(res.status);
+        setMensagens(res.msgs);
+      })
+      .catch((error) => {
+        console.error("Erro ao carregar mensagens:", error);
+      })
+      .finally(() => {
+        if (ativo) setLoading(false);
+      });
 
-      const { data: msgs, error } = await supabase
-        .from("mensagens")
-        .select("*")
-        .eq("conexao_id", conexaoId)
-        .order("criado_em", { ascending: false })
-        .limit(50);
+    const canal = supabase
+      .channel("chat_sync_" + conexaoId)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "mensagens", filter: `conexao_id=eq.${conexaoId}` },
+        (payload) => {
+          const novaMsg = payload.new;
+          setMensagens((prev) => {
+            if (prev.some((m) => m.id === novaMsg.id)) return prev;
+            return [novaMsg, ...prev];
+          });
+          if (myUserId && novaMsg.remetente_id !== myUserId) {
+            supabase
+              .from("mensagens")
+              .update({ lida: true })
+              .eq("id", novaMsg.id)
+              .then(() => {});
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "conexoes", filter: `id=eq.${conexaoId}` },
+        (payload) => {
+          if (payload.new?.status) {
+            setStatusConexao(payload.new.status);
+          }
+        }
+      )
+      .subscribe();
 
-      if (error) throw error;
-      setMensagens(msgs || []);
-
-      if (msgs && msgs.length > 0 && user) {
-        const naoLidas = msgs.filter((m) => !m.lida && m.remetente_id !== user.id);
-        naoLidas.forEach((m) => marcarComoLida(m.id));
-      }
-    } catch (error) {
-      console.error("Erro ao carregar mensagens:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      ativo = false;
+      supabase.removeChannel(canal);
+    };
+  }, [conexaoId, myUserId]);
 
   const enviarMensagem = async (textoDesejado: string | null = null) => {
     const conteudo = textoDesejado || texto.trim();
@@ -72,7 +128,7 @@ export function useChat(route: any, navigation: any) {
     try {
       const { data, error } = await supabase
         .from("mensagens")
-        .insert([{ conexao_id: conexaoId, remetente_id: myUserId, tipo_remetente: tipoUsuarioLogado, conteudo: conteudo }])
+        .insert([{ conexao_id: conexaoId, remetente_id: myUserId, tipo_remetente: tipoUsuarioLogado, conteudo }])
         .select()
         .single();
 
@@ -87,82 +143,83 @@ export function useChat(route: any, navigation: any) {
     }
   };
 
-  useEffect(() => {
-    let isMounted = true;
-
-    Promise.resolve().then(() => {
-      if (isMounted) iniciarChat();
-    });
-
-    const canal = supabase
-      .channel("chat_sync_" + conexaoId)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "mensagens", filter: `conexao_id=eq.${conexaoId}` },
-        (payload) => {
-          const novaMsg = payload.new;
-          setMensagens((prev) => {
-            if (prev.some((m) => m.id === novaMsg.id)) return prev;
-            return [novaMsg, ...prev];
-          });
-          if (novaMsg.remetente_id !== myUserId) {
-            marcarComoLida(novaMsg.id);
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "conexoes", filter: `id=eq.${conexaoId}` },
-        (payload) => {
-          setStatusConexao(payload.new.status);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      isMounted = false; 
-      supabase.removeChannel(canal);
-    };
-  }, [myUserId]);
-
   const handleAlunoSolicitaParceria = () => {
-    Alert.alert(
-      "Solicitar Parceria",
-      `Deseja enviar uma solicitação oficial para ${nomeOutro} assumir seu treinamento?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sim, Solicitar",
-          onPress: async () => {
-            try {
-              const { error } = await supabase.from("conexoes").update({ status: "aguardando_personal" }).eq("id", conexaoId);
-              if (error) throw error;
+    setModalParceriaVisivel(true);
+  };
 
-              setStatusConexao("aguardando_personal");
-              await enviarMensagem("🚀 Gostei da proposta! Enviei uma solicitação oficial para iniciarmos nossa parceria.");
-            } catch (err) {
-              Alert.alert("Erro", "Não foi possível enviar a solicitação. Tente novamente.");
-            }
-          },
+  const confirmarSolicitacaoParceria = async () => {
+    setSolicitandoParceria(true);
+    try {
+      const { error } = await supabase
+        .from("conexoes")
+        .update({ status: "aguardando_personal" })
+        .eq("id", conexaoId);
+
+      if (error) throw error;
+
+      setStatusConexao("aguardando_personal");
+      setModalParceriaVisivel(false);
+      await enviarMensagem(
+        "🚀 Gostei da proposta! Enviei uma solicitação oficial para iniciarmos nossa parceria."
+      );
+    } catch (err) {
+      Alert.alert("Erro", "Não foi possível enviar a solicitação. Tente novamente.");
+    } finally {
+      setSolicitandoParceria(false);
+    }
+  };
+
+  const handleSairConta = () => {
+    Alert.alert("Sair da conta", "Deseja desconectar sua conta deste dispositivo?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Sair",
+        style: "destructive",
+        onPress: async () => {
+          await supabase.auth.signOut();
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const irParaContrato = () => {
     navigation.navigate("ContratoMatch", {
-      conexaoId: conexaoId,
-      nomeAluno: nomeOutro
+      conexaoId,
+      nomeAluno: nomeOutro,
+    });
+  };
+
+  const irParaPropostaAluno = () => {
+    navigation.navigate("PropostaAluno", {
+      conexaoId,
     });
   };
 
   return {
     state: {
-      mensagens, texto, loading, myUserId, statusConexao, flatListRef,
-      nomeOutro, fotoOutro, tipoUsuarioLogado, conexaoId
+      mensagens,
+      texto,
+      loading,
+      myUserId,
+      statusConexao,
+      flatListRef,
+      nomeOutro,
+      fotoOutro,
+      tipoUsuarioLogado,
+      conexaoId,
+      modalParceriaVisivel,
+      solicitandoParceria,
     },
     actions: {
-      setTexto, enviarMensagem, handleAlunoSolicitaParceria, irParaContrato, navigation
-    }
-  }
+      setTexto,
+      setModalParceriaVisivel,
+      enviarMensagem,
+      handleAlunoSolicitaParceria,
+      confirmarSolicitacaoParceria,
+      handleSairConta,
+      irParaContrato,
+      irParaPropostaAluno,
+      navigation,
+    },
+  };
 }

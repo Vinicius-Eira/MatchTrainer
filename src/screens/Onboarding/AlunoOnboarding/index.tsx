@@ -1,10 +1,22 @@
 import React from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StatusBar, Platform, KeyboardAvoidingView, ActivityIndicator, Image } from "react-native";
-import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
+import {
+  ActivityIndicator,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { theme } from "../../../theme/theme";
 
-import { useMiniOnboarding, OBJETIVOS, NIVEIS, FREQUENCIAS } from "./useMiniOnboarding";
+import { useMiniOnboarding } from "./useMiniOnboarding";
 import { styles } from "./styles";
 
 export function MiniOnboarding({ route, navigation }: any) {
@@ -13,26 +25,29 @@ export function MiniOnboarding({ route, navigation }: any) {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <StatusBar barStyle="light-content" backgroundColor="#050505" />
-      
+
       <View style={styles.glowTop} />
 
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={[styles.btnBack, state.step === 1 && { opacity: 0 }]} 
+        <TouchableOpacity
+          style={[styles.btnBack, state.step === 1 && { opacity: 0 }]}
           onPress={() => state.step > 1 && actions.setStep(state.step - 1)}
           disabled={state.step === 1}
           activeOpacity={0.7}
         >
           <Ionicons name="chevron-back" size={20} color="#FFF" />
         </TouchableOpacity>
-        
+
         <View style={styles.progressWrapper}>
-          <Text style={styles.stepText}>ETAPA {state.step} DE {state.totalPassos}</Text>
+          <Text style={styles.stepText}>
+            ETAPA {state.step} DE {state.totalPassos}
+          </Text>
           <View style={styles.progressContainer}>
-            <LinearGradient 
-              colors={[theme.colors.primary, "#FF8C00"]} 
-              start={{x: 0, y: 0}} end={{x: 1, y: 0}}
-              style={[styles.progressBar, { width: `${(state.step / state.totalPassos) * 100}%` }]} 
+            <LinearGradient
+              colors={[theme.colors.primary, "#FF8C00"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.progressBar, { width: `${(state.step / state.totalPassos) * 100}%` }]}
             />
           </View>
         </View>
@@ -40,8 +55,7 @@ export function MiniOnboarding({ route, navigation }: any) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {state.step === 1 && (
           <View style={styles.stepContainerCenter}>
             <View style={styles.avatarWrapper}>
@@ -62,11 +76,12 @@ export function MiniOnboarding({ route, navigation }: any) {
               Conexão <Text style={styles.titleHighlight}>Estabelecida</Text>
             </Text>
             <Text style={styles.sectionSubtitle}>
-              Você acaba de se conectar ao time do treinador <Text style={styles.highlight}>{state.personalInfo?.nome?.split(" ")[0] || "Personal"}</Text>.
+              Você acaba de se conectar ao time do treinador{" "}
+              <Text style={styles.highlight}>{state.personalInfo?.nome?.split(" ")[0] || "Personal"}</Text>.
             </Text>
-            
+
             <View style={styles.photoSection}>
-              <Text style={styles.featuresTitle}>Sua Foto de Perfil</Text>
+              <Text style={styles.featuresTitle}>Sua Foto de Perfil (Opcional)</Text>
               <TouchableOpacity style={styles.photoBtn} onPress={actions.handlePickImage} activeOpacity={0.8}>
                 {state.fotoAluno ? (
                   <Image source={{ uri: state.fotoAluno }} style={styles.photoSelected} />
@@ -80,29 +95,35 @@ export function MiniOnboarding({ route, navigation }: any) {
             </View>
 
             <View style={styles.featuresContainer}>
-              <Text style={styles.featuresTitle}>O que vai acontecer agora?</Text>
-              
+              <Text style={styles.featuresTitle}>Rápido e direto ao ponto</Text>
+
               <View style={styles.featureItem}>
-                <View style={styles.featureIconBox}><Ionicons name="body" size={20} color={theme.colors.primary} /></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.featureItemTitle}>Mapeamento Físico</Text>
-                  <Text style={styles.featureItemDesc}>Vamos colher seus dados para criar um ponto de partida exato.</Text>
+                <View style={styles.featureIconBox}>
+                  <Ionicons name="body" size={20} color={theme.colors.primary} />
                 </View>
-              </View>
-              
-              <View style={styles.featureItem}>
-                <View style={styles.featureIconBox}><Ionicons name="compass" size={20} color={theme.colors.primary} /></View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.featureItemTitle}>Alinhamento de Metas</Text>
-                  <Text style={styles.featureItemDesc}>Definiremos seu objetivo para direcionar a estratégia do treino.</Text>
+                  <Text style={styles.featureItemTitle}>Dados Básicos e Contato</Text>
+                  <Text style={styles.featureItemDesc}>Informações essenciais para sua ficha e comunicação rápida.</Text>
                 </View>
               </View>
 
               <View style={styles.featureItem}>
-                <View style={styles.featureIconBox}><Ionicons name="star" size={20} color={theme.colors.primary} /></View>
+                <View style={styles.featureIconBox}>
+                  <Ionicons name="shield-checkmark" size={20} color={theme.colors.primary} />
+                </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.featureItemTitle}>Proposta VIP</Text>
-                  <Text style={styles.featureItemDesc}>O professor enviará seu contrato digital para liberar o acesso total.</Text>
+                  <Text style={styles.featureItemTitle}>Segurança e Saúde</Text>
+                  <Text style={styles.featureItemDesc}>Confirme se há alguma dor, lesão ou restrição médica.</Text>
+                </View>
+              </View>
+
+              <View style={styles.featureItem}>
+                <View style={styles.featureIconBox}>
+                  <Ionicons name="document-text" size={20} color={theme.colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.featureItemTitle}>Revisão do Contrato</Text>
+                  <Text style={styles.featureItemDesc}>Confira os valores e termos do seu treinador para liberar os treinos.</Text>
                 </View>
               </View>
             </View>
@@ -111,13 +132,22 @@ export function MiniOnboarding({ route, navigation }: any) {
 
         {state.step === 2 && (
           <View style={styles.stepContainerTop}>
-            <Text style={styles.sectionTitle}>Métricas e <Text style={styles.titleHighlight}>Contato</Text></Text>
-            <Text style={styles.sectionSubtitle}>Precisamos do seu ponto de partida para que o professor trace a melhor rota para o seu resultado.</Text>
+            <Text style={styles.sectionTitle}>
+              Dados e <Text style={styles.titleHighlight}>Contato</Text>
+            </Text>
+            <Text style={styles.sectionSubtitle}>
+              Apenas o essencial para sua ficha de acompanhamento com seu Personal.
+            </Text>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Onde você mora?</Text>
               <View style={[styles.inputBox, state.inputFocado === "cidade" && styles.inputBoxFocused]}>
-                <Ionicons name="location-outline" size={18} color={state.inputFocado === "cidade" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+                <Ionicons
+                  name="location-outline"
+                  size={18}
+                  color={state.inputFocado === "cidade" ? theme.colors.primary : "#666"}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="Ex: São Paulo, SP"
@@ -136,7 +166,12 @@ export function MiniOnboarding({ route, navigation }: any) {
               <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
                 <Text style={styles.label}>Nascimento</Text>
                 <View style={[styles.inputBox, state.inputFocado === "nasc" && styles.inputBoxFocused]}>
-                  <Ionicons name="calendar-outline" size={18} color={state.inputFocado === "nasc" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+                  <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color={state.inputFocado === "nasc" ? theme.colors.primary : "#666"}
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={styles.input}
                     placeholder="DD/MM/AAAA"
@@ -155,7 +190,12 @@ export function MiniOnboarding({ route, navigation }: any) {
               <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
                 <Text style={styles.label}>WhatsApp</Text>
                 <View style={[styles.inputBox, state.inputFocado === "whats" && styles.inputBoxFocused]}>
-                  <MaterialCommunityIcons name="whatsapp" size={18} color={state.inputFocado === "whats" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+                  <MaterialCommunityIcons
+                    name="whatsapp"
+                    size={18}
+                    color={state.inputFocado === "whats" ? theme.colors.primary : "#666"}
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={styles.input}
                     placeholder="(00) 00000"
@@ -177,7 +217,12 @@ export function MiniOnboarding({ route, navigation }: any) {
             <View style={styles.rowInputs}>
               <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
                 <View style={[styles.inputBox, state.inputFocado === "altura" && styles.inputBoxFocused]}>
-                  <MaterialCommunityIcons name="human-male-height" size={20} color={state.inputFocado === "altura" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+                  <MaterialCommunityIcons
+                    name="human-male-height"
+                    size={20}
+                    color={state.inputFocado === "altura" ? theme.colors.primary : "#666"}
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={styles.input}
                     placeholder="Altura"
@@ -196,7 +241,12 @@ export function MiniOnboarding({ route, navigation }: any) {
 
               <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
                 <View style={[styles.inputBox, state.inputFocado === "peso" && styles.inputBoxFocused]}>
-                  <MaterialCommunityIcons name="scale-bathroom" size={20} color={state.inputFocado === "peso" ? theme.colors.primary : "#666"} style={styles.inputIcon} />
+                  <MaterialCommunityIcons
+                    name="scale-bathroom"
+                    size={20}
+                    color={state.inputFocado === "peso" ? theme.colors.primary : "#666"}
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={styles.input}
                     placeholder="Peso"
@@ -213,156 +263,62 @@ export function MiniOnboarding({ route, navigation }: any) {
                 </View>
               </View>
             </View>
-
-            <View style={styles.targetWeightBox}>
-              <View style={styles.targetIconBox}>
-                <Ionicons name="flag" size={20} color={theme.colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.targetTitle}>Qual a sua meta de peso?</Text>
-                <View style={styles.targetInputContainer}>
-                  <TextInput
-                    style={styles.targetInput}
-                    placeholder="Ex: 70.0"
-                    placeholderTextColor="#555"
-                    keyboardType="decimal-pad"
-                    maxLength={6}
-                    value={state.metaPeso}
-                    onChangeText={actions.formatarMetaPeso}
-                    keyboardAppearance="dark"
-                  />
-                  <Text style={styles.targetSuffix}>kg</Text>
-                </View>
-              </View>
-            </View>
           </View>
         )}
 
         {state.step === 3 && (
           <View style={styles.stepContainerTop}>
-            <Text style={styles.sectionTitle}>Seu <Text style={styles.titleHighlight}>Direcionamento</Text></Text>
-            <Text style={styles.sectionSubtitle}>Defina o foco central do seu treinamento para que a estratégia seja exata.</Text>
+            <Text style={styles.sectionTitle}>
+              Atenção à <Text style={styles.titleHighlight}>Saúde</Text>
+            </Text>
+            <Text style={styles.sectionSubtitle}>
+              Confirme se existe alguma limitação ou observação médica importante antes de iniciar seus treinos.
+            </Text>
 
-            <Text style={styles.label}>Objetivo Principal</Text>
-            <View style={styles.gridContainer}>
-              {OBJETIVOS.map((item) => {
-                const isSelected = state.objetivo === item.id;
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[styles.premiumCard, isSelected && styles.premiumCardActive]}
-                    onPress={() => actions.setObjetivo(item.id)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.cardIconWrap, isSelected && styles.cardIconWrapActive]}>
-                      <FontAwesome5 name={item.icon} size={16} color={isSelected ? theme.colors.primary : "#888"} />
-                    </View>
-                    <Text style={[styles.cardTitle, isSelected && styles.cardTitleActive]}>{item.titulo}</Text>
-                    <Text style={styles.cardDesc}>{item.desc}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <Text style={[styles.label, { textAlign: "center", marginBottom: 15 }]}>
+              Possui dores crônicas, lesões ou restrição médica?
+            </Text>
 
-            <View style={styles.divider} />
-            <Text style={styles.label}>Nível de Experiência Física</Text>
-            
-            <View style={styles.gridContainer}>
-              {NIVEIS.map((item) => {
-                const isSelected = state.nivel === item.id;
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[styles.premiumCard, { width: '100%', flexDirection: 'row', alignItems: 'center' }, isSelected && styles.premiumCardActive]}
-                    onPress={() => actions.setNivel(item.id)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.cardIconWrap, isSelected && styles.cardIconWrapActive, { marginBottom: 0, marginRight: 16 }]}>
-                      <FontAwesome5 name={item.icon} size={16} color={isSelected ? theme.colors.primary : "#888"} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.cardTitle, isSelected && styles.cardTitleActive, { marginBottom: 2 }]}>{item.titulo}</Text>
-                      <Text style={styles.cardDesc}>{item.desc}</Text>
-                    </View>
-                    <View style={[styles.radioCircle, isSelected && styles.radioCircleActive]}>
-                      {isSelected && <View style={styles.radioInner} />}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {state.step === 4 && (
-          <View style={styles.stepContainerTop}>
-            <Text style={styles.sectionTitle}>Sua <Text style={styles.titleHighlight}>Frequência</Text></Text>
-            <Text style={styles.sectionSubtitle}>Seja realista com a sua rotina. O volume de treino será distribuído pelos dias que você marcar.</Text>
-
-            <View style={styles.gridContainer}>
-              {FREQUENCIAS.map((item) => {
-                const isSelected = state.diasTreino === item.id;
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[styles.premiumCard, { width: '100%', flexDirection: 'row', alignItems: 'center' }, isSelected && styles.premiumCardActive]}
-                    onPress={() => actions.setDiasTreino(item.id)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.cardIconWrap, isSelected && styles.cardIconWrapActive, { marginBottom: 0, marginRight: 16 }]}>
-                      <Ionicons name={item.icon as any} size={20} color={isSelected ? theme.colors.primary : "#888"} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.cardTitle, isSelected && styles.cardTitleActive, { marginBottom: 0 }]}>{item.titulo}</Text>
-                    </View>
-                    <View style={[styles.radioCircle, isSelected && styles.radioCircleActive]}>
-                      {isSelected && <View style={styles.radioInner} />}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <View style={styles.tipCard}>
-              <View style={styles.tipIconBox}><Ionicons name="bulb" size={20} color={theme.colors.primary} /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.tipTitle}>Lembre-se</Text>
-                <Text style={styles.tipDesc}>A constância bate a intensidade. Treinar bem 3 vezes na semana traz mais resultados do que treinar 6 e desistir rápido.</Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {state.step === 5 && (
-          <View style={styles.stepContainerTop}>
-            <Text style={styles.sectionTitle}>Atenção à <Text style={styles.titleHighlight}>Saúde</Text></Text>
-            <Text style={styles.sectionSubtitle}>Informações médicas são essenciais para estruturarmos o plano e evitar lesões.</Text>
-
-            <Text style={[styles.label, { textAlign: 'center', marginBottom: 15 }]}>Possui dores crônicas, lesões ou laudo médico?</Text>
-            
             <View style={styles.yesNoContainer}>
               <TouchableOpacity
                 style={[styles.yesNoBtn, state.temRestricao === false && styles.yesNoBtnGreen]}
-                onPress={() => { actions.setTemRestricao(false); actions.setDetalhes(""); }}
+                onPress={() => {
+                  actions.setTemRestricao(false);
+                  actions.setDetalhes("");
+                }}
                 activeOpacity={0.8}
               >
-                <Ionicons name="checkmark-circle" size={28} color={state.temRestricao === false ? "#00E676" : "#444"} style={{ marginBottom: 8 }} />
-                <Text style={[styles.yesNoText, state.temRestricao === false && { color: "#00E676" }]}>Não, 100% Saudável</Text>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={28}
+                  color={state.temRestricao === false ? "#00E676" : "#444"}
+                  style={{ marginBottom: 8 }}
+                />
+                <Text style={[styles.yesNoText, state.temRestricao === false && { color: "#00E676" }]}>
+                  Não, nenhuma restrição
+                </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[styles.yesNoBtn, state.temRestricao === true && styles.yesNoBtnRed]}
                 onPress={() => actions.setTemRestricao(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="alert-circle" size={28} color={state.temRestricao === true ? "#FF3B30" : "#444"} style={{ marginBottom: 8 }} />
-                <Text style={[styles.yesNoText, state.temRestricao === true && { color: "#FF3B30" }]}>Sim, possuo restrição</Text>
+                <Ionicons
+                  name="alert-circle"
+                  size={28}
+                  color={state.temRestricao === true ? "#FF3B30" : "#444"}
+                  style={{ marginBottom: 8 }}
+                />
+                <Text style={[styles.yesNoText, state.temRestricao === true && { color: "#FF3B30" }]}>
+                  Sim, possuo restrição
+                </Text>
               </TouchableOpacity>
             </View>
 
             {state.temRestricao && (
               <View style={styles.detalhesArea}>
-                <Text style={styles.label}>Por favor, detalhe sua condição:</Text>
+                <Text style={styles.label}>Detalhe sua condição:</Text>
                 <View style={styles.textAreaBox}>
                   <TextInput
                     style={styles.textArea}
@@ -377,14 +333,18 @@ export function MiniOnboarding({ route, navigation }: any) {
               </View>
             )}
 
-            {!state.temRestricao && state.temRestricao !== null && (
-               <View style={[styles.tipCard, { borderColor: "#00E676", backgroundColor: "rgba(0, 230, 118, 0.05)" }]}>
-                 <View style={[styles.tipIconBox, { backgroundColor: "rgba(0, 230, 118, 0.15)" }]}><Ionicons name="shield-checkmark" size={20} color="#00E676" /></View>
-                 <View style={{ flex: 1 }}>
-                   <Text style={[styles.tipTitle, { color: "#00E676" }]}>Tudo Certo!</Text>
-                   <Text style={styles.tipDesc}>Excelente. Sem restrições de saúde, o seu professor tem carta branca para montar um treino de alta performance.</Text>
-                 </View>
-               </View>
+            {state.temRestricao === false && (
+              <View style={[styles.tipCard, { borderColor: "#00E676", backgroundColor: "rgba(0, 230, 118, 0.05)" }]}>
+                <View style={[styles.tipIconBox, { backgroundColor: "rgba(0, 230, 118, 0.15)" }]}>
+                  <Ionicons name="shield-checkmark" size={20} color="#00E676" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.tipTitle, { color: "#00E676" }]}>Tudo Certo!</Text>
+                  <Text style={styles.tipDesc}>
+                    Perfeito. Agora vamos para a revisão e assinatura da sua proposta comercial.
+                  </Text>
+                </View>
+              </View>
             )}
           </View>
         )}
@@ -392,25 +352,49 @@ export function MiniOnboarding({ route, navigation }: any) {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.btnPrimary, state.loading && { opacity: 0.7 }]}
+          style={[footerBtnStyles.btnTransparentNeon, state.loading && { opacity: 0.7 }]}
           onPress={state.step === state.totalPassos ? actions.handleFinalizar : actions.handleNext}
           disabled={state.loading}
-          activeOpacity={0.85}
+          activeOpacity={0.82}
         >
-          <LinearGradient colors={["#FF8C00", "#FF6B00"]} style={styles.btnGradient}>
-            {state.loading ? (
-              <ActivityIndicator color="#000" />
-            ) : (
-              <>
-                <Text style={styles.btnPrimaryText}>
-=                  {state.step === state.totalPassos ? "Liberar Minha Proposta VIP" : "Avançar Etapa"}
-                </Text>
-                {state.step < state.totalPassos && <Ionicons name="arrow-forward" size={18} color="#000" style={{ marginLeft: 8 }} />}
-              </>
-            )}
-          </LinearGradient>
+          {state.loading ? (
+            <ActivityIndicator color={theme.colors.primary} />
+          ) : (
+            <>
+              <Text style={footerBtnStyles.btnTransparentNeonText}>
+                {state.step === state.totalPassos ? "Ver Minha Proposta" : "Avançar Etapa"}
+              </Text>
+              <Ionicons name="arrow-forward" size={21} color={theme.colors.primary} style={{ marginLeft: 10 }} />
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
-};
+}
+
+const footerBtnStyles = StyleSheet.create({
+  btnTransparentNeon: {
+    width: "100%",
+    height: 58,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 107, 0, 0.08)",
+    borderWidth: 1.5,
+    borderColor: theme.colors.primary,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  btnTransparentNeonText: {
+    color: theme.colors.primary,
+    fontSize: 17,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+});
