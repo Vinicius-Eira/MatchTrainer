@@ -4,7 +4,12 @@
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
   },
-  "deno.enablePaths": [
-    "supabase/functions"
+  "deno.enablePaths": ["supabase/functions"],
+  "python-envs.pythonProjects": [
+    {
+      "path": "src/screens/personal/crm/gestaoalunos/meusalunos",
+      "envManager": "ms-python.python:venv",
+      "packageManager": "ms-python.python:pip"
+    }
   ]
 }
