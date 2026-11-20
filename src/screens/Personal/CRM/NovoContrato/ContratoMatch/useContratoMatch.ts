@@ -3,6 +3,15 @@ import { Alert, LayoutAnimation, Platform, UIManager } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../../../../../services/supabase";
+import {
+  abrirDocumentoContrato,
+  analisarDocumentoComIA,
+  DocumentoContratoAnexo,
+  organizarTextoContratoComIA,
+  removerDocumentoContrato,
+  ResultadoAnaliseIA,
+  uploadDocumentoContrato,
+} from "../../../../../services/contratoDocumentos";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -11,7 +20,9 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 type ModalidadeEfetiva = "Consultoria" | "Presencial";
 
 async function carregarModalidadesPersonal() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { opcoes: ["Consultoria"] as ModalidadeEfetiva[], padrao: "Consultoria" as ModalidadeEfetiva };
 
   const { data: personal } = await supabase
@@ -39,7 +50,6 @@ async function carregarModalidadesPersonal() {
   if ((temConsultoria && temPresencial) || temAmbos) {
     return { opcoes: ["Consultoria", "Presencial"] as ModalidadeEfetiva[], padrao: "Consultoria" as ModalidadeEfetiva };
   }
-
   if (temPresencial && !temConsultoria) {
     return { opcoes: ["Presencial"] as ModalidadeEfetiva[], padrao: "Presencial" as ModalidadeEfetiva };
   }
@@ -50,7 +60,7 @@ async function carregarModalidadesPersonal() {
 export function useCriarContratoMatch(route: any, navigation: any) {
   const { conexaoId, nomeAluno } = route?.params || {};
 
-  const [modalidadesDisponiveis, setModalidadesDisponiveis] = useState<ModalidadeEfetiva[]>(["Consultoria", "Presencial"]);
+  const [modalidadesDisponiveis, setModalidadesDisponiveis] = useState<ModalidadeEfetiva[]>(["Consultoria"]);
   const [modalidade, setModalidade] = useState<ModalidadeEfetiva>("Consultoria");
 
   const [frequencia, setFrequencia] = useState("Mensal");
@@ -58,6 +68,10 @@ export function useCriarContratoMatch(route: any, navigation: any) {
   const [vencimento, setVencimento] = useState("10");
   const [vencimentoOutro, setVencimentoOutro] = useState("");
   const [observacoes, setObservacoes] = useState("");
+
+  const [documentoAnexo, setDocumentoAnexo] = useState<DocumentoContratoAnexo | null>(null);
+  const [resultadoIA, setResultadoIA] = useState<ResultadoAnaliseIA | null>(null);
+  const [modalRevisaoIAVisivel, setModalRevisaoIAVisivel] = useState(false);
 
   const [inputFocado, setInputFocado] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -97,44 +111,197 @@ export function useCriarContratoMatch(route: any, navigation: any) {
     setVencimento(val);
   };
 
+  const executarAnaliseDocumento = async (anexo: DocumentoContratoAnexo) => {
+    setIsProcessandoTexto(true);
+    setStatusProcessamento("Analisando documento com IA (preservando original)...");
+    try {
+      const resultado = await analisarDocumentoComIA(anexo);
+      setResultadoIA(resultado);
+      setModalRevisaoIAVisivel(true);
+    } catch (err: any) {
+      Alert.alert(
+        "Falha na Leitura por IA",
+        `${err.message}\n\nSeu arquivo original permanece anexado com segurança e você pode editar os termos manualmente.`
+      );
+    } finally {
+      setIsProcessandoTexto(false);
+      setStatusProcessamento("");
+    }
+  };
+
+  const processarUploadEAnalise = async (
+    payload: { uri: string; nomeArquivo?: string | null; mimeType?: string | null; tamanhoBytes?: number | null; base64?: string | null },
+    perguntarIA: boolean
+  ) => {
+    setIsProcessandoTexto(true);
+    setStatusProcessamento("Enviando arquivo para armazenamento seguro...");
+    try {
+      const anexoAnterior = documentoAnexo;
+      const novoAnexo = await uploadDocumentoContrato(payload);
+      setDocumentoAnexo(novoAnexo);
+
+      if (anexoAnterior?.storagePath) {
+        removerDocumentoContrato(anexoAnterior.storagePath).catch(() => {});
+      }
+
+      if (perguntarIA) {
+        setIsProcessandoTexto(false);
+        setStatusProcessamento("");
+        Alert.alert(
+          "Documento Anexado!",
+          `"${novoAnexo.nomeArquivo}" foi salvo com segurança.\n\nDeseja que a IA leia e organize as cláusulas para sua revisão?`,
+          [
+            { text: "Não, apenas anexar", style: "cancel" },
+            { text: "Analisar com IA", onPress: () => executarAnaliseDocumento(novoAnexo) },
+          ]
+        );
+      } else {
+        await executarAnaliseDocumento(novoAnexo);
+      }
+    } catch (err: any) {
+      Alert.alert("Erro ao Importar", err.message || "Não foi possível salvar o documento.");
+      setIsProcessandoTexto(false);
+      setStatusProcessamento("");
+    }
+  };
+
   const handlePickDocument = async () => {
     setModalUploadVisivel(false);
     setTimeout(async () => {
       try {
-        const result = await DocumentPicker.getDocumentAsync({ type: "application/pdf", copyToCacheDirectory: true });
+        const result = await DocumentPicker.getDocumentAsync({
+          type: "application/pdf",
+          copyToCacheDirectory: true,
+        });
         if (!result.canceled && result.assets && result.assets.length > 0) {
-          Alert.alert(
-            "Em atualização",
-            "O armazenamento seguro de PDF e a leitura por IA serão ativados na próxima etapa. Por enquanto, digite os termos diretamente no editor."
+          const asset = result.assets[0];
+          await processarUploadEAnalise(
+            {
+              uri: asset.uri,
+              nomeArquivo: asset.name,
+              mimeType: asset.mimeType || "application/pdf",
+              tamanhoBytes: asset.size,
+            },
+            true
           );
         }
       } catch (err: any) {
         Alert.alert("Erro no Documento", err.message);
       }
-    }, 500);
+    }, 400);
   };
 
   const handlePickImage = async () => {
     setModalUploadVisivel(false);
-    Alert.alert(
-      "Em atualização",
-      "A leitura de imagens por IA segura (via servidor) será ativada na Etapa 4."
-    );
+    setTimeout(async () => {
+      try {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+          return Alert.alert("Permissão Bloqueada", "Precisamos de acesso à Galeria.");
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.75,
+          base64: true,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          const asset = result.assets[0];
+          await processarUploadEAnalise(
+            {
+              uri: asset.uri,
+              nomeArquivo: asset.fileName || `contrato_galeria_${Date.now()}.jpg`,
+              mimeType: asset.mimeType || "image/jpeg",
+              tamanhoBytes: asset.fileSize,
+              base64: asset.base64,
+            },
+            false
+          );
+        }
+      } catch (err: any) {
+        Alert.alert("Erro na Galeria", err.message);
+      }
+    }, 400);
   };
 
   const handleTakePicture = async () => {
     setModalUploadVisivel(false);
-    Alert.alert(
-      "Em atualização",
-      "A leitura de fotos por IA segura (via servidor) será ativada na Etapa 4."
-    );
+    setTimeout(async () => {
+      try {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permission.granted) {
+          return Alert.alert("Permissão Bloqueada", "Precisamos de acesso à Câmera.");
+        }
+        const result = await ImagePicker.launchCameraAsync({
+          quality: 0.75,
+          base64: true,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          const asset = result.assets[0];
+          await processarUploadEAnalise(
+            {
+              uri: asset.uri,
+              nomeArquivo: asset.fileName || `contrato_foto_${Date.now()}.jpg`,
+              mimeType: asset.mimeType || "image/jpeg",
+              tamanhoBytes: asset.fileSize,
+              base64: asset.base64,
+            },
+            false
+          );
+        }
+      } catch (err: any) {
+        Alert.alert("Erro na Câmera", err.message);
+      }
+    }, 400);
   };
 
-  const handleMelhorarTextoManual = () => {
-    Alert.alert(
-      "Em atualização",
-      "A assistência real de IA para organização contratual será ativada na Etapa 4."
-    );
+  const handleRemoverDocumento = async () => {
+    if (!documentoAnexo) return;
+    const path = documentoAnexo.storagePath;
+    setDocumentoAnexo(null);
+    removerDocumentoContrato(path).catch(() => {});
+  };
+
+  const handleVisualizarDocumento = async () => {
+    if (!documentoAnexo) return;
+    try {
+      await abrirDocumentoContrato(documentoAnexo.storagePath);
+    } catch (err: any) {
+      Alert.alert("Erro", err.message || "Não foi possível abrir o arquivo.");
+    }
+  };
+
+  const handleAnalisarDocumentoAnexo = async () => {
+    if (!documentoAnexo) return;
+    await executarAnaliseDocumento(documentoAnexo);
+  };
+
+  const handleMelhorarTextoManual = async () => {
+    if (observacoes.trim().length < 15) {
+      return Alert.alert(
+        "Atenção",
+        "Escreva pelo menos algumas condições no editor ou importe um PDF/imagem antes de usar a IA."
+      );
+    }
+
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsProcessandoTexto(true);
+    setStatusProcessamento("Organizando suas cláusulas com IA (sem inventar regras)...");
+
+    try {
+      const resultado = await organizarTextoContratoComIA(observacoes.trim());
+      setResultadoIA(resultado);
+      setModalRevisaoIAVisivel(true);
+    } catch (err: any) {
+      Alert.alert("Erro na IA", err.message || "Não foi possível organizar o texto agora.");
+    } finally {
+      setIsProcessandoTexto(false);
+      setStatusProcessamento("");
+    }
+  };
+
+  const handleAplicarTextoIA = (textoOrganizado: string) => {
+    setObservacoes(textoOrganizado);
+    setModalRevisaoIAVisivel(false);
   };
 
   const handleEnviarProposta = async () => {
@@ -165,6 +332,7 @@ export function useCriarContratoMatch(route: any, navigation: any) {
         p_dia_vencimento: diaInt,
         p_modalidade: modalidade,
         p_termos_contrato: observacoes.trim() || null,
+        p_documento_original_url: documentoAnexo?.storagePath || null,
       });
 
       if (error) throw error;
@@ -191,6 +359,9 @@ export function useCriarContratoMatch(route: any, navigation: any) {
       vencimento,
       vencimentoOutro,
       observacoes,
+      documentoAnexo,
+      resultadoIA,
+      modalRevisaoIAVisivel,
       inputFocado,
       loading,
       isProcessandoTexto,
@@ -206,12 +377,17 @@ export function useCriarContratoMatch(route: any, navigation: any) {
       setObservacoes,
       setInputFocado,
       setModalUploadVisivel,
+      setModalRevisaoIAVisivel,
       handleMoneyChange,
       handleVencimentoSelect,
       handlePickDocument,
       handlePickImage,
       handleTakePicture,
+      handleRemoverDocumento,
+      handleVisualizarDocumento,
+      handleAnalisarDocumentoAnexo,
       handleMelhorarTextoManual,
+      handleAplicarTextoIA,
       handleEnviarProposta,
     },
   };

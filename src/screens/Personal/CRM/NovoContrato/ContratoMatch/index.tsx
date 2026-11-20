@@ -6,6 +6,7 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -16,7 +17,7 @@ import { BlurView } from "expo-blur";
 import { theme } from "../../../../../theme/theme";
 import { moderateScale } from "../../../../../utils/responsive";
 import { useCriarContratoMatch } from "./useContratoMatch";
-
+import { ModalRevisaoIA } from "../components/ModalRevisaoIA";
 import { frequenciaList, styles } from "../AdicionarAluno/styles";
 
 const OPCOES_MODALIDADE_ALUNO = [
@@ -165,24 +166,67 @@ export function ContratoMatch({ route, navigation }: any) {
             </View>
 
             <View style={styles.editorHeader}>
-              <Text style={styles.editorHeaderDesc}>Descreva o que está incluso no serviço e as regras de cancelamento/pausa.</Text>
-              <TouchableOpacity style={styles.btnImportar} onPress={() => actions.setModalUploadVisivel(true)} activeOpacity={0.7}>
+              <Text style={styles.editorHeaderDesc}>Opcional: descreva as regras ou importe seu contrato (PDF/imagem) para organizar com IA.</Text>
+              <TouchableOpacity
+                style={styles.btnImportar}
+                onPress={() => actions.setModalUploadVisivel(true)}
+                disabled={state.isProcessandoTexto}
+                activeOpacity={0.7}
+              >
                 <Ionicons name="cloud-upload" size={14} color={theme.colors.primary} />
                 <Text style={styles.btnImportarText}>Importar</Text>
               </TouchableOpacity>
             </View>
 
+            {state.documentoAnexo && (
+              <View style={anexoStyles.card}>
+                <View style={anexoStyles.row}>
+                  <View style={anexoStyles.iconWrap}>
+                    <Ionicons
+                      name={state.documentoAnexo.mimeType === "application/pdf" ? "document-text" : "image"}
+                      size={20}
+                      color="#00E676"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={anexoStyles.title} numberOfLines={1}>
+                      {state.documentoAnexo.nomeArquivo}
+                    </Text>
+                    <Text style={anexoStyles.sub}>Original preservado no armazenamento seguro</Text>
+                  </View>
+                  <TouchableOpacity onPress={actions.handleRemoverDocumento} style={anexoStyles.btnRemove}>
+                    <Ionicons name="trash-outline" size={16} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={anexoStyles.actionsRow}>
+                  <TouchableOpacity style={anexoStyles.btnSmall} onPress={actions.handleVisualizarDocumento}>
+                    <Ionicons name="eye-outline" size={14} color="#FFF" />
+                    <Text style={anexoStyles.btnSmallText}>Abrir Original</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[anexoStyles.btnSmall, anexoStyles.btnSmallPrimary]}
+                    onPress={actions.handleAnalisarDocumentoAnexo}
+                    disabled={state.isProcessandoTexto}
+                  >
+                    <FontAwesome5 name="magic" size={12} color={theme.colors.primary} />
+                    <Text style={[anexoStyles.btnSmallText, { color: theme.colors.primary }]}>Ler com IA</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             {state.isProcessandoTexto ? (
               <View style={styles.iaProcessingContainer}>
                 <ActivityIndicator size="large" color={theme.colors.primary} />
-                <Text style={styles.iaProcessingTitle}>Analisando regras...</Text>
+                <Text style={styles.iaProcessingTitle}>Processando com segurança...</Text>
                 <Text style={styles.iaProcessingStatus}>{state.statusProcessamento}</Text>
               </View>
             ) : (
               <View style={[styles.editorContainer, state.inputFocado === "obs" && styles.editorContainerFocused]}>
                 <TextInput
                   style={styles.editorInput}
-                  placeholder="Escreva os termos aqui ou anexe um documento..."
+                  placeholder="Escreva os termos aqui ou importe um documento..."
                   placeholderTextColor="#444"
                   multiline
                   value={state.observacoes}
@@ -196,13 +240,17 @@ export function ContratoMatch({ route, navigation }: any) {
             )}
 
             {!state.isProcessandoTexto && (
-              <TouchableOpacity style={styles.btnMagicIA} onPress={actions.handleMelhorarTextoManual}>
+              <TouchableOpacity style={styles.btnMagicIA} onPress={actions.handleMelhorarTextoManual} activeOpacity={0.8}>
                 <FontAwesome5 name="magic" size={14} color={theme.colors.primary} />
                 <Text style={styles.btnMagicIAText}>Organizar Termos com I.A.</Text>
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity style={[styles.btnFinalizar, state.loading && { opacity: 0.7 }]} onPress={actions.handleEnviarProposta} disabled={state.loading}>
+            <TouchableOpacity
+              style={[styles.btnFinalizar, (state.loading || state.isProcessandoTexto) && { opacity: 0.7 }]}
+              onPress={actions.handleEnviarProposta}
+              disabled={state.loading || state.isProcessandoTexto}
+            >
               {state.loading ? (
                 <ActivityIndicator size="small" color={theme.colors.primary} />
               ) : (
@@ -222,7 +270,7 @@ export function ContratoMatch({ route, navigation }: any) {
           <View style={styles.modalUploadSheet}>
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>Importar Documento</Text>
-            <Text style={styles.sheetSubtitle}>Como deseja subir o seu contrato base?</Text>
+            <Text style={styles.sheetSubtitle}>O arquivo original será preservado com segurança (PDF até 10 MB, imagem até 5 MB).</Text>
 
             <TouchableOpacity style={styles.uploadOptionBtn} onPress={actions.handlePickDocument} activeOpacity={0.7}>
               <View style={[styles.uploadOptionIcon, { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.3)" }]}>
@@ -230,7 +278,7 @@ export function ContratoMatch({ route, navigation }: any) {
               </View>
               <View style={styles.uploadOptionTexts}>
                 <Text style={styles.uploadOptionTitle}>Arquivo Digital (PDF)</Text>
-                <Text style={styles.uploadOptionDesc}>Ficará anexado para o aluno visualizar.</Text>
+                <Text style={styles.uploadOptionDesc}>Suporta várias páginas e PDF digitalizado.</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#444" />
             </TouchableOpacity>
@@ -241,7 +289,7 @@ export function ContratoMatch({ route, navigation }: any) {
               </View>
               <View style={styles.uploadOptionTexts}>
                 <Text style={styles.uploadOptionTitle}>Imagem da Galeria (Leitura IA)</Text>
-                <Text style={styles.uploadOptionDesc}>A IA lê e organiza o conteúdo para revisão.</Text>
+                <Text style={styles.uploadOptionDesc}>A IA lê e organiza o conteúdo para sua revisão.</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#444" />
             </TouchableOpacity>
@@ -252,7 +300,7 @@ export function ContratoMatch({ route, navigation }: any) {
               </View>
               <View style={styles.uploadOptionTexts}>
                 <Text style={styles.uploadOptionTitle}>Câmera (Leitura IA)</Text>
-                <Text style={styles.uploadOptionDesc}>Fotografe o documento para leitura assistida.</Text>
+                <Text style={styles.uploadOptionDesc}>Fotografe o contrato para leitura assistida.</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#444" />
             </TouchableOpacity>
@@ -263,6 +311,76 @@ export function ContratoMatch({ route, navigation }: any) {
           </View>
         </View>
       </Modal>
+
+      <ModalRevisaoIA
+        visible={state.modalRevisaoIAVisivel}
+        resultado={state.resultadoIA}
+        onAplicarTexto={actions.handleAplicarTextoIA}
+        onFechar={() => actions.setModalRevisaoIAVisivel(false)}
+      />
     </View>
   );
 }
+
+const anexoStyles = StyleSheet.create({
+  card: {
+    backgroundColor: "rgba(0, 230, 118, 0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(0, 230, 118, 0.28)",
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  iconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "rgba(0, 230, 118, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  sub: {
+    color: "#8E8E93",
+    fontSize: 11,
+    marginTop: 2,
+  },
+  btnRemove: {
+    padding: 8,
+  },
+  actionsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  btnSmall: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  btnSmallPrimary: {
+    backgroundColor: "rgba(255, 107, 0, 0.1)",
+    borderColor: "rgba(255, 107, 0, 0.35)",
+  },
+  btnSmallText: {
+    color: "#FFF",
+    fontSize: 11.5,
+    fontWeight: "700",
+  },
+});

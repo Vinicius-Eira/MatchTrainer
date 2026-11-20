@@ -18,6 +18,7 @@ import { theme } from "../../../../../theme/theme";
 import { moderateScale } from "../../../../../utils/responsive";
 
 import { useAdicionarAluno } from "./useAdicionarAluno";
+import { ModalRevisaoIA } from "../components/ModalRevisaoIA";
 import { conviteModalStyles, frequenciaList, styles } from "./styles";
 
 const OPCOES_MODALIDADE_ALUNO = [
@@ -244,17 +245,107 @@ export function AdicionarAluno({ route, navigation }: any) {
             </View>
 
             <View style={styles.editorHeader}>
-              <Text style={styles.editorHeaderDesc}>Adicione cláusulas personalizadas ou anexe um PDF para compor o contrato oficial.</Text>
-              <TouchableOpacity style={styles.btnImportar} onPress={() => actions.setModalUploadVisivel(true)} activeOpacity={0.7}>
+              <Text style={styles.editorHeaderDesc}>
+                Opcional: adicione cláusulas personalizadas ou importe um PDF/imagem para compor o contrato oficial.
+              </Text>
+              <TouchableOpacity
+                style={styles.btnImportar}
+                onPress={() => actions.setModalUploadVisivel(true)}
+                disabled={state.isProcessandoTexto}
+                activeOpacity={0.7}
+              >
                 <Ionicons name="cloud-upload" size={14} color={theme.colors.primary} />
                 <Text style={styles.btnImportarText}>Importar</Text>
               </TouchableOpacity>
             </View>
 
+            {state.documentoAnexo && (
+              <View
+                style={{
+                  backgroundColor: "rgba(0, 230, 118, 0.05)",
+                  borderWidth: 1,
+                  borderColor: "rgba(0, 230, 118, 0.28)",
+                  borderRadius: 14,
+                  padding: 12,
+                  marginBottom: 12,
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <View
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 10,
+                      backgroundColor: "rgba(0, 230, 118, 0.12)",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name={state.documentoAnexo.mimeType === "application/pdf" ? "document-text" : "image"}
+                      size={20}
+                      color="#00E676"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: "#FFF", fontSize: 13, fontWeight: "700" }} numberOfLines={1}>
+                      {state.documentoAnexo.nomeArquivo}
+                    </Text>
+                    <Text style={{ color: "#8E8E93", fontSize: 11, marginTop: 2 }}>
+                      Original preservado no armazenamento seguro
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={actions.handleRemoverDocumento} style={{ padding: 8 }}>
+                    <Ionicons name="trash-outline" size={16} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                  <TouchableOpacity
+                    style={{
+                      flex: 1,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      paddingVertical: 8,
+                      borderRadius: 10,
+                      backgroundColor: "rgba(255,255,255,0.06)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255,255,255,0.12)",
+                    }}
+                    onPress={actions.handleVisualizarDocumento}
+                  >
+                    <Ionicons name="eye-outline" size={14} color="#FFF" />
+                    <Text style={{ color: "#FFF", fontSize: 11.5, fontWeight: "700" }}>Abrir Original</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{
+                      flex: 1,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      paddingVertical: 8,
+                      borderRadius: 10,
+                      backgroundColor: "rgba(255, 107, 0, 0.1)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255, 107, 0, 0.35)",
+                    }}
+                    onPress={actions.handleAnalisarDocumentoAnexo}
+                    disabled={state.isProcessandoTexto}
+                  >
+                    <FontAwesome5 name="magic" size={12} color={theme.colors.primary} />
+                    <Text style={{ color: theme.colors.primary, fontSize: 11.5, fontWeight: "700" }}>Ler com IA</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             {state.isProcessandoTexto ? (
               <View style={styles.iaProcessingContainer}>
                 <ActivityIndicator size="large" color={theme.colors.primary} />
-                <Text style={styles.iaProcessingTitle}>Analisando regras...</Text>
+                <Text style={styles.iaProcessingTitle}>Processando com segurança...</Text>
                 <Text style={styles.iaProcessingStatus}>{state.statusProcessamento}</Text>
               </View>
             ) : (
@@ -281,7 +372,12 @@ export function AdicionarAluno({ route, navigation }: any) {
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity style={[styles.btnFinalizar, state.loading && { opacity: 0.7 }]} onPress={actions.handleAdicionarAluno} disabled={state.loading} activeOpacity={0.9}>
+            <TouchableOpacity
+              style={[styles.btnFinalizar, (state.loading || state.isProcessandoTexto) && { opacity: 0.7 }]}
+              onPress={actions.handleAdicionarAluno}
+              disabled={state.loading || state.isProcessandoTexto}
+              activeOpacity={0.9}
+            >
               {state.loading ? (
                 <ActivityIndicator size="small" color={theme.colors.primary} />
               ) : (
@@ -295,13 +391,20 @@ export function AdicionarAluno({ route, navigation }: any) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <Modal visible={state.modalUploadVisivel} transparent animationType="slide" onRequestClose={() => actions.setModalUploadVisivel(false)}>
+      <Modal
+        visible={state.modalUploadVisivel}
+        transparent
+        animationType="slide"
+        onRequestClose={() => actions.setModalUploadVisivel(false)}
+      >
         <View style={styles.modalUploadOverlay}>
           <TouchableOpacity style={{ flex: 1 }} onPress={() => actions.setModalUploadVisivel(false)} activeOpacity={1} />
           <View style={styles.modalUploadSheet}>
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>Importar Documento</Text>
-            <Text style={styles.sheetSubtitle}>Como deseja subir o seu contrato base?</Text>
+            <Text style={styles.sheetSubtitle}>
+              O arquivo original será preservado com segurança (PDF até 10 MB, imagem até 5 MB).
+            </Text>
 
             <TouchableOpacity style={styles.uploadOptionBtn} onPress={actions.handlePickDocument} activeOpacity={0.7}>
               <View style={[styles.uploadOptionIcon, { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.3)" }]}>
@@ -309,7 +412,7 @@ export function AdicionarAluno({ route, navigation }: any) {
               </View>
               <View style={styles.uploadOptionTexts}>
                 <Text style={styles.uploadOptionTitle}>Arquivo Digital (PDF)</Text>
-                <Text style={styles.uploadOptionDesc}>Ficará anexado para o aluno visualizar.</Text>
+                <Text style={styles.uploadOptionDesc}>Suporta várias páginas e PDF digitalizado.</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#444" />
             </TouchableOpacity>
@@ -320,7 +423,7 @@ export function AdicionarAluno({ route, navigation }: any) {
               </View>
               <View style={styles.uploadOptionTexts}>
                 <Text style={styles.uploadOptionTitle}>Imagem da Galeria (Leitura IA)</Text>
-                <Text style={styles.uploadOptionDesc}>A IA lê e organiza o conteúdo para revisão.</Text>
+                <Text style={styles.uploadOptionDesc}>A IA lê e organiza o conteúdo para sua revisão.</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#444" />
             </TouchableOpacity>
@@ -343,6 +446,13 @@ export function AdicionarAluno({ route, navigation }: any) {
         </View>
       </Modal>
 
+      <ModalRevisaoIA
+        visible={state.modalRevisaoIAVisivel}
+        resultado={state.resultadoIA}
+        onAplicarTexto={actions.handleAplicarTextoIA}
+        onFechar={() => actions.setModalRevisaoIAVisivel(false)}
+      />
+
       <Modal
         visible={state.modalConviteVisivel}
         transparent
@@ -360,7 +470,7 @@ export function AdicionarAluno({ route, navigation }: any) {
             <Text style={conviteModalStyles.tag}>CONVITE SEGURO GERADO</Text>
             <Text style={conviteModalStyles.title}>Tudo pronto para o aluno!</Text>
             <Text style={conviteModalStyles.subtitle}>
-              Envie o código abaixo para o aluno informar na tela Já tenho um Personal usando o e-mail autorizado.
+              Envie o código abaixo para o aluno informar na tela "Já tenho um Personal" usando o e-mail autorizado.
             </Text>
 
             <View style={conviteModalStyles.infoBox}>

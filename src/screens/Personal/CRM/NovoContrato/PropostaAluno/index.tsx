@@ -216,6 +216,36 @@ export function PropostaAluno({ route, navigation }: any) {
                   Nenhuma cláusula adicional foi informada pelo treinador. As condições comerciais acima (valor, ciclo de cobrança, modalidade e dia de vencimento) regem este acordo.
                 </Text>
               )}
+
+              {state.proposta?.documento_original_url && (
+                <TouchableOpacity
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    marginTop: 14,
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    backgroundColor: "rgba(0, 230, 118, 0.08)",
+                    borderWidth: 1,
+                    borderColor: "rgba(0, 230, 118, 0.35)",
+                    opacity: state.abrindoDocumento ? 0.6 : 1,
+                  }}
+                  onPress={actions.handleAbrirDocumentoOriginal}
+                  disabled={state.abrindoDocumento}
+                  activeOpacity={0.8}
+                >
+                  {state.abrindoDocumento ? (
+                    <ActivityIndicator size="small" color="#00E676" />
+                  ) : (
+                    <Ionicons name="document-attach-outline" size={18} color="#00E676" />
+                  )}
+                  <Text style={{ color: "#00E676", fontSize: 13, fontWeight: "800" }}>
+                    {state.abrindoDocumento ? "Gerando acesso seguro..." : "Visualizar Documento Original Anexado"}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </TouchableOpacity>

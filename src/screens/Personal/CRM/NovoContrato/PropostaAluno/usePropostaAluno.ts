@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, LayoutAnimation, Platform, UIManager } from "react-native";
 import { supabase } from "../../../../../services/supabase";
+import { abrirDocumentoContrato } from "../../../../../services/contratoDocumentos";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -58,6 +59,7 @@ export function usePropostaAluno(route: any, navigation: any) {
   const [regrasExpandidas, setRegrasExpandidas] = useState<boolean>(true);
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
+  const [abrindoDocumento, setAbrindoDocumento] = useState<boolean>(false);
   const [modalSucessoVisivel, setModalSucessoVisivel] = useState<boolean>(false);
 
   useEffect(() => {
@@ -109,6 +111,22 @@ export function usePropostaAluno(route: any, navigation: any) {
     setRegrasExpandidas((prev) => !prev);
   };
 
+  const handleAbrirDocumentoOriginal = async () => {
+    if (!proposta?.documento_original_url || abrindoDocumento) return;
+
+    setAbrindoDocumento(true);
+    try {
+      await abrirDocumentoContrato(proposta.documento_original_url);
+    } catch (error: any) {
+      Alert.alert(
+        "Documento Indisponível",
+        error.message || "Não foi possível abrir o documento anexo."
+      );
+    } finally {
+      setAbrindoDocumento(false);
+    }
+  };
+
   const handleAceitarProposta = async () => {
     if (!proposta?.id || !conexaoId) return;
 
@@ -151,11 +169,13 @@ export function usePropostaAluno(route: any, navigation: any) {
       regrasExpandidas,
       loadingData,
       loading,
+      abrindoDocumento,
       modalSucessoVisivel,
       conexaoId,
     },
     actions: {
       toggleRegras,
+      handleAbrirDocumentoOriginal,
       handleAceitarProposta,
       handleNegociar,
       setModalSucessoVisivel,
