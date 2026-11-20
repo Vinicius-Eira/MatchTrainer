@@ -825,3 +825,110 @@ export const localStyles = StyleSheet.create({
     lineHeight: 17,
   },
 });
+
+export const bioStyles = StyleSheet.create({
+  resumoDeltaText: {
+    color: '#FF6B00',
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  estadoBadgeAtualizado: {
+    backgroundColor: 'rgba(0, 230, 118, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 230, 118, 0.4)',
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 10,
+  },
+  loadingText: {
+    color: '#888',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  historyContainer: {
+    marginBottom: 16,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  historyLabel: {
+    color: '#888',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  compareHint: {
+    color: '#666',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  historyScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  historyPill: {
+    backgroundColor: '#111',
+    borderWidth: 1,
+    borderColor: '#222',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  historyPillActive: {
+    backgroundColor: 'rgba(255, 107, 0, 0.12)',
+    borderColor: '#FF6B00',
+  },
+  historyPillDate: {
+    color: '#AAA',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  historyPillDateActive: {
+    color: '#FF6B00',
+  },
+  historyPillSub: {
+    color: '#666',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  historyPillSubActive: {
+    color: '#FFF',
+  },
+  emptyBioBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 107, 0, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 0, 0.25)',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 14,
+  },
+  emptyBioText: {
+    color: '#CCC',
+    fontSize: 12,
+    lineHeight: 17,
+    flex: 1,
+  },
+  deltaBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    marginLeft: 6,
+  },
+  deltaText: {
+    fontSize: 9.5,
+    fontWeight: '900',
+  },
+});
