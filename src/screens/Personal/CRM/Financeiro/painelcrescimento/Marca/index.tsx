@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { BusinessKPIs } from "../usePainelCrescimento";
@@ -15,6 +15,23 @@ interface AbaMarcaVitrineProps {
   navigation: any;
 }
 
+function navegarComSeguranca(navigation: any, rota: string, fallbackMensagem: string) {
+  try {
+    let nav = navigation;
+    while (nav) {
+      const state = nav.getState?.();
+      if (state?.routeNames?.includes(rota)) {
+        nav.navigate(rota);
+        return;
+      }
+      nav = nav.getParent?.();
+    }
+    Alert.alert("Aviso", fallbackMensagem);
+  } catch {
+    Alert.alert("Aviso", fallbackMensagem);
+  }
+}
+
 export function Marca({
   kpis,
   indicacaoCopiada,
@@ -28,8 +45,9 @@ export function Marca({
   const scoreMarca = Number(marca?.score_marca || 0);
   const notaMedia = Number(marca?.nota_media || 0);
   const totalAvaliacoes = Number(marca?.total_avaliacoes || 0);
-  const checklist = marca?.checklist || [];
-  const depoimentos = marca?.depoimentos || [];
+  const checklist = Array.isArray(marca?.checklist) ? marca.checklist : [];
+  const depoimentos = Array.isArray(marca?.depoimentos) ? marca.depoimentos : [];
+  const crefVerificado = Boolean(marca?.perfil?.cref_verificado);
 
   const corMarca = scoreMarca >= 80 ? "#00E676" : "#FF6B00";
   const statusMarca =
@@ -38,6 +56,40 @@ export function Marca({
       : scoreMarca >= 50
         ? "Vitrine em Construção"
         : "Perfil Subaproveitado";
+
+  const handleAbrirAvaliacoes = () => {
+    navegarComSeguranca(
+      navigation,
+      "Avaliacoes",
+      "Acesse suas avaliações pelo menu principal do seu perfil."
+    );
+  };
+
+  const handleToqueSeloCref = () => {
+    if (crefVerificado) {
+      Alert.alert("Selo CREF Verificado", "Seu registro profissional já está validado e visível no seu perfil público.");
+      return;
+    }
+
+    Alert.alert(
+      "Como ativar o Selo CREF?",
+      marca?.perfil?.cref
+        ? `Seu CREF (${marca.perfil.cref}) está em validação pela equipe MatchTrainer. Assim que confirmado, o selo oficial é ativado automaticamente.`
+        : "Cadastre o número do seu CREF no seu perfil profissional para solicitar a verificação e ganhar o selo oficial.",
+      [
+        { text: "Fechar", style: "cancel" },
+        {
+          text: "Abrir Perfil",
+          onPress: () =>
+            navegarComSeguranca(
+              navigation,
+              "PersonalSetup",
+              "Abra a aba Perfil no menu inferior para editar seu CREF."
+            ),
+        },
+      ]
+    );
+  };
 
   return (
     <View>
@@ -57,20 +109,24 @@ export function Marca({
         </View>
 
         <View style={styles.marcaStatsRow}>
-          <View style={styles.marcaStatBox}>
+          <TouchableOpacity style={styles.marcaStatBox} onPress={handleAbrirAvaliacoes} activeOpacity={0.75}>
             <Ionicons name="star" size={16} color="#FF6B00" />
-            <Text style={styles.marcaStatVal}>{totalAvaliacoes > 0 ? notaMedia.toFixed(1) : "--"}</Text>
-            <Text style={styles.marcaStatLabel}>Nota ({totalAvaliacoes})</Text>
-          </View>
-          <View style={styles.marcaStatBox}>
+            <Text style={styles.marcaStatVal}>{totalAvaliacoes > 0 ? notaMedia.toFixed(1) : "Novo"}</Text>
+            <Text style={styles.marcaStatLabel}>
+              {totalAvaliacoes > 0 ? `Nota (${totalAvaliacoes})` : "Sem avaliações"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.marcaStatBox} onPress={handleToqueSeloCref} activeOpacity={0.75}>
             <MaterialCommunityIcons
-              name={marca?.perfil?.cref_verificado ? "shield-check" : "shield-alert-outline"}
+              name={crefVerificado ? "shield-check" : "shield-alert-outline"}
               size={16}
-              color={marca?.perfil?.cref_verificado ? "#00E676" : "#FF6B00"}
+              color={crefVerificado ? "#00E676" : "#FF6B00"}
             />
-            <Text style={styles.marcaStatVal}>{marca?.perfil?.cref_verificado ? "Ativo" : "Pendente"}</Text>
+            <Text style={styles.marcaStatVal}>{crefVerificado ? "Ativo" : "Validar"}</Text>
             <Text style={styles.marcaStatLabel}>Selo CREF</Text>
-          </View>
+          </TouchableOpacity>
+
           <View style={styles.marcaStatBox}>
             <Ionicons name="people" size={16} color="#FF6B00" />
             <Text style={styles.marcaStatVal}>{kpis?.alunos_ativos || 0}</Text>
@@ -115,7 +171,7 @@ export function Marca({
       <View style={styles.cardPadrao}>
         {checklist.map((item, idx) => (
           <TouchableOpacity
-            key={item.chave}
+            key={item.chave || idx}
             style={[styles.checkRow, idx === checklist.length - 1 && { borderBottomWidth: 0, paddingBottom: 0 }]}
             onPress={() => !item.concluido && onAcaoChecklist(item.chave)}
             disabled={item.concluido}
@@ -169,7 +225,7 @@ export function Marca({
       <View style={styles.sectionTitleRow}>
         <Ionicons name="star-outline" size={18} color="#FF6B00" />
         <Text style={styles.sectionTitle}>Depoimentos em Destaque</Text>
-        <TouchableOpacity style={styles.sectionActionLink} onPress={() => navigation.navigate("Avaliacoes")}>
+        <TouchableOpacity style={styles.sectionActionLink} onPress={handleAbrirAvaliacoes}>
           <Text style={styles.sectionActionLinkText}>Ver todos</Text>
           <Ionicons name="chevron-forward" size={14} color="#FF6B00" />
         </TouchableOpacity>
@@ -183,24 +239,27 @@ export function Marca({
             </Text>
           </View>
         ) : (
-          depoimentos.slice(0, 3).map((dep, idx) => (
-            <View
-              key={dep.id}
-              style={[styles.depCard, idx === Math.min(depoimentos.length, 3) - 1 && { marginBottom: 0 }]}
-            >
-              <View style={styles.depHeader}>
-                <Text style={styles.depAutor}>{dep.aluno_nome}</Text>
-                <View style={{ flexDirection: "row", gap: 2 }}>
-                  {Array.from({ length: dep.nota }).map((_, i) => (
-                    <Ionicons key={i} name="star" size={12} color="#FF6B00" />
-                  ))}
+          depoimentos.slice(0, 3).map((dep, idx) => {
+            const qtdEstrelas = Math.max(0, Math.min(5, Math.round(Number(dep?.nota) || 0)));
+            return (
+              <View
+                key={dep.id || idx}
+                style={[styles.depCard, idx === Math.min(depoimentos.length, 3) - 1 && { marginBottom: 0 }]}
+              >
+                <View style={styles.depHeader}>
+                  <Text style={styles.depAutor}>{dep.aluno_nome || "Aluno"}</Text>
+                  <View style={{ flexDirection: "row", gap: 2 }}>
+                    {Array.from({ length: qtdEstrelas }).map((_, i) => (
+                      <Ionicons key={i} name="star" size={12} color="#FF6B00" />
+                    ))}
+                  </View>
                 </View>
+                <Text style={styles.depTexto} numberOfLines={3}>
+                  {dep.comentario}
+                </Text>
               </View>
-              <Text style={styles.depTexto} numberOfLines={3}>
-                {dep.comentario}
-              </Text>
-            </View>
-          ))
+            );
+          })
         )}
       </View>
     </View>

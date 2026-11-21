@@ -278,7 +278,6 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // MODAL DE EDIÇÃO DE TEXTO
   editorOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.82)",

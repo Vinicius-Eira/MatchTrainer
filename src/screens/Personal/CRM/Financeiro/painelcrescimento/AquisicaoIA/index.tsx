@@ -19,9 +19,11 @@ export function AbaAquisicaoIA({ kpis, onAbrirInfo, onAbrirEstrategistaIA, navig
   const totalPropostas = Number(funil?.propostas_aguardando || 0);
   const valorPropostas = Number(funil?.propostas_valor || 0);
   const totalFechados = Number(funil?.fechados || 0);
-  const tempoResposta = Number(funil?.tempo_resposta_horas || 0);
-  const tempoFechamento = Number(funil?.tempo_fechamento_dias || 0);
+
   const taxaConversao = totalLeads > 0 ? Math.min(100, Math.round((totalFechados / totalLeads) * 100)) : 0;
+  const leadsEmAberto = Math.max(0, totalLeads - totalFechados);
+  const leadsSemResposta = Math.max(0, totalLeads - totalContatos);
+  const leadsEmNegociacao = Math.max(0, totalContatos - totalFechados);
 
   const conv = kpis?.funil_convites;
   const convTotal = Number(conv?.total || 0);
@@ -30,11 +32,30 @@ export function AbaAquisicaoIA({ kpis, onAbrirInfo, onAbrirEstrategistaIA, navig
   const convExpirados = Number(conv?.expirados || 0);
   const taxaConvites = convTotal > 0 ? Math.round((convUtilizados / convTotal) * 100) : 0;
 
-  let msgGargalo = "Sem volume ainda";
+  let statusBoxTitulo = "STATUS";
+  let statusBoxValor = "Sem leads";
+  let statusBoxCor = "#A1A1AA";
+  let statusBoxVerde = false;
+
   if (totalLeads > 0) {
-    const perdaInicio = totalLeads - totalContatos;
-    const perdaFechamento = totalContatos - totalFechados;
-    msgGargalo = perdaInicio > perdaFechamento ? "Resposta inicial" : "Fechamento";
+    if (totalPropostas > 0) {
+      statusBoxTitulo = "FOCO AGORA";
+      statusBoxValor = `${totalPropostas} proposta(s)`;
+      statusBoxCor = "#FF6B00";
+    } else if (leadsSemResposta > 0 && leadsSemResposta >= leadsEmNegociacao) {
+      statusBoxTitulo = "FOCO AGORA";
+      statusBoxValor = "Responder leads";
+      statusBoxCor = "#FF6B00";
+    } else if (leadsEmNegociacao > 0) {
+      statusBoxTitulo = "FOCO AGORA";
+      statusBoxValor = "Fechar vendas";
+      statusBoxCor = "#FF6B00";
+    } else {
+      statusBoxTitulo = "STATUS";
+      statusBoxValor = "100% fechado";
+      statusBoxCor = "#00E676";
+      statusBoxVerde = true;
+    }
   }
 
   const pctContatos = totalLeads > 0 ? Math.min(100, (totalContatos / totalLeads) * 100) : 0;
@@ -85,8 +106,8 @@ export function AbaAquisicaoIA({ kpis, onAbrirInfo, onAbrirEstrategistaIA, navig
           onPress={() =>
             onAbrirInfo(
               "Funil do Match",
-              "Mede de forma cumulativa quantas pessoas deram Match com você, avançaram para conversa no chat e fecharam contrato ativo.",
-              "Responder em menos de 30 minutos com uma pergunta sobre o objetivo do aluno aumenta drasticamente o fechamento."
+              "Mostra quantos alunos deram Match com você, quantos entraram em conversa e quantos fecharam contrato ativo.",
+              "Acompanhe o número de leads em aberto e responda rápido para não perder o interesse do aluno."
             )
           }
         >
@@ -131,20 +152,44 @@ export function AbaAquisicaoIA({ kpis, onAbrirInfo, onAbrirEstrategistaIA, navig
 
         <View style={styles.metricasFunilRow}>
           <View style={styles.metricaBox}>
-            <Text style={styles.metricaLabel}>RESPOSTA</Text>
-            <Text style={styles.metricaVal}>{tempoResposta > 0 ? `${tempoResposta}h` : "--"}</Text>
+            <Text style={styles.metricaLabel}>CONVERSÃO</Text>
+            <Text style={[styles.metricaVal, { color: taxaConversao > 0 ? "#00E676" : "#FFF" }]}>
+              {taxaConversao}%
+            </Text>
           </View>
+
           <View style={styles.metricaBox}>
-            <Text style={styles.metricaLabel}>FECHAMENTO</Text>
-            <Text style={styles.metricaVal}>{tempoFechamento > 0 ? `${tempoFechamento}d` : "--"}</Text>
+            <Text style={styles.metricaLabel}>EM ABERTO</Text>
+            <Text style={[styles.metricaVal, { color: leadsEmAberto > 0 ? "#FF6B00" : "#FFF" }]}>
+              {leadsEmAberto}
+            </Text>
           </View>
-          <View style={[styles.metricaBox, styles.metricaBoxDestaque]}>
-            <Text style={[styles.metricaLabel, { color: "#FF6B00" }]}>GARGALO</Text>
-            <Text style={styles.metricaValGargalo} numberOfLines={2}>
-              {msgGargalo}
+
+          <View
+            style={[
+              styles.metricaBox,
+              statusBoxVerde
+                ? { backgroundColor: "rgba(0, 230, 118, 0.08)", borderColor: "rgba(0, 230, 118, 0.3)" }
+                : totalLeads > 0
+                  ? styles.metricaBoxDestaque
+                  : null,
+            ]}
+          >
+            <Text style={[styles.metricaLabel, { color: statusBoxCor }]}>{statusBoxTitulo}</Text>
+            <Text style={[styles.metricaValGargalo, { color: statusBoxVerde ? "#00E676" : "#FFF" }]} numberOfLines={2}>
+              {statusBoxValor}
             </Text>
           </View>
         </View>
+
+        <TouchableOpacity
+          style={[styles.btnPri, { marginTop: 14, flex: undefined }]}
+          onPress={() => navigation.navigate("Messages")}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="chatbubbles-outline" size={16} color="#FF6B00" />
+          <Text style={styles.btnPriText}>Abrir Conversas do Match</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.sectionTitleRow}>
