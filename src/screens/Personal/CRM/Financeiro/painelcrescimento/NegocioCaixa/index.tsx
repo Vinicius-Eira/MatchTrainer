@@ -115,6 +115,34 @@ export function NegocioCaixa({
     return "#A1A1AA";
   };
 
+  const abrirFichaAluno = (item: AlunoRiscoItem) => {
+    const params = {
+      aluno: {
+        id: item.aluno_id,
+        nome: item.nome,
+        email: item.email || "",
+      },
+      alunoId: item.aluno_id,
+      conexaoId: item.conexao_id,
+      nomeAluno: item.nome,
+    };
+
+    try {
+      let nav = navigation;
+      while (nav) {
+        const state = nav.getState?.();
+        if (state?.routeNames?.includes("VisaoAluno")) {
+          nav.navigate("VisaoAluno", params);
+          return;
+        }
+        nav = nav.getParent?.();
+      }
+      navigation.navigate("VisaoAluno", params);
+    } catch (err) {
+      console.log("Erro ao navegar para VisaoAluno:", err);
+    }
+  };
+
   return (
     <View>
       {insightAtual && (
@@ -149,12 +177,12 @@ export function NegocioCaixa({
         <LinearGradient colors={["rgba(255, 107, 0, 0.12)", "transparent"]} style={StyleSheet.absoluteFill} />
         <View style={styles.mrrHeader}>
           <View style={styles.mrrLabelRow}>
-            <Text style={styles.mrrLabel}>MRR (Receita Recorrente)</Text>
+            <Text style={styles.mrrLabel}>Receita Fixa Mensal (MRR)</Text>
             <TouchableOpacity
               style={styles.btnInfo}
               onPress={() =>
                 onAbrirInfo(
-                  "MRR (Receita Recorrente)",
+                  "Receita Fixa Mensal (MRR)",
                   "É a soma mensal de todos os seus contratos recorrentes ativos (desconsiderando vendas avulsas). Representa a previsibilidade real do seu negócio.",
                   "Subir seu ticket médio em R$ 30 ou reter 2 alunos por trimestre faz mais diferença no ano do que picos isolados."
                 )
@@ -456,13 +484,7 @@ export function NegocioCaixa({
               <TouchableOpacity
                 key={`${item.conexao_id}-${idx}`}
                 style={[styles.riscoRow, idx === alunosRisco.length - 1 && { borderBottomWidth: 0, paddingBottom: 0 }]}
-                onPress={() =>
-                  navigation.navigate("VisaoAluno", {
-                    alunoId: item.aluno_id,
-                    conexaoId: item.conexao_id,
-                    nomeAluno: item.nome,
-                  })
-                }
+                onPress={() => abrirFichaAluno(item)}
                 activeOpacity={0.75}
               >
                 <View style={[styles.riscoDot, { backgroundColor: cor }]} />

@@ -70,6 +70,7 @@ export interface AlunoRiscoItem {
   aluno_id: string;
   conexao_id: string;
   nome: string;
+  email?: string;
   valor_mensal: number;
   motivo: string;
   prioridade: "alta" | "media" | "baixa";
