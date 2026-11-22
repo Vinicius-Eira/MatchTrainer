@@ -10,6 +10,11 @@
       "path": "src/screens/personal/crm/gestaoalunos/meusalunos",
       "envManager": "ms-python.python:venv",
       "packageManager": "ms-python.python:pip"
+    },
+    {
+      "path": "src/screens/user/feed/personalpublicprofile/authority",
+      "envManager": "ms-python.python:venv",
+      "packageManager": "ms-python.python:pip"
     }
   ]
 }
