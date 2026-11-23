@@ -1,7 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Platform,
   ScrollView,
@@ -14,19 +13,29 @@ import { FontAwesome5, Ionicons, MaterialCommunityIcons, Octicons } from "@expo/
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Authority } from "./Authority";
-import { Testimonials } from "./Testimonials";
-import { Results } from "./Results";
 import { Profile } from "./Profile";
+import { PublishResult } from "./PublishResult";
+import { Results } from "./Results";
+import { ModalEditorVitrine } from "./ShowCase";
 import { styles } from "./styles";
-import { AbaVitrine, formatarLocalizacaoPremium, usePersonalPublicProfile } from "./usePersonalPublicProfile";
+import { Testimonials } from "./Testimonials";
+import {
+  AbaVitrine,
+  formatarLocalizacaoPremium,
+  hexToRgba,
+  usePersonalPublicProfile,
+} from "./usePersonalPublicProfile";
 
 export function PersonalPublicProfile({ route, navigation }: any) {
   const { state, actions } = usePersonalPublicProfile(route, navigation);
+  const [editorVisivel, setEditorVisivel] = useState(false);
+  const [publicarVisivel, setPublicarVisivel] = useState(false);
 
   const {
     isOwner,
     loading,
     personal,
+    corDestaque,
     abaAtiva,
     notaMedia,
     avaliacoes,
@@ -53,19 +62,15 @@ export function PersonalPublicProfile({ route, navigation }: any) {
     locaisAtendimento,
   } = state;
 
-  const abrirEditorVitrine = () => {
-    Alert.alert("Editor da Vitrine (Etapa 3)", "Na próxima etapa ativamos a edição livre de capa, headline, formações, destaques e depoimentos fixados direto aqui!");
-  };
-
-  const abrirPublicarResultado = () => {
-    Alert.alert("Publicar Resultado (Etapa 3)", "Na próxima etapa ativamos o upload direto de resultados com métrica e legenda para o Supabase Storage!");
-  };
+  const accent = corDestaque || "#FF6B00";
+  const accentSoft = hexToRgba(accent, 0.14);
+  const accentBorder = hexToRgba(accent, 0.5);
 
   if (loading || !personal) {
     return (
       <View style={styles.centerContainer}>
         <StatusBar barStyle="light-content" backgroundColor="#000" />
-        <ActivityIndicator size="large" color="#FF6B00" />
+        <ActivityIndicator size="large" color={accent} />
       </View>
     );
   }
@@ -74,6 +79,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
+      {/* TOP BAR — SELO MATCH FIXO NA IDENTIDADE MATCHTRAINER */}
       <View style={styles.topBarAbsolute}>
         <TouchableOpacity style={styles.btnHeaderIcon} onPress={() => navigation.goBack()} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={20} color="#FFF" />
@@ -90,9 +96,13 @@ export function PersonalPublicProfile({ route, navigation }: any) {
             <Ionicons name="chevron-forward" size={13} color="#FF6B00" />
           </TouchableOpacity>
         ) : isOwner ? (
-          <TouchableOpacity style={styles.matchPillTop} onPress={abrirEditorVitrine} activeOpacity={0.85}>
-            <Ionicons name="create-outline" size={14} color="#FF6B00" />
-            <Text style={styles.matchPillTopText}>MODO VITRINE</Text>
+          <TouchableOpacity
+            style={[styles.matchPillTop, { borderColor: accent }]}
+            onPress={() => setEditorVisivel(true)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="create-outline" size={14} color={accent} />
+            <Text style={[styles.matchPillTopText, { color: accent }]}>EDITAR VITRINE</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -103,7 +113,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
             <Image source={{ uri: capaUrl }} style={styles.coverImage} resizeMode="cover" />
           ) : (
             <LinearGradient
-              colors={["rgba(255, 107, 0, 0.28)", "#111115", "#000000"]}
+              colors={[hexToRgba(accent, 0.34), "#111115", "#000000"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.coverImage}
@@ -114,7 +124,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
 
         <View style={styles.profileHeaderSection}>
           <View style={styles.avatarStatsRow}>
-            <View style={styles.avatarRing}>
+            <View style={[styles.avatarRing, { borderColor: accent }]}>
               <Image source={{ uri: fotoPerfil }} style={styles.avatarImg} resizeMode="cover" />
             </View>
 
@@ -151,12 +161,12 @@ export function PersonalPublicProfile({ route, navigation }: any) {
 
           <View style={styles.metaRow}>
             <View style={styles.metaChip}>
-              <Octicons name="location" size={12} color="#FF6B00" />
+              <Octicons name="location" size={12} color={accent} />
               <Text style={styles.metaChipText}>{formatarLocalizacaoPremium(personal.cidade, personal.bairro)}</Text>
             </View>
             {personal.cref ? (
               <View style={styles.metaChip}>
-                <MaterialCommunityIcons name="shield-check-outline" size={13} color="#FF6B00" />
+                <MaterialCommunityIcons name="shield-check-outline" size={13} color={accent} />
                 <Text style={styles.metaChipText}>CREF {personal.cref}</Text>
               </View>
             ) : null}
@@ -165,9 +175,13 @@ export function PersonalPublicProfile({ route, navigation }: any) {
           <View style={styles.pillsActionRow}>
             <View style={styles.modalidadesWrap}>
               {modalidadesAtendidas.map((mod) => (
-                <View key={mod} style={styles.modPill}>
-                  <Ionicons name={mod === "Consultoria" ? "phone-portrait-outline" : "barbell-outline"} size={12} color="#FF6B00" />
-                  <Text style={styles.modPillText}>{mod}</Text>
+                <View key={mod} style={[styles.modPill, { backgroundColor: accentSoft, borderColor: accentBorder }]}>
+                  <Ionicons
+                    name={mod === "Consultoria" ? "phone-portrait-outline" : "barbell-outline"}
+                    size={12}
+                    color={accent}
+                  />
+                  <Text style={[styles.modPillText, { color: accent }]}>{mod}</Text>
                 </View>
               ))}
             </View>
@@ -197,7 +211,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
           <View style={styles.precoEscassezRow}>
             <View>
               <Text style={styles.precoLabel}>{labelPrecoExibido}</Text>
-              <Text style={styles.precoVal}>R$ {precoExibido}</Text>
+              <Text style={styles.precoVal}>{precoExibido === "--" ? "Sob consulta" : `R$ ${precoExibido}`}</Text>
             </View>
 
             <View
@@ -235,6 +249,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
           </TouchableOpacity>
         )}
 
+        {/* DESTAQUES (FOTO NA BOLINHA OU ÍCONE NA COR DO PERSONAL) */}
         <View style={styles.highlightsSection}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.highlightsScroll}>
             {destaquesExibidos.map((dest) => (
@@ -244,8 +259,12 @@ export function PersonalPublicProfile({ route, navigation }: any) {
                 onPress={() => actions.setDestaqueAberto(dest)}
                 activeOpacity={0.8}
               >
-                <View style={styles.highlightCircle}>
-                  <Ionicons name={(dest.icone as any) || "flame"} size={22} color="#FF6B00" />
+                <View style={[styles.highlightCircle, { borderColor: accent }]}>
+                  {dest.imagem_url ? (
+                    <Image source={{ uri: dest.imagem_url }} style={styles.highlightImg} resizeMode="cover" />
+                  ) : (
+                    <Ionicons name={(dest.icone as any) || "flame"} size={22} color={accent} />
+                  )}
                 </View>
                 <Text style={styles.highlightLabel} numberOfLines={1}>
                   {dest.titulo}
@@ -255,6 +274,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
           </ScrollView>
         </View>
 
+        {/* BARRA DAS 3 ABAS */}
         <View style={styles.tabsBar}>
           {[
             { id: "resultados" as AbaVitrine, label: "Resultados", icon: "grid-outline" },
@@ -265,12 +285,12 @@ export function PersonalPublicProfile({ route, navigation }: any) {
             return (
               <TouchableOpacity
                 key={tab.id}
-                style={[styles.tabBtn, ativa && styles.tabBtnAtiva]}
+                style={[styles.tabBtn, ativa && { borderBottomColor: accent }]}
                 onPress={() => actions.setAbaAtiva(tab.id)}
                 activeOpacity={0.8}
               >
-                <Ionicons name={tab.icon as any} size={15} color={ativa ? "#FF6B00" : "#71717A"} />
-                <Text style={[styles.tabText, ativa && styles.tabTextAtiva]}>{tab.label}</Text>
+                <Ionicons name={tab.icon as any} size={15} color={ativa ? accent : "#71717A"} />
+                <Text style={[styles.tabText, ativa && { color: accent, fontWeight: "900" }]}>{tab.label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -280,7 +300,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
           <Results
             publicacoes={publicacoes}
             isOwner={isOwner}
-            onPublicarNovo={abrirPublicarResultado}
+            onPublicarNovo={() => setPublicarVisivel(true)}
           />
         )}
 
@@ -305,6 +325,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
         )}
       </ScrollView>
 
+      {/* RODAPÉ FIXO — WHATSAPP, CHAT E CONTRATO PRESERVADOS */}
       <BlurView
         intensity={Platform.OS === "ios" ? 85 : 100}
         tint="dark"
@@ -313,13 +334,17 @@ export function PersonalPublicProfile({ route, navigation }: any) {
       >
         {isOwner ? (
           <View style={styles.footerRow}>
-            <TouchableOpacity style={styles.btnSecondaryFooter} onPress={abrirEditorVitrine} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.btnSecondaryFooter} onPress={() => setEditorVisivel(true)} activeOpacity={0.8}>
               <Ionicons name="create-outline" size={17} color="#FFF" />
               <Text style={styles.btnSecondaryFooterText}>Editar Vitrine</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.btnPrimaryFooter} onPress={abrirPublicarResultado} activeOpacity={0.85}>
-              <Ionicons name="add-circle-outline" size={18} color="#FF6B00" />
-              <Text style={styles.btnPrimaryFooterText}>Publicar</Text>
+            <TouchableOpacity
+              style={[styles.btnPrimaryFooter, { backgroundColor: accentSoft, borderColor: accent }]}
+              onPress={() => setPublicarVisivel(true)}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={accent} />
+              <Text style={[styles.btnPrimaryFooterText, { color: accent }]}>Publicar</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -345,12 +370,12 @@ export function PersonalPublicProfile({ route, navigation }: any) {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={styles.btnPrimaryFooter}
+                style={[styles.btnPrimaryFooter, { backgroundColor: accentSoft, borderColor: accent }]}
                 onPress={() => actions.handleContato("chat")}
                 activeOpacity={0.85}
               >
-                <Ionicons name="chatbubbles-outline" size={19} color="#FF6B00" />
-                <Text style={styles.btnPrimaryFooterText}>Iniciar Conversa</Text>
+                <Ionicons name="chatbubbles-outline" size={19} color={accent} />
+                <Text style={[styles.btnPrimaryFooterText, { color: accent }]}>Iniciar Conversa</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -360,6 +385,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
       <Profile
         personal={personal}
         isOwner={isOwner}
+        corDestaque={accent}
         destaqueAberto={destaqueAberto}
         onFecharDestaque={() => actions.setDestaqueAberto(null)}
         modalMatchVisivel={modalMatchVisivel}
@@ -371,6 +397,27 @@ export function PersonalPublicProfile({ route, navigation }: any) {
         propostaPendente={propostaPendente}
         onAssinarContrato={actions.assinarContrato}
       />
+
+      {isOwner && (
+        <>
+          <ModalEditorVitrine
+            visible={editorVisivel}
+            personal={personal}
+            vitrineConfig={vitrineConfig}
+            avaliacoes={avaliacoes}
+            onClose={() => setEditorVisivel(false)}
+            onSalvo={actions.recarregar}
+          />
+          <PublishResult
+            visible={publicarVisivel}
+            onClose={() => setPublicarVisivel(false)}
+            onPublicado={() => {
+              actions.setAbaAtiva("resultados");
+              actions.recarregar();
+            }}
+          />
+        </>
+      )}
     </View>
   );
 }

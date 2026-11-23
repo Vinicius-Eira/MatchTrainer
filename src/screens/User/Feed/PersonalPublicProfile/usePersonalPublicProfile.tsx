@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import * as Linking from "expo-linking";
 import { supabase } from "../../../../services/supabase";
@@ -24,6 +24,7 @@ export interface DestaqueStory {
   icone: string;
   subtitulo: string;
   conteudo: string;
+  imagem_url?: string | null;
 }
 
 export interface FormacaoItem {
@@ -34,12 +35,22 @@ export interface FormacaoItem {
 }
 
 export interface VitrineConfig {
+  cor_destaque?: string;
   destaques?: DestaqueStory[];
   formacoes?: FormacaoItem[];
   depoimentos_fixados?: string[];
   metodo_titulo?: string;
   metodo_descricao?: string;
   diferenciais_lista?: string[];
+}
+
+export function hexToRgba(hex: string, alpha: number): string {
+  const clean = (hex || "#FF6B00").replace("#", "");
+  if (clean.length !== 6) return `rgba(255, 107, 0, ${alpha})`;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 export const formatarLocalizacaoPremium = (cidade?: string, bairro?: string) => {
@@ -62,7 +73,7 @@ export const getEspecialidadeInfo = (tag: string) => {
   if (t.includes("cardio") || t.includes("coração")) return { icon: "heart-broken", title: "Cardiopatias", desc: "Exercício monitorado com segurança cardiovascular." };
   if (t.includes("hiperten") || t.includes("pressão")) return { icon: "tachometer-alt", title: "Hipertensão", desc: "Controle de intensidade para estabilidade pressórica." };
   if (t.includes("diabet") || t.includes("glicemia")) return { icon: "tint", title: "Diabetes", desc: "Manejo metabólico e glicêmico através do treino." };
-  if (t.includes("postura") || t.includes("coluna") || t.includes("joelho") || t.includes("ombro")) {
+  if (t.includes("postura") || t.includes("coluna") || t.includes("joelho") || t.includes("ombro") || t.includes("quadril") || t.includes("tornozelo")) {
     return { icon: "shield-alt", title: tag.charAt(0).toUpperCase() + tag.slice(1), desc: "Fortalecimento específico e alinhamento biomecânico." };
   }
   return { icon: "bullseye", title: tag.charAt(0).toUpperCase() + tag.slice(1), desc: "Acompanhamento especializado com foco nesta necessidade." };
@@ -101,7 +112,7 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
   const [modalMatchVisivel, setModalMatchVisivel] = useState(false);
 
   const [precoExibido, setPrecoExibido] = useState("--");
-  const [labelPrecoExibido, setLabelPrecoExibido] = useState("A partir de");
+  const [labelPrecoExibido, setLabelPrecoExibido] = useState("Investimento");
 
   const carregarPerfilCompleto = useCallback(async () => {
     if (!personalId) {
@@ -146,21 +157,23 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
       const urlsExistentes = new Set(pubsTabela.map((p) => p.imagem_url));
       const legadas: PublicacaoVitrine[] = Array.isArray(prof.galeria_fotos)
         ? prof.galeria_fotos
-          .filter((url: string) => url && !urlsExistentes.has(url))
-          .map((url: string, idx: number) => ({
-            id: `legacy-${idx}`,
-            imagem_url: url,
-            categoria: "resultado" as const,
-            titulo: "Resultado de Acompanhamento",
-            legenda: "Evolução registrada no portfólio do treinador.",
-            origemLegada: true,
-          }))
+            .filter((url: string) => url && !urlsExistentes.has(url))
+            .map((url: string, idx: number) => ({
+              id: `legacy-${idx}`,
+              imagem_url: url,
+              categoria: "resultado" as const,
+              titulo: "Resultado de Acompanhamento",
+              legenda: "Evolução registrada no portfólio do treinador.",
+              origemLegada: true,
+            }))
         : [];
       setPublicacoes([...pubsTabela, ...legadas]);
 
-      const precoDefault = prof.preco_consultoria || prof.preco_presencial || prof.preco_medio || "--";
-      setPrecoExibido(String(precoDefault));
-      setLabelPrecoExibido(prof.preco_consultoria ? "Consultoria/mês" : "Por aula");
+      const precoDefault = prof.preco_consultoria || prof.preco_presencial || prof.preco_medio || null;
+      setPrecoExibido(precoDefault ? String(precoDefault) : "--");
+      setLabelPrecoExibido(
+        prof.preco_consultoria ? "Consultoria/mês" : prof.preco_presencial ? "Por aula" : "Investimento"
+      );
 
       if (user && !ehDono) {
         const { data: connData } = await supabase
@@ -193,7 +206,11 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
         if (modalidadeAluno.includes("Consultoria") && !modalidadeAluno.includes("Presencial") && prof.preco_consultoria) {
           setPrecoExibido(String(prof.preco_consultoria));
           setLabelPrecoExibido("Consultoria/mês");
-        } else if (modalidadeAluno.includes("Presencial") && !modalidadeAluno.includes("Consultoria") && prof.preco_presencial) {
+        } else if (
+          modalidadeAluno.includes("Presencial") &&
+          !modalidadeAluno.includes("Consultoria") &&
+          prof.preco_presencial
+        ) {
           setPrecoExibido(String(prof.preco_presencial));
           setLabelPrecoExibido("Por aula");
         }
@@ -327,17 +344,23 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
     try {
       especialidades =
         typeof personal.especialidades === "string" ? JSON.parse(personal.especialidades) : personal.especialidades || {};
-    } catch { }
+    } catch {}
     try {
       vitrineConfig =
         typeof personal.vitrine_config === "string" ? JSON.parse(personal.vitrine_config) : personal.vitrine_config || {};
-    } catch { }
+    } catch {}
   }
 
+  const corDestaque = vitrineConfig?.cor_destaque || "#FF6B00";
+
   const todasAsTags = personal
-    ? [...(especialidades?.objetivos || []), ...(especialidades?.limitacoes || []), ...(especialidades?.subs || [])].filter(
-      (tag) => tag && tag !== "nenhuma" && tag !== "outro" && tag !== "outra"
-    )
+    ? [
+        ...(especialidades?.objetivos || []),
+        ...(especialidades?.limitacoes || []),
+        ...(especialidades?.subs || []),
+        especialidades?.outroObjetivo,
+        especialidades?.outraLimitacao,
+      ].filter((tag) => tag && tag !== "nenhuma" && tag !== "outro" && tag !== "outra")
     : [];
 
   const locaisAtendimento: string[] = Array.isArray(especialidades?.locais) ? especialidades.locais : [];
@@ -367,50 +390,54 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
     Array.isArray(personal?.servicos_oferecidos) && personal.servicos_oferecidos.length > 0
       ? personal.servicos_oferecidos
       : ["Consultoria"];
-  const isPoucasVagas = personal?.status_agenda === "Poucas Vagas" || personal?.status_agenda === "Quase Lotada";
+  const isPoucasVagas =
+    personal?.status_agenda === "Poucas Vagas" ||
+    personal?.status_agenda === "Quase Lotada" ||
+    personal?.status_agenda === "Lotada";
 
   const destaquesPersonalizados = Array.isArray(vitrineConfig.destaques) ? vitrineConfig.destaques : [];
   const destaquesExibidos: DestaqueStory[] =
     destaquesPersonalizados.length > 0
       ? destaquesPersonalizados
       : [
-        {
-          id: "auto-metodo",
-          titulo: "Meu Método",
-          icone: "flame",
-          subtitulo: "Como eu trabalho",
-          conteudo:
-            vitrineConfig.metodo_descricao ||
-            personal?.descricao ||
-            "Treinamento individualizado focado na sua rotina, segurança articular e evolução progressiva.",
-        },
-        {
-          id: "auto-modalidades",
-          titulo: "Planos",
-          icone: "wallet",
-          subtitulo: "Formatos de Atendimento",
-          conteudo: `Atendimento via ${modalidadesAtendidas.join(" e ")}.\n\n${personal?.preco_consultoria ? `• Consultoria Online: a partir de R$ ${personal.preco_consultoria}/mês\n` : ""
+          {
+            id: "auto-metodo",
+            titulo: "Meu Método",
+            icone: "flame",
+            subtitulo: "Como eu trabalho",
+            conteudo:
+              vitrineConfig.metodo_descricao ||
+              personal?.descricao ||
+              "Treinamento individualizado focado na sua rotina, segurança articular e evolução progressiva.",
+          },
+          {
+            id: "auto-modalidades",
+            titulo: "Planos",
+            icone: "wallet",
+            subtitulo: "Formatos de Atendimento",
+            conteudo: `Atendimento via ${modalidadesAtendidas.join(" e ")}.\n\n${
+              personal?.preco_consultoria ? `• Consultoria Online: a partir de R$ ${personal.preco_consultoria}/mês\n` : ""
             }${personal?.preco_presencial ? `• Presencial: a partir de R$ ${personal.preco_presencial}/aula` : ""}`,
-        },
-        ...(locaisAtendimento.length > 0
-          ? [
-            {
-              id: "auto-locais",
-              titulo: "Locais",
-              icone: "location",
-              subtitulo: formatarLocalizacaoPremium(personal?.cidade, personal?.bairro),
-              conteudo: `Atendimento presencial em: ${locaisAtendimento.join(", ")}.`,
-            },
-          ]
-          : []),
-        {
-          id: "auto-exp",
-          titulo: "Carreira",
-          icone: "ribbon",
-          subtitulo: personal?.cref ? `CREF ${personal.cref}` : "Profissional Registrado",
-          conteudo: `${personal?.tempo_experiencia || "Experiência comprovada"} ajudando alunos a alcançarem resultados reais com consistência.`,
-        },
-      ];
+          },
+          ...(locaisAtendimento.length > 0
+            ? [
+                {
+                  id: "auto-locais",
+                  titulo: "Locais",
+                  icone: "location",
+                  subtitulo: formatarLocalizacaoPremium(personal?.cidade, personal?.bairro),
+                  conteudo: `Atendimento presencial em: ${locaisAtendimento.join(", ")}.`,
+                },
+              ]
+            : []),
+          {
+            id: "auto-exp",
+            titulo: "Carreira",
+            icone: "ribbon",
+            subtitulo: personal?.cref ? `CREF ${personal.cref}` : "Profissional Registrado",
+            conteudo: `${personal?.tempo_experiencia || "Experiência comprovada"} ajudando alunos a alcançarem resultados reais com consistência.`,
+          },
+        ];
 
   const formacoes: FormacaoItem[] = Array.isArray(vitrineConfig.formacoes) ? vitrineConfig.formacoes : [];
   const depoimentosFixadosIds: string[] = Array.isArray(vitrineConfig.depoimentos_fixados)
@@ -423,6 +450,7 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
       fromDashboard: Boolean(fromDashboard),
       loading,
       personal,
+      corDestaque,
       abaAtiva,
       notaMedia,
       avaliacoes,
