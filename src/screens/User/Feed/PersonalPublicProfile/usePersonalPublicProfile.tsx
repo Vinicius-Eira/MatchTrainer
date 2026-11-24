@@ -3,7 +3,7 @@ import { Alert } from "react-native";
 import * as Linking from "expo-linking";
 import { supabase } from "../../../../services/supabase";
 
-export type AbaVitrine = "resultados" | "autoridade" | "depoimentos";
+export type AbaVitrine = "autoridade" | "resultados" | "depoimentos";
 export type CategoriaPublicacao = "todos" | "resultado" | "treino" | "certificado" | "espaco";
 
 export interface PublicacaoVitrine {
@@ -92,14 +92,21 @@ const MAPA_DNA: Record<string, string> = {
   proximo: "Contato Quase Diário",
 };
 
+const MAPA_TURNOS: Record<string, string> = {
+  manha: "Manhã",
+  tarde: "Tarde",
+  noite: "Noite",
+  variado: "Horários Variados",
+};
+
 export function usePersonalPublicProfile(route: any, navigation: any) {
-  const { personalId: pId, id, matchPreCalculado, fromDashboard } = route.params || {};
+  const { personalId: pId, id, matchPreCalculado } = route.params || {};
   const personalId = id || pId;
 
   const [personal, setPersonal] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isOwner, setIsOwner] = useState(Boolean(fromDashboard));
-  const [abaAtiva, setAbaAtiva] = useState<AbaVitrine>("resultados");
+  const [isOwner, setIsOwner] = useState(false);
+  const [abaAtiva, setAbaAtiva] = useState<AbaVitrine>("autoridade");
 
   const [notaMedia, setNotaMedia] = useState<number>(0);
   const [avaliacoes, setAvaliacoes] = useState<any[]>([]);
@@ -127,7 +134,8 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
         data: { user },
       } = await supabase.auth.getUser();
 
-      const ehDono = Boolean(fromDashboard || (user && user.id === personalId));
+      // Verificação estrita pelo ID autenticado — impede qualquer aluno de entrar como dono
+      const ehDono = Boolean(user && user.id === personalId);
       setIsOwner(ehDono);
 
       const [reqPersonal, reqNota, reqAvaliacoes, reqPubs] = await Promise.all([
@@ -147,16 +155,15 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
       setPersonal(prof);
       setNotaMedia(Number(reqNota.data || 0));
 
-      const avaliacoesFormatadas =
-        !reqAvaliacoes.error && Array.isArray(reqAvaliacoes.data)
-          ? reqAvaliacoes.data.map((a: any) => ({
-              id: a.id,
-              nota: a.nota,
-              comentario: a.comentario,
-              criado_em: a.criado_em,
-              usuarios: { nome: a.primeiro_nome_aluno || "Aluno" },
-            }))
-          : [];
+      const avaliacoesFormatadas = Array.isArray(reqAvaliacoes.data)
+        ? reqAvaliacoes.data.map((a: any) => ({
+            id: a.id,
+            nota: a.nota,
+            comentario: a.comentario,
+            criado_em: a.criado_em,
+            usuarios: { nome: a.primeiro_nome_aluno || "Aluno" },
+          }))
+        : [];
       setAvaliacoes(avaliacoesFormatadas);
 
       const pubsTabela: PublicacaoVitrine[] = !reqPubs.error && Array.isArray(reqPubs.data) ? reqPubs.data : [];
@@ -177,7 +184,9 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
 
       const precoDefault = prof.preco_consultoria || prof.preco_presencial || prof.preco_medio || null;
       setPrecoExibido(precoDefault ? String(precoDefault) : "--");
-      setLabelPrecoExibido(prof.preco_consultoria ? "Consultoria/mês" : prof.preco_presencial ? "Por aula" : "Investimento");
+      setLabelPrecoExibido(
+        prof.preco_consultoria ? "Consultoria/mês" : prof.preco_presencial ? "Por aula" : "Investimento"
+      );
 
       if (user && !ehDono) {
         const { data: connData } = await supabase
@@ -191,7 +200,7 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
 
         if (connData) {
           setStatusConexao(connData.status);
-          if (connData.status === "aguardando_aluno" || connData.status === "aguardando_assinatura") {
+          if (connData.status === "aguardando_assinatura" || connData.status === "aguardando_aluno") {
             const { data: plano } = await supabase
               .from("planos")
               .select("*")
@@ -200,6 +209,9 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
               .maybeSingle();
             if (plano) setPropostaPendente(plano);
           }
+        } else {
+          setStatusConexao(null);
+          setPropostaPendente(null);
         }
 
         const { data: uData } = await supabase.from("usuarios").select("preferencias").eq("id", user.id).maybeSingle();
@@ -207,16 +219,10 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
           typeof uData?.preferencias === "string" ? JSON.parse(uData.preferencias) : uData?.preferencias || {};
 
         const servicoUnico = alunoPrefs.servico_buscado;
-        const modalidadeAluno = Array.isArray(alunoPrefs.servicos_buscados)
-          ? alunoPrefs.servicos_buscados
-          : servicoUnico && servicoUnico !== "Indiferente"
-            ? [servicoUnico]
-            : ["Consultoria", "Presencial"];
-
-        if (modalidadeAluno.includes("Consultoria") && !modalidadeAluno.includes("Presencial") && prof.preco_consultoria) {
+        if (servicoUnico === "Consultoria" && prof.preco_consultoria) {
           setPrecoExibido(String(prof.preco_consultoria));
           setLabelPrecoExibido("Consultoria/mês");
-        } else if (modalidadeAluno.includes("Presencial") && !modalidadeAluno.includes("Consultoria") && prof.preco_presencial) {
+        } else if (servicoUnico === "Presencial" && prof.preco_presencial) {
           setPrecoExibido(String(prof.preco_presencial));
           setLabelPrecoExibido("Por aula");
         }
@@ -228,7 +234,7 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
     } finally {
       setLoading(false);
     }
-  }, [personalId, fromDashboard, navigation]);
+  }, [personalId, navigation]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -241,22 +247,28 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
     setLoading(true);
     try {
       if (!propostaPendente) throw new Error("Proposta não encontrada.");
-      await supabase.from("planos").update({ status: "ativo" }).eq("id", propostaPendente.id);
-      await supabase.from("conexoes").update({ status: "aluno_ativo" }).eq("id", propostaPendente.conexao_id);
-      setModalPropostaVisivel(false);
 
+      const { error } = await supabase.rpc("aceitar_contrato_aluno", {
+        p_conexao_id: propostaPendente.conexao_id,
+        p_plano_id: propostaPendente.id,
+      });
+      if (error) throw error;
+
+      setModalPropostaVisivel(false);
       navigation.reset({
         index: 0,
         routes: [{ name: "AlunoDashboard", params: { conexaoId: propostaPendente.conexao_id } }],
       });
-    } catch {
-      Alert.alert("Erro", "Falha ao aceitar a proposta.");
+    } catch (err: any) {
+      Alert.alert("Erro", err?.message || "Falha ao aceitar a proposta.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleContato = async (tipo: "whatsapp" | "chat") => {
+    if (isOwner) return;
+
     try {
       const {
         data: { user },
@@ -360,16 +372,24 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
   const corDestaque = vitrineConfig?.cor_destaque || "#FF6B00";
 
   const todasAsTags = personal
-    ? [
-        ...(especialidades?.objetivos || []),
-        ...(especialidades?.limitacoes || []),
-        ...(especialidades?.subs || []),
-        especialidades?.outroObjetivo,
-        especialidades?.outraLimitacao,
-      ].filter((tag) => tag && tag !== "nenhuma" && tag !== "outro" && tag !== "outra")
+    ? Array.from(
+        new Set(
+          [
+            ...(especialidades?.objetivos || []),
+            ...(especialidades?.limitacoes || []),
+            ...(especialidades?.subs || []),
+            especialidades?.outroObjetivo,
+            especialidades?.outraLimitacao,
+          ].filter((tag) => tag && tag !== "nenhuma" && tag !== "outro" && tag !== "outra")
+        )
+      )
     : [];
 
   const locaisAtendimento: string[] = Array.isArray(especialidades?.locais) ? especialidades.locais : [];
+
+  const turnosFormatados: string[] = Array.isArray(personal?.turnos_disponiveis)
+    ? personal.turnos_disponiveis.map((t: string) => MAPA_TURNOS[t] || t)
+    : [];
 
   const dnaAtendimento = [
     especialidades?.estiloComunicacao && {
@@ -400,6 +420,8 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
     personal?.status_agenda === "Poucas Vagas" ||
     personal?.status_agenda === "Quase Lotada" ||
     personal?.status_agenda === "Lotada";
+
+  const temPropostaPendente = statusConexao === "aguardando_assinatura" || statusConexao === "aguardando_aluno";
 
   const destaquesPersonalizados = Array.isArray(vitrineConfig.destaques) ? vitrineConfig.destaques : [];
   const destaquesExibidos: DestaqueStory[] =
@@ -453,7 +475,6 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
   return {
     state: {
       isOwner,
-      fromDashboard: Boolean(fromDashboard),
       loading,
       personal,
       corDestaque,
@@ -469,6 +490,7 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
       dnaAtendimento,
       modalMatchVisivel,
       statusConexao,
+      temPropostaPendente,
       propostaPendente,
       modalPropostaVisivel,
       precoExibido,
@@ -476,6 +498,7 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
       matchPreCalculado,
       especialidades,
       todasAsTags,
+      turnosFormatados,
       fotoPerfil,
       capaUrl,
       modalidadesAtendidas,

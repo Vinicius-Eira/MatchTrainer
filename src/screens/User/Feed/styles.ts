@@ -30,7 +30,6 @@ export const styles = StyleSheet.create({
     opacity: 0.07,
   },
 
-  // HEADER PREMIUM
   headerFeed: {
     flexDirection: "row",
     alignItems: "center",
@@ -93,7 +92,6 @@ export const styles = StyleSheet.create({
     paddingBottom: verticalScale(38),
   },
 
-  // RADAR PRESENCIAL
   radarContainer: {
     backgroundColor: "#0A0A10",
     paddingHorizontal: scale(15),
@@ -130,7 +128,6 @@ export const styles = StyleSheet.create({
   },
   radarBadgeText: { color: theme.colors.primary, fontSize: moderateScale(11.5), fontWeight: "900" },
 
-  // INDICADOR TOP 3
   topProgressWrap: { marginBottom: verticalScale(12) },
   topProgressHeader: {
     flexDirection: "row",
@@ -168,7 +165,6 @@ export const styles = StyleSheet.create({
     shadowRadius: 6,
   },
 
-  // HERO CARD DO PERSONAL
   cardWrapper: { width: "100%" },
   premiumCard: {
     width: "100%",
@@ -240,7 +236,6 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // SETAS LATERAIS TRANSLÚCIDAS
   sideArrowBtn: {
     position: "absolute",
     top: "43%",
@@ -376,7 +371,6 @@ export const styles = StyleSheet.create({
     marginBottom: verticalScale(16),
   },
 
-  // ESPECIALIDADES EM DESTAQUE (VISUAL LARANJA NEON)
   specialtiesSection: {
     backgroundColor: "#101018",
     borderRadius: moderateScale(18),
@@ -435,7 +429,6 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // DOCK DE MÉTRICAS (ALINHADO E SEM QUEBRA DE TEXTO)
   statsContainer: {
     flexDirection: "row",
     alignItems: "stretch",
@@ -489,7 +482,6 @@ export const styles = StyleSheet.create({
   },
   statDivider: { width: 1, backgroundColor: "#222230", marginVertical: 4 },
 
-  // BOTÃO PRINCIPAL TRANSPARENTE NEON
   btnActionOutlined: {
     width: "100%",
     backgroundColor: "rgba(255, 107, 0, 0.14)",
@@ -520,7 +512,6 @@ export const styles = StyleSheet.create({
   },
   swipeFootHintText: { color: "#71717A", fontSize: moderateScale(11), fontWeight: "700" },
 
-  // ESTADO VAZIO
   emptyCard: {
     backgroundColor: "#0A0A10",
     borderRadius: moderateScale(26),
@@ -582,9 +573,7 @@ export const styles = StyleSheet.create({
   },
   btnEmptySecondaryText: { color: "#E4E4E7", fontSize: moderateScale(12.5), fontWeight: "800" },
 
-  // =========================================================================
-  // MODAL ANÁLISE DE COMPATIBILIDADE (SCROLL DESTRAVADO + NEON NATURAL)
-  // =========================================================================
+
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.9)",
@@ -837,7 +826,6 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // MODAL NOVA PROPOSTA
   propostaCard: {
     backgroundColor: "#0B0B10",
     borderRadius: moderateScale(26),

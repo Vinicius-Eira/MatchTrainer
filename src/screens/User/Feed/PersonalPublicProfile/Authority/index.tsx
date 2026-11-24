@@ -1,11 +1,18 @@
 import React from "react";
-import { Text, View } from "react-native";
-import { FontAwesome5, Ionicons } from "@expo/vector-icons";
-import { FormacaoItem, getEspecialidadeInfo, VitrineConfig } from "../usePersonalPublicProfile";
+import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  FormacaoItem,
+  getEspecialidadeInfo,
+  hexToRgba,
+  VitrineConfig,
+} from "../usePersonalPublicProfile";
 import { styles } from "./styles";
 
 interface AuthorityProps {
   personal: any;
+  corDestaque?: string;
   vitrineConfig: VitrineConfig;
   formacoes: FormacaoItem[];
   todasAsTags: string[];
@@ -14,141 +21,259 @@ interface AuthorityProps {
   diferenciaisLegacy?: string;
 }
 
+function getIconeDiferencial(texto: string): any {
+  const t = texto.toLowerCase();
+  if (t.includes("vídeo") || t.includes("video") || t.includes("execução")) return "videocam-outline";
+  if (t.includes("whatsapp") || t.includes("suporte") || t.includes("chat") || t.includes("contato")) return "chatbubbles-outline";
+  if (t.includes("carga") || t.includes("ajuste") || t.includes("semanal") || t.includes("evolução")) return "trending-up-outline";
+  if (t.includes("rotina") || t.includes("horário") || t.includes("tempo") || t.includes("adapt")) return "time-outline";
+  if (t.includes("avalia") || t.includes("meta") || t.includes("bioimped") || t.includes("resultado")) return "analytics-outline";
+  if (t.includes("lesão") || t.includes("dor") || t.includes("segur") || t.includes("saúde")) return "shield-checkmark-outline";
+  if (t.includes("dieta") || t.includes("nutri") || t.includes("aliment")) return "nutrition-outline";
+  if (t.includes("app") || t.includes("planilha") || t.includes("treino")) return "barbell-outline";
+  return "ribbon-outline";
+}
+
+function getIconeEspecialidade(tag: string): any {
+  const t = tag.toLowerCase();
+  if (t.includes("hipertrofia")) return "barbell-outline";
+  if (t.includes("emagrecimento")) return "flame-outline";
+  if (t.includes("saude") || t.includes("saúde") || t.includes("qualidade")) return "heart-outline";
+  if (t.includes("performance") || t.includes("rendimento")) return "speedometer-outline";
+  if (t.includes("gestante") || t.includes("gravidez")) return "body-outline";
+  if (t.includes("idoso") || t.includes("longevidade")) return "walk-outline";
+  if (t.includes("lesão") || t.includes("lesao") || t.includes("dor") || t.includes("reabilitação")) return "medkit-outline";
+  if (
+    t.includes("médica") ||
+    t.includes("medica") ||
+    t.includes("clínica") ||
+    t.includes("clinica") ||
+    t.includes("cardio") ||
+    t.includes("hiperten") ||
+    t.includes("diabet")
+  ) {
+    return "pulse-outline";
+  }
+  if (
+    t.includes("postura") ||
+    t.includes("coluna") ||
+    t.includes("joelho") ||
+    t.includes("ombro") ||
+    t.includes("quadril") ||
+    t.includes("tornozelo")
+  ) {
+    return "shield-checkmark-outline";
+  }
+  return "fitness-outline";
+}
+
+function getIconeDna(label: string, fallbackIcon?: string): any {
+  const l = label.toLowerCase();
+  if (l.includes("comunica")) return "chatbubbles-outline";
+  if (l.includes("cobran")) return "flame-outline";
+  if (l.includes("contato") || l.includes("acompanh")) return "calendar-outline";
+  return fallbackIcon || "pulse-outline";
+}
+
+function SectionTitle({ title, accent }: { title: string; accent: string }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <View style={[styles.sectionBar, { backgroundColor: accent }]} />
+      <Text style={styles.sectionTitle}>{title}</Text>
+    </View>
+  );
+}
 
 export function Authority({
-    personal,
-    vitrineConfig,
-    formacoes,
-    todasAsTags,
-    locaisAtendimento,
-    dnaAtendimento,
-    diferenciaisLegacy,
+  personal,
+  corDestaque = "#FF6B00",
+  vitrineConfig,
+  formacoes,
+  todasAsTags,
+  locaisAtendimento,
+  dnaAtendimento,
+  diferenciaisLegacy,
 }: AuthorityProps) {
-    const diferenciaisLista = Array.isArray(vitrineConfig.diferenciais_lista) ? vitrineConfig.diferenciais_lista : [];
-    const temBlocoMetodo = Boolean(vitrineConfig.metodo_descricao || diferenciaisLegacy || diferenciaisLista.length > 0);
+  const accent = corDestaque || "#FF6B00";
+  const accentSoft = hexToRgba(accent, 0.13);
+  const accentBorder = hexToRgba(accent, 0.4);
+  const accentCardBorder = hexToRgba(accent, 0.28);
 
-    return (
-        <View style={styles.container}>
-            <View style={styles.sectionHeader}>
-                <Ionicons name="person-outline" size={16} color="#FF6B00" />
-                <Text style={styles.sectionTitle}>Sobre o Treinador</Text>
-            </View>
-            <View style={styles.card}>
-                <Text style={styles.bioText}>
-                    {personal?.descricao ||
-                        "Profissional dedicado a construir treinos inteligentes, seguros e adaptados à rotina de cada aluno."}
-                </Text>
-            </View>
+  const metodoTitulo = vitrineConfig?.metodo_titulo?.trim() || "";
+  const metodoDescricao = vitrineConfig?.metodo_descricao?.trim() || "";
 
-            {temBlocoMetodo && (
-                <>
-                    <View style={styles.sectionHeader}>
-                        <Ionicons name="diamond-outline" size={16} color="#FF6B00" />
-                        <Text style={styles.sectionTitle}>Método & Diferenciais</Text>
-                    </View>
-                    <View style={styles.card}>
-                        {vitrineConfig.metodo_titulo ? (
-                            <Text style={styles.metodoTitle}>{vitrineConfig.metodo_titulo}</Text>
-                        ) : null}
-                        {(vitrineConfig.metodo_descricao || diferenciaisLegacy) ? (
-                            <Text style={styles.bioText}>{vitrineConfig.metodo_descricao || diferenciaisLegacy}</Text>
-                        ) : null}
-                        {diferenciaisLista.map((item, idx) => (
-                            <View key={idx} style={styles.difItem}>
-                                <Ionicons name="checkmark-circle" size={16} color="#00E676" style={{ marginTop: 2 }} />
-                                <Text style={styles.difText}>{item}</Text>
-                            </View>
-                        ))}
-                    </View>
-                </>
-            )}
+  const diferenciaisLista: string[] =
+    Array.isArray(vitrineConfig?.diferenciais_lista) && vitrineConfig.diferenciais_lista.length > 0
+      ? vitrineConfig.diferenciais_lista
+      : diferenciaisLegacy && diferenciaisLegacy.trim() && diferenciaisLegacy.trim() !== metodoDescricao
+        ? diferenciaisLegacy
+            .split(/\n|;|•/)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 2)
+        : [];
 
-            {formacoes.length > 0 && (
-                <>
-                    <View style={styles.sectionHeader}>
-                        <Ionicons name="school-outline" size={16} color="#FF6B00" />
-                        <Text style={styles.sectionTitle}>Formação & Certificações</Text>
-                    </View>
-                    <View style={styles.card}>
-                        {formacoes.map((f, idx) => (
-                            <View
-                                key={f.id || idx}
-                                style={[styles.formacaoRow, idx === formacoes.length - 1 && { borderBottomWidth: 0, paddingBottom: 0 }]}
-                            >
-                                <View style={styles.formacaoIcon}>
-                                    <Ionicons name="ribbon-outline" size={18} color="#FF6B00" />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.formacaoTitulo}>{f.titulo}</Text>
-                                    <Text style={styles.formacaoSub}>
-                                        {f.instituicao}
-                                        {f.ano ? ` • ${f.ano}` : ""}
-                                    </Text>
-                                </View>
-                            </View>
-                        ))}
-                    </View>
-                </>
-            )}
+  const temMetodo = Boolean(metodoTitulo || metodoDescricao);
 
-            {dnaAtendimento.length > 0 && (
-                <>
-                    <View style={styles.sectionHeader}>
-                        <Ionicons name="flash-outline" size={16} color="#FF6B00" />
-                        <Text style={styles.sectionTitle}>Estilo de Acompanhamento</Text>
-                    </View>
-                    <View style={styles.dnaGrid}>
-                        {dnaAtendimento.map((dna, idx) => (
-                            <View key={idx} style={styles.dnaChip}>
-                                <Text style={styles.dnaLabel}>{dna.label}</Text>
-                                <Text style={styles.dnaVal}>{dna.valor}</Text>
-                            </View>
-                        ))}
-                    </View>
-                </>
-            )}
-
-            {todasAsTags.length > 0 && (
-                <>
-                    <View style={styles.sectionHeader}>
-                        <Ionicons name="analytics-outline" size={16} color="#FF6B00" />
-                        <Text style={styles.sectionTitle}>Especialidades & Foco</Text>
-                    </View>
-                    <View style={{ marginBottom: 14 }}>
-                        {todasAsTags.map((tag, idx) => {
-                            const info = getEspecialidadeInfo(tag);
-                            return (
-                                <View key={`${tag}-${idx}`} style={styles.specRow}>
-                                    <View style={styles.specIconBox}>
-                                        <FontAwesome5 name={info.icon} size={15} color="#FF6B00" />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.specTitle}>{info.title}</Text>
-                                        <Text style={styles.specDesc}>{info.desc}</Text>
-                                    </View>
-                                </View>
-                            );
-                        })}
-                    </View>
-                </>
-            )}
-
-            {locaisAtendimento.length > 0 && (
-                <>
-                    <View style={styles.sectionHeader}>
-                        <Ionicons name="location-outline" size={16} color="#FF6B00" />
-                        <Text style={styles.sectionTitle}>Locais de Atendimento</Text>
-                    </View>
-                    <View style={styles.locaisWrap}>
-                        {locaisAtendimento.map((local, idx) => (
-                            <View key={idx} style={styles.localPill}>
-                                <Ionicons name="business-outline" size={13} color="#FF6B00" />
-                                <Text style={styles.localPillText}>{local}</Text>
-                            </View>
-                        ))}
-                    </View>
-                </>
-            )}
+  return (
+    <View style={styles.container}>
+      <View style={styles.sectionBlock}>
+        <SectionTitle title="Sobre o Treinador" accent={accent} />
+        <View style={styles.bioCard}>
+          <Text style={styles.bodyText}>
+            {personal?.descricao?.trim() ||
+              "Profissional dedicado a construir treinos inteligentes, seguros e adaptados à rotina real de cada aluno."}
+          </Text>
         </View>
-    );
+      </View>
+
+      {todasAsTags.length > 0 ? (
+        <View style={styles.sectionBlock}>
+          <SectionTitle title="Especialidades" accent={accent} />
+          <View style={styles.specsGrid}>
+            {todasAsTags.map((tag, idx) => {
+              const info = getEspecialidadeInfo(tag);
+              const isLastOdd = idx === todasAsTags.length - 1 && todasAsTags.length % 2 !== 0;
+              return (
+                <View key={`${tag}-${idx}`} style={[styles.specTile, isLastOdd && styles.specTileFull]}>
+                  <View style={[styles.specTileIcon, { backgroundColor: accentSoft, borderColor: accentBorder }]}>
+                    <Ionicons name={getIconeEspecialidade(tag)} size={18} color={accent} />
+                  </View>
+                  <Text style={styles.specTileTitle} numberOfLines={2}>
+                    {info.title}
+                  </Text>
+                  <Text style={styles.specTileDesc} numberOfLines={3}>
+                    {info.desc}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
+
+      {temMetodo ? (
+        <View style={styles.sectionBlock}>
+          <SectionTitle title="Metodologia" accent={accent} />
+          <View style={[styles.metodoCard, { borderColor: accentCardBorder }]}>
+            <LinearGradient
+              colors={[hexToRgba(accent, 0.09), "transparent"]}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.metodoTopGlow}
+            />
+
+            <View style={styles.metodoTopRow}>
+              <View style={[styles.metodoPill, { backgroundColor: accentSoft, borderColor: accentBorder }]}>
+                <Ionicons name="layers-outline" size={12} color={accent} />
+                <Text style={[styles.metodoPillText, { color: accent }]}>Método de Trabalho</Text>
+              </View>
+            </View>
+
+            {metodoTitulo ? <Text style={styles.metodoTitle}>{metodoTitulo}</Text> : null}
+
+            {metodoTitulo && metodoDescricao ? <View style={styles.metodoDivider} /> : null}
+
+            {metodoDescricao ? <Text style={styles.metodoDesc}>{metodoDescricao}</Text> : null}
+          </View>
+        </View>
+      ) : null}
+
+      {diferenciaisLista.length > 0 ? (
+        <View style={styles.sectionBlock}>
+          <SectionTitle title="Diferenciais" accent={accent} />
+          <View style={styles.difGrid}>
+            {diferenciaisLista.map((item, idx) => {
+              const isLastOdd = idx === diferenciaisLista.length - 1 && diferenciaisLista.length % 2 !== 0;
+              return (
+                <View key={`${item}-${idx}`} style={[styles.difCard, isLastOdd && styles.difCardFull]}>
+                  <View style={styles.difCardTop}>
+                    <View style={[styles.difIconBox, { backgroundColor: accentSoft, borderColor: accentBorder }]}>
+                      <Ionicons name={getIconeDiferencial(item)} size={17} color={accent} />
+                    </View>
+                    <Ionicons name="checkmark-circle-outline" size={16} color={accent} style={{ opacity: 0.85 }} />
+                  </View>
+
+                  <Text style={styles.difText}>{item}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
+
+      {dnaAtendimento.length > 0 ? (
+        <View style={styles.sectionBlock}>
+          <SectionTitle title="Estilo de Acompanhamento" accent={accent} />
+          <View style={styles.editorialPanel}>
+            {dnaAtendimento.map((dna, idx) => (
+              <View key={dna.label}>
+                <View style={styles.dnaItem}>
+                  <View style={[styles.dnaIconBox, { backgroundColor: accentSoft, borderColor: accentBorder }]}>
+                    <Ionicons name={getIconeDna(dna.label, dna.icon)} size={18} color={accent} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.dnaLabel}>{dna.label}</Text>
+                    <Text style={styles.dnaValue}>{dna.valor}</Text>
+                  </View>
+                </View>
+                {idx < dnaAtendimento.length - 1 ? <View style={styles.hairline} /> : null}
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {formacoes.length > 0 ? (
+        <View style={styles.formacaoOuterCard}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.headerIconBox, { backgroundColor: accentSoft, borderColor: accentBorder }]}>
+              <Ionicons name="school-outline" size={17} color={accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>Formação & Certificações</Text>
+              <Text style={styles.cardSubtitle}>Qualificação acadêmica e especializações</Text>
+            </View>
+          </View>
+
+          {formacoes.map((f, idx) => (
+            <View
+              key={f.id || `${f.titulo}-${idx}`}
+              style={[styles.timelineRow, idx === formacoes.length - 1 && { marginBottom: 0 }]}
+            >
+              <View style={styles.timelineRail}>
+                <View style={[styles.timelineDot, { backgroundColor: accent }]} />
+                {idx < formacoes.length - 1 ? <View style={styles.timelineLine} /> : null}
+              </View>
+
+              <View style={styles.formacaoBox}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.formacaoTitle}>{f.titulo}</Text>
+                  <Text style={styles.formacaoInst}>{f.instituicao}</Text>
+                </View>
+                {f.ano ? (
+                  <View style={[styles.anoPill, { backgroundColor: accentSoft, borderColor: accentBorder }]}>
+                    <Text style={[styles.anoPillText, { color: accent }]}>{f.ano}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {locaisAtendimento.length > 0 ? (
+        <View style={[styles.sectionBlock, { marginBottom: 0 }]}>
+          <SectionTitle title="Locais de Atendimento" accent={accent} />
+          <View style={styles.locaisWrap}>
+            {locaisAtendimento.map((loc, idx) => (
+              <View key={`${loc}-${idx}`} style={styles.localChip}>
+                <Ionicons name="business-outline" size={14} color={accent} />
+                <Text style={styles.localChipText}>{loc}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
 }

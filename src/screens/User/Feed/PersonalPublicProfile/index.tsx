@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   Image,
@@ -9,14 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { FontAwesome5, Ionicons, MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Authority } from "./Authority";
 import { Profile } from "./Profile";
-import { PublishResult } from "./PublishResult";
 import { Results } from "./Results";
-import { ModalEditorVitrine } from "./ShowCase";
 import { styles } from "./styles";
 import { Testimonials } from "./Testimonials";
 import {
@@ -28,8 +26,6 @@ import {
 
 export function PersonalPublicProfile({ route, navigation }: any) {
   const { state, actions } = usePersonalPublicProfile(route, navigation);
-  const [editorVisivel, setEditorVisivel] = useState(false);
-  const [publicarVisivel, setPublicarVisivel] = useState(false);
 
   const {
     isOwner,
@@ -40,14 +36,12 @@ export function PersonalPublicProfile({ route, navigation }: any) {
     notaMedia,
     avaliacoes,
     publicacoes,
-    destaquesExibidos,
-    destaqueAberto,
     formacoes,
     depoimentosFixadosIds,
     vitrineConfig,
     dnaAtendimento,
     modalMatchVisivel,
-    statusConexao,
+    temPropostaPendente,
     propostaPendente,
     modalPropostaVisivel,
     precoExibido,
@@ -55,6 +49,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
     matchPreCalculado,
     especialidades,
     todasAsTags,
+    turnosFormatados,
     fotoPerfil,
     capaUrl,
     modalidadesAtendidas,
@@ -63,28 +58,34 @@ export function PersonalPublicProfile({ route, navigation }: any) {
   } = state;
 
   const accent = corDestaque || "#FF6B00";
-  const accentSoft = hexToRgba(accent, 0.14);
-  const accentBorder = hexToRgba(accent, 0.5);
+  const accentSoft = hexToRgba(accent, 0.13);
+  const accentBorder = hexToRgba(accent, 0.42);
 
   if (loading || !personal) {
     return (
       <View style={styles.centerContainer}>
-        <StatusBar barStyle="light-content" backgroundColor="#000" />
+        <StatusBar barStyle="light-content" backgroundColor="#040406" />
         <ActivityIndicator size="large" color={accent} />
       </View>
     );
   }
 
+  const temAmbosPrecos =
+    Boolean(personal.preco_consultoria) &&
+    Boolean(personal.preco_presencial) &&
+    modalidadesAtendidas.length > 1;
+  const expCurta = personal.tempo_experiencia ? personal.tempo_experiencia.split(" ")[0] : "Pro";
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-=      <View style={styles.topBarAbsolute}>
+      <View style={styles.topBarAbsolute}>
         <TouchableOpacity style={styles.btnHeaderIcon} onPress={() => navigation.goBack()} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={20} color="#FFF" />
         </TouchableOpacity>
 
-        {matchPreCalculado ? (
+        {!isOwner && matchPreCalculado ? (
           <TouchableOpacity
             style={styles.matchPillTop}
             onPress={() => actions.setModalMatchVisivel(true)}
@@ -95,14 +96,10 @@ export function PersonalPublicProfile({ route, navigation }: any) {
             <Ionicons name="chevron-forward" size={13} color="#FF6B00" />
           </TouchableOpacity>
         ) : isOwner ? (
-          <TouchableOpacity
-            style={[styles.matchPillTop, { borderColor: accent }]}
-            onPress={() => setEditorVisivel(true)}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="create-outline" size={14} color={accent} />
-            <Text style={[styles.matchPillTopText, { color: accent }]}>EDITAR VITRINE</Text>
-          </TouchableOpacity>
+          <View style={styles.previewPillTop}>
+            <View style={styles.previewPillDot} />
+            <Text style={styles.previewPillTopText}>VISUALIZAÇÃO DO ALUNO</Text>
+          </View>
         ) : null}
       </View>
 
@@ -112,128 +109,203 @@ export function PersonalPublicProfile({ route, navigation }: any) {
             <Image source={{ uri: capaUrl }} style={styles.coverImage} resizeMode="cover" />
           ) : (
             <LinearGradient
-              colors={[hexToRgba(accent, 0.34), "#111115", "#000000"]}
+              colors={[hexToRgba(accent, 0.42), "#14141E", "#040406"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.coverImage}
             />
           )}
-          <LinearGradient colors={["transparent", "#000000"]} style={styles.coverGradient} />
+          <LinearGradient colors={["rgba(4,4,6,0.55)", "transparent"]} style={styles.coverTopFade} />
+          <LinearGradient colors={["transparent", "rgba(4,4,6,0.75)", "#040406"]} style={styles.coverBottomFade} />
         </View>
 
-        <View style={styles.profileHeaderSection}>
-          <View style={styles.avatarStatsRow}>
+        <View style={styles.heroSection}>
+          <View style={styles.avatarWrapper}>
+            <View style={[styles.avatarHalo, { backgroundColor: hexToRgba(accent, 0.16) }]} />
             <View style={[styles.avatarRing, { borderColor: accent }]}>
               <Image source={{ uri: fotoPerfil }} style={styles.avatarImg} resizeMode="cover" />
             </View>
-
-            <View style={styles.instaStatsRow}>
-              <View style={styles.instaStatItem}>
-                <Text style={styles.instaStatVal}>{publicacoes.length}</Text>
-                <Text style={styles.instaStatLabel}>Registros</Text>
-              </View>
-              <View style={styles.instaStatItem}>
-                <Text style={styles.instaStatVal}>{notaMedia > 0 ? `${notaMedia.toFixed(1)}★` : "Novo"}</Text>
-                <Text style={styles.instaStatLabel}>Avaliação</Text>
-              </View>
-              <View style={styles.instaStatItem}>
-                <Text style={styles.instaStatVal} numberOfLines={1}>
-                  {personal.tempo_experiencia?.split(" ")[0] || "Pro"}
-                </Text>
-                <Text style={styles.instaStatLabel}>Nível</Text>
-              </View>
+            <View style={styles.avatarStatusBadge}>
+              {personal.cref_verificado ? (
+                <MaterialCommunityIcons name="check-decagram" size={20} color="#00E676" />
+              ) : (
+                <View style={[styles.onlineDot, { backgroundColor: isPoucasVagas ? "#FF3B30" : "#00E676" }]} />
+              )}
             </View>
           </View>
 
           <View style={styles.nameRow}>
             <Text style={styles.nomeText}>{personal.nome || "Profissional"}</Text>
-            {personal.cref_verificado && <MaterialCommunityIcons name="check-decagram" size={20} color="#00E676" />}
           </View>
 
-          {personal.headline ? (
-            <Text style={styles.headlineText}>{personal.headline}</Text>
-          ) : (
-            <Text style={styles.headlineText} numberOfLines={2}>
-              {personal.descricao || "Personal Trainer no MatchTrainer • Treino sob medida para o seu objetivo."}
-            </Text>
-          )}
+          <Text style={styles.headlineText} numberOfLines={3}>
+            {personal.headline ||
+              personal.descricao ||
+              "Personal Trainer no MatchTrainer • Treino sob medida para o seu objetivo."}
+          </Text>
 
-          <View style={styles.metaRow}>
-            <View style={styles.metaChip}>
-              <Octicons name="location" size={12} color={accent} />
-              <Text style={styles.metaChipText}>{formatarLocalizacaoPremium(personal.cidade, personal.bairro)}</Text>
-            </View>
+          <View style={styles.quickInfoRow}>
             {personal.cref ? (
-              <View style={styles.metaChip}>
-                <MaterialCommunityIcons name="shield-check-outline" size={13} color={accent} />
-                <Text style={styles.metaChipText}>CREF {personal.cref}</Text>
+              <View
+                style={[
+                  styles.quickInfoPill,
+                  {
+                    borderColor: personal.cref_verificado ? "rgba(0, 230, 118, 0.4)" : accentBorder,
+                    backgroundColor: personal.cref_verificado ? "rgba(0, 230, 118, 0.08)" : accentSoft,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="shield-checkmark"
+                  size={13}
+                  color={personal.cref_verificado ? "#00E676" : accent}
+                />
+                <Text style={styles.quickInfoText}>CREF {personal.cref}</Text>
               </View>
+            ) : null}
+
+            <View style={styles.quickInfoPill}>
+              <Ionicons name="location" size={13} color={accent} />
+              <Text style={styles.quickInfoText}>
+                {formatarLocalizacaoPremium(personal.cidade, personal.bairro)}
+              </Text>
+            </View>
+
+            {personal.instagram ? (
+              <TouchableOpacity
+                style={styles.btnSocialMini}
+                onPress={() => actions.abrirRedeSocial("instagram", personal.instagram)}
+                activeOpacity={0.75}
+              >
+                <Ionicons name="logo-instagram" size={16} color="#FFF" />
+              </TouchableOpacity>
+            ) : null}
+
+            {personal.tiktok ? (
+              <TouchableOpacity
+                style={styles.btnSocialMini}
+                onPress={() => actions.abrirRedeSocial("tiktok", personal.tiktok)}
+                activeOpacity={0.75}
+              >
+                <FontAwesome5 name="tiktok" size={13} color="#FFF" />
+              </TouchableOpacity>
             ) : null}
           </View>
 
-          <View style={styles.pillsActionRow}>
-            <View style={styles.modalidadesWrap}>
-              {modalidadesAtendidas.map((mod) => (
-                <View key={mod} style={[styles.modPill, { backgroundColor: accentSoft, borderColor: accentBorder }]}>
-                  <Ionicons
-                    name={mod === "Consultoria" ? "phone-portrait-outline" : "barbell-outline"}
-                    size={12}
-                    color={accent}
-                  />
-                  <Text style={[styles.modPillText, { color: accent }]}>{mod}</Text>
-                </View>
-              ))}
+          <View style={styles.kpiRow}>
+            <TouchableOpacity
+              style={styles.kpiItem}
+              onPress={() => actions.setAbaAtiva("depoimentos")}
+              activeOpacity={0.75}
+            >
+              <View style={styles.kpiValueRow}>
+                <Ionicons name="star" size={14} color={accent} />
+                <Text style={styles.kpiValue}>{notaMedia > 0 ? notaMedia.toFixed(1) : "Novo"}</Text>
+              </View>
+              <Text style={styles.kpiLabel}>
+                {avaliacoes.length > 0 ? `${avaliacoes.length} aval.` : "Avaliação"}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.kpiDivider} />
+
+            <View style={styles.kpiItem}>
+              <View style={styles.kpiValueRow}>
+                <Ionicons name="barbell-outline" size={14} color={accent} />
+                <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit>
+                  {expCurta}
+                </Text>
+              </View>
+              <Text style={styles.kpiLabel}>Experiência</Text>
             </View>
 
-            <View style={styles.socialRow}>
-              {personal.instagram ? (
-                <TouchableOpacity
-                  style={styles.btnSocial}
-                  onPress={() => actions.abrirRedeSocial("instagram", personal.instagram)}
-                  activeOpacity={0.75}
+            <View style={styles.kpiDivider} />
+
+            <View style={styles.kpiItem}>
+              <View style={styles.kpiValueRow}>
+                <Ionicons
+                  name={isPoucasVagas ? "time-outline" : "checkmark-circle-outline"}
+                  size={14}
+                  color={isPoucasVagas ? "#FF3B30" : "#00E676"}
+                />
+                <Text
+                  style={[styles.kpiValue, { color: isPoucasVagas ? "#FF3B30" : "#00E676" }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
-                  <Ionicons name="logo-instagram" size={18} color="#FFF" />
-                </TouchableOpacity>
-              ) : null}
-              {personal.tiktok ? (
-                <TouchableOpacity
-                  style={styles.btnSocial}
-                  onPress={() => actions.abrirRedeSocial("tiktok", personal.tiktok)}
-                  activeOpacity={0.75}
-                >
-                  <FontAwesome5 name="tiktok" size={15} color="#FFF" />
-                </TouchableOpacity>
-              ) : null}
+                  {personal.status_agenda || "Disponível"}
+                </Text>
+              </View>
+              <Text style={styles.kpiLabel}>Agenda</Text>
             </View>
           </View>
 
-          <View style={styles.precoEscassezRow}>
-            <View>
-              <Text style={styles.precoLabel}>{labelPrecoExibido}</Text>
-              <Text style={styles.precoVal}>{precoExibido === "--" ? "Sob consulta" : `R$ ${precoExibido}`}</Text>
+          <View style={styles.investCard}>
+            <View style={styles.investHeader}>
+              <View style={styles.investHeaderLeft}>
+                <View style={[styles.investIconBox, { backgroundColor: accentSoft, borderColor: accentBorder }]}>
+                  <Ionicons name="wallet-outline" size={15} color={accent} />
+                </View>
+                <Text style={styles.investHeaderTitle}>Investimento</Text>
+              </View>
+
+              <View style={styles.modalidadesRow}>
+                {modalidadesAtendidas.map((mod) => (
+                  <View key={mod} style={[styles.modBadge, { backgroundColor: accentSoft, borderColor: accentBorder }]}>
+                    <Ionicons
+                      name={mod === "Consultoria" ? "phone-portrait-outline" : "barbell-outline"}
+                      size={11}
+                      color={accent}
+                    />
+                    <Text style={[styles.modBadgeText, { color: accent }]}>{mod}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
 
-            <View
-              style={[
-                styles.agendaBadge,
-                isPoucasVagas
-                  ? { backgroundColor: "rgba(255, 59, 48, 0.12)", borderColor: "rgba(255, 59, 48, 0.45)" }
-                  : { backgroundColor: "rgba(0, 230, 118, 0.1)", borderColor: "rgba(0, 230, 118, 0.4)" },
-              ]}
-            >
-              <Ionicons
-                name={isPoucasVagas ? "time-outline" : "checkmark-circle-outline"}
-                size={13}
-                color={isPoucasVagas ? "#FF3B30" : "#00E676"}
-              />
-              <Text style={[styles.agendaBadgeText, { color: isPoucasVagas ? "#FF3B30" : "#00E676" }]}>
-                {personal.status_agenda || "Disponível"}
-              </Text>
+            <View style={styles.pricesGrid}>
+              {temAmbosPrecos ? (
+                <>
+                  <View style={styles.priceTile}>
+                    <Text style={styles.priceTileLabel}>Consultoria Online</Text>
+                    <View style={styles.priceTileValRow}>
+                      <Text style={[styles.priceTileVal, { color: accent }]}>R$ {personal.preco_consultoria}</Text>
+                      <Text style={styles.priceTileUnit}>/mês</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.priceTile}>
+                    <Text style={styles.priceTileLabel}>Presencial</Text>
+                    <View style={styles.priceTileValRow}>
+                      <Text style={styles.priceTileVal}>R$ {personal.preco_presencial}</Text>
+                      <Text style={styles.priceTileUnit}>/aula</Text>
+                    </View>
+                  </View>
+                </>
+              ) : (
+                <View style={styles.priceTile}>
+                  <Text style={styles.priceTileLabel}>{labelPrecoExibido}</Text>
+                  <View style={styles.priceTileValRow}>
+                    <Text style={[styles.priceTileVal, { color: accent }]}>
+                      {precoExibido === "--" ? "Sob consulta" : `R$ ${precoExibido}`}
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
+
+            {modalidadesAtendidas.includes("Presencial") && turnosFormatados.length > 0 ? (
+              <View style={styles.turnosRow}>
+                <Ionicons name="time-outline" size={15} color={accent} />
+                <Text style={styles.turnosText} numberOfLines={1}>
+                  Turnos presenciais: {turnosFormatados.join(" • ")}
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
-        {!isOwner && statusConexao === "aguardando_aluno" && (
+        {!isOwner && temPropostaPendente ? (
           <TouchableOpacity
             style={styles.propostaBanner}
             onPress={() => actions.setModalPropostaVisivel(true)}
@@ -246,43 +318,19 @@ export function PersonalPublicProfile({ route, navigation }: any) {
             </View>
             <Ionicons name="chevron-forward" size={18} color="#00E676" />
           </TouchableOpacity>
-        )}
+        ) : null}
 
-=        <View style={styles.highlightsSection}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.highlightsScroll}>
-            {destaquesExibidos.map((dest) => (
-              <TouchableOpacity
-                key={dest.id}
-                style={styles.highlightItem}
-                onPress={() => actions.setDestaqueAberto(dest)}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.highlightCircle, { borderColor: accent }]}>
-                  {dest.imagem_url ? (
-                    <Image source={{ uri: dest.imagem_url }} style={styles.highlightImg} resizeMode="cover" />
-                  ) : (
-                    <Ionicons name={(dest.icone as any) || "flame"} size={22} color={accent} />
-                  )}
-                </View>
-                <Text style={styles.highlightLabel} numberOfLines={1}>
-                  {dest.titulo}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-=        <View style={styles.tabsBar}>
+        <View style={styles.tabContainer}>
           {[
+            { id: "autoridade" as AbaVitrine, label: "Perfil", icon: "person-outline" },
             { id: "resultados" as AbaVitrine, label: "Resultados", icon: "grid-outline" },
-            { id: "autoridade" as AbaVitrine, label: "Autoridade", icon: "ribbon-outline" },
             { id: "depoimentos" as AbaVitrine, label: `Avaliações (${avaliacoes.length})`, icon: "star-outline" },
           ].map((tab) => {
             const ativa = abaAtiva === tab.id;
             return (
               <TouchableOpacity
                 key={tab.id}
-                style={[styles.tabBtn, ativa && { borderBottomColor: accent }]}
+                style={[styles.tabBtn, ativa && { backgroundColor: accentSoft, borderColor: accentBorder }]}
                 onPress={() => actions.setAbaAtiva(tab.id)}
                 activeOpacity={0.8}
               >
@@ -293,17 +341,10 @@ export function PersonalPublicProfile({ route, navigation }: any) {
           })}
         </View>
 
-        {abaAtiva === "resultados" && (
-          <Results
-            publicacoes={publicacoes}
-            isOwner={isOwner}
-            onPublicarNovo={() => setPublicarVisivel(true)}
-          />
-        )}
-
-        {abaAtiva === "autoridade" && (
+        {abaAtiva === "autoridade" ? (
           <Authority
             personal={personal}
+            corDestaque={accent}
             vitrineConfig={vitrineConfig}
             formacoes={formacoes}
             todasAsTags={todasAsTags}
@@ -311,41 +352,42 @@ export function PersonalPublicProfile({ route, navigation }: any) {
             dnaAtendimento={dnaAtendimento}
             diferenciaisLegacy={especialidades?.diferenciais}
           />
-        )}
+        ) : null}
 
-        {abaAtiva === "depoimentos" && (
+        {abaAtiva === "resultados" ? (
+          <Results publicacoes={publicacoes} isOwner={false} onPublicarNovo={() => {}} />
+        ) : null}
+
+        {abaAtiva === "depoimentos" ? (
           <Testimonials
             notaMedia={notaMedia}
             avaliacoes={avaliacoes}
             depoimentosFixadosIds={depoimentosFixadosIds}
           />
-        )}
+        ) : null}
       </ScrollView>
 
-=      <BlurView
+      <BlurView
         intensity={Platform.OS === "ios" ? 85 : 100}
         tint="dark"
         experimentalBlurMethod="dimezisBlurView"
         style={styles.footerBlur}
       >
         {isOwner ? (
-          <View style={styles.footerRow}>
-            <TouchableOpacity style={styles.btnSecondaryFooter} onPress={() => setEditorVisivel(true)} activeOpacity={0.8}>
-              <Ionicons name="create-outline" size={17} color="#FFF" />
-              <Text style={styles.btnSecondaryFooterText}>Editar Vitrine</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.btnPrimaryFooter, { backgroundColor: accentSoft, borderColor: accent }]}
-              onPress={() => setPublicarVisivel(true)}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="add-circle-outline" size={18} color={accent} />
-              <Text style={[styles.btnPrimaryFooterText, { color: accent }]}>Publicar</Text>
+          <View style={styles.ownerViewFooter}>
+            <View style={styles.ownerViewInfo}>
+              <Ionicons name="eye-outline" size={18} color={accent} />
+              <Text style={styles.ownerViewText}>
+                Visualização exata do aluno. Para alterar dados ou vitrine, use Editar Perfil.
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.btnOwnerBack} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+              <Text style={styles.btnOwnerBackText}>Voltar</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.footerRow}>
-            {personal.whatsapp_ativo !== false && (
+            {personal.whatsapp_ativo !== false ? (
               <TouchableOpacity
                 style={styles.btnWhatsApp}
                 onPress={() => actions.handleContato("whatsapp")}
@@ -353,9 +395,9 @@ export function PersonalPublicProfile({ route, navigation }: any) {
               >
                 <MaterialCommunityIcons name="whatsapp" size={24} color="#00E676" />
               </TouchableOpacity>
-            )}
+            ) : null}
 
-            {statusConexao === "aguardando_aluno" ? (
+            {temPropostaPendente ? (
               <TouchableOpacity
                 style={[styles.btnPrimaryFooter, { borderColor: "#00E676", backgroundColor: "rgba(0, 230, 118, 0.14)" }]}
                 onPress={() => actions.setModalPropostaVisivel(true)}
@@ -382,8 +424,8 @@ export function PersonalPublicProfile({ route, navigation }: any) {
         personal={personal}
         isOwner={isOwner}
         corDestaque={accent}
-        destaqueAberto={destaqueAberto}
-        onFecharDestaque={() => actions.setDestaqueAberto(null)}
+        destaqueAberto={null}
+        onFecharDestaque={() => {}}
         modalMatchVisivel={modalMatchVisivel}
         onFecharMatch={() => actions.setModalMatchVisivel(false)}
         matchPreCalculado={matchPreCalculado}
@@ -393,27 +435,6 @@ export function PersonalPublicProfile({ route, navigation }: any) {
         propostaPendente={propostaPendente}
         onAssinarContrato={actions.assinarContrato}
       />
-
-      {isOwner && (
-        <>
-          <ModalEditorVitrine
-            visible={editorVisivel}
-            personal={personal}
-            vitrineConfig={vitrineConfig}
-            avaliacoes={avaliacoes}
-            onClose={() => setEditorVisivel(false)}
-            onSalvo={actions.recarregar}
-          />
-          <PublishResult
-            visible={publicarVisivel}
-            onClose={() => setPublicarVisivel(false)}
-            onPublicado={() => {
-              actions.setAbaAtiva("resultados");
-              actions.recarregar();
-            }}
-          />
-        </>
-      )}
     </View>
   );
 }
