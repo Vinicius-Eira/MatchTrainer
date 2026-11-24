@@ -133,12 +133,7 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
       const [reqPersonal, reqNota, reqAvaliacoes, reqPubs] = await Promise.all([
         supabase.from("personals").select("*").eq("id", personalId).single(),
         supabase.rpc("get_media_avaliacoes", { p_id: personalId }),
-        supabase
-          .from("avaliacoes")
-          .select("id, nota, comentario, criado_em, usuarios(nome)")
-          .eq("personal_id", personalId)
-          .order("criado_em", { ascending: false })
-          .limit(20),
+        supabase.rpc("get_avaliacoes_publicas_personal", { p_personal_id: personalId }),
         supabase
           .from("personal_publicacoes")
           .select("*")
@@ -151,7 +146,18 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
       const prof = reqPersonal.data;
       setPersonal(prof);
       setNotaMedia(Number(reqNota.data || 0));
-      setAvaliacoes(reqAvaliacoes.data || []);
+
+      const avaliacoesFormatadas =
+        !reqAvaliacoes.error && Array.isArray(reqAvaliacoes.data)
+          ? reqAvaliacoes.data.map((a: any) => ({
+              id: a.id,
+              nota: a.nota,
+              comentario: a.comentario,
+              criado_em: a.criado_em,
+              usuarios: { nome: a.primeiro_nome_aluno || "Aluno" },
+            }))
+          : [];
+      setAvaliacoes(avaliacoesFormatadas);
 
       const pubsTabela: PublicacaoVitrine[] = !reqPubs.error && Array.isArray(reqPubs.data) ? reqPubs.data : [];
       const urlsExistentes = new Set(pubsTabela.map((p) => p.imagem_url));
@@ -171,9 +177,7 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
 
       const precoDefault = prof.preco_consultoria || prof.preco_presencial || prof.preco_medio || null;
       setPrecoExibido(precoDefault ? String(precoDefault) : "--");
-      setLabelPrecoExibido(
-        prof.preco_consultoria ? "Consultoria/mês" : prof.preco_presencial ? "Por aula" : "Investimento"
-      );
+      setLabelPrecoExibido(prof.preco_consultoria ? "Consultoria/mês" : prof.preco_presencial ? "Por aula" : "Investimento");
 
       if (user && !ehDono) {
         const { data: connData } = await supabase
@@ -187,7 +191,7 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
 
         if (connData) {
           setStatusConexao(connData.status);
-          if (connData.status === "aguardando_aluno") {
+          if (connData.status === "aguardando_aluno" || connData.status === "aguardando_assinatura") {
             const { data: plano } = await supabase
               .from("planos")
               .select("*")
@@ -202,15 +206,17 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
         const alunoPrefs =
           typeof uData?.preferencias === "string" ? JSON.parse(uData.preferencias) : uData?.preferencias || {};
 
-        const modalidadeAluno = alunoPrefs.servicos_buscados || ["Consultoria", "Presencial"];
+        const servicoUnico = alunoPrefs.servico_buscado;
+        const modalidadeAluno = Array.isArray(alunoPrefs.servicos_buscados)
+          ? alunoPrefs.servicos_buscados
+          : servicoUnico && servicoUnico !== "Indiferente"
+            ? [servicoUnico]
+            : ["Consultoria", "Presencial"];
+
         if (modalidadeAluno.includes("Consultoria") && !modalidadeAluno.includes("Presencial") && prof.preco_consultoria) {
           setPrecoExibido(String(prof.preco_consultoria));
           setLabelPrecoExibido("Consultoria/mês");
-        } else if (
-          modalidadeAluno.includes("Presencial") &&
-          !modalidadeAluno.includes("Consultoria") &&
-          prof.preco_presencial
-        ) {
+        } else if (modalidadeAluno.includes("Presencial") && !modalidadeAluno.includes("Consultoria") && prof.preco_presencial) {
           setPrecoExibido(String(prof.preco_presencial));
           setLabelPrecoExibido("Por aula");
         }
