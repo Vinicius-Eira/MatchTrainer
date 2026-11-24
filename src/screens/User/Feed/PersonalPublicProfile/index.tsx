@@ -79,8 +79,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* TOP BAR — SELO MATCH FIXO NA IDENTIDADE MATCHTRAINER */}
-      <View style={styles.topBarAbsolute}>
+=      <View style={styles.topBarAbsolute}>
         <TouchableOpacity style={styles.btnHeaderIcon} onPress={() => navigation.goBack()} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={20} color="#FFF" />
         </TouchableOpacity>
@@ -249,8 +248,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
           </TouchableOpacity>
         )}
 
-        {/* DESTAQUES (FOTO NA BOLINHA OU ÍCONE NA COR DO PERSONAL) */}
-        <View style={styles.highlightsSection}>
+=        <View style={styles.highlightsSection}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.highlightsScroll}>
             {destaquesExibidos.map((dest) => (
               <TouchableOpacity
@@ -274,8 +272,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
           </ScrollView>
         </View>
 
-        {/* BARRA DAS 3 ABAS */}
-        <View style={styles.tabsBar}>
+=        <View style={styles.tabsBar}>
           {[
             { id: "resultados" as AbaVitrine, label: "Resultados", icon: "grid-outline" },
             { id: "autoridade" as AbaVitrine, label: "Autoridade", icon: "ribbon-outline" },
@@ -325,8 +322,7 @@ export function PersonalPublicProfile({ route, navigation }: any) {
         )}
       </ScrollView>
 
-      {/* RODAPÉ FIXO — WHATSAPP, CHAT E CONTRATO PRESERVADOS */}
-      <BlurView
+=      <BlurView
         intensity={Platform.OS === "ios" ? 85 : 100}
         tint="dark"
         experimentalBlurMethod="dimezisBlurView"

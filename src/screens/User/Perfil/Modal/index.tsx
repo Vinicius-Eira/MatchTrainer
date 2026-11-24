@@ -61,8 +61,7 @@ export function PrivacyModal({
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
-            {/* 1. CONTROLE DE DADOS SENSÍVEIS DE SAÚDE */}
-            <View style={styles.lgpdCard}>
+=            <View style={styles.lgpdCard}>
               <Text style={styles.lgpdCardTitle}>Dados Sensíveis de Saúde no Match</Text>
               <Text style={styles.lgpdCardText}>
                 Informações sobre lesões, gestação ou condições clínicas são opcionais e usadas apenas para filtrar
@@ -106,8 +105,7 @@ export function PrivacyModal({
               )}
             </View>
 
-            {/* 2. COMPARTILHAMENTO COM PROFISSIONAIS */}
-            <View style={styles.lgpdCard}>
+=            <View style={styles.lgpdCard}>
               <Text style={styles.lgpdCardTitle}>Quem Pode Ver Seu Perfil</Text>
               <Text style={styles.lgpdCardText}>
                 Seu perfil é privado. Nenhum personal trainer vê seus dados pessoais ou de saúde antes de você iniciar
@@ -138,8 +136,7 @@ export function PrivacyModal({
               )}
             </View>
 
-            {/* 3. RECOMENDAÇÃO AUTOMATIZADA E DIREITOS */}
-            <View style={styles.lgpdCard}>
+=            <View style={styles.lgpdCard}>
               <Text style={styles.lgpdCardTitle}>Transparência do Algoritmo de Match</Text>
               <Text style={styles.lgpdCardText}>
                 O MatchTrainer utiliza critérios objetivos (modalidade, objetivos, restrições de saúde quando autorizadas,
