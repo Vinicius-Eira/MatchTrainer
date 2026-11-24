@@ -24,6 +24,8 @@ export function usePerfilAluno(navigation: any) {
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [modalSucessoVisivel, setModalSucessoVisivel] = useState(false);
+  const [modalSairVisivel, setModalSairVisivel] = useState(false);
+  const [saindo, setSaindo] = useState(false);
   const [inputFocado, setInputFocado] = useState<string | null>(null);
   const [buscandoLocal, setBuscandoLocal] = useState(false);
 
@@ -290,18 +292,17 @@ export function usePerfilAluno(navigation: any) {
     }
   };
 
-  const logout = () => {
-    Alert.alert("Sair da Conta", "Deseja realmente sair?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Sair",
-        style: "destructive",
-        onPress: async () => {
-          await supabase.auth.signOut();
-          navigation.reset({ index: 0, routes: [{ name: "ChoiceScreen" }] });
-        },
-      },
-    ]);
+  const logout = () => setModalSairVisivel(true);
+
+  const confirmarLogout = async () => {
+    setSaindo(true);
+    try {
+      await supabase.auth.signOut();
+      setModalSairVisivel(false);
+      navigation.reset({ index: 0, routes: [{ name: "ChoiceScreen" }] });
+    } finally {
+      setSaindo(false);
+    }
   };
 
   return {
@@ -328,6 +329,8 @@ export function usePerfilAluno(navigation: any) {
       consentimentoSaudeAtivo,
       consentimentos,
       personalsComAcesso,
+      modalSairVisivel,
+      saindo
     },
     actions: {
       setNome,
@@ -356,6 +359,7 @@ export function usePerfilAluno(navigation: any) {
       },
       handleSalvar,
       logout,
+      fecharModalSair: () => setModalSairVisivel(false), confirmarLogout
     },
   };
 }

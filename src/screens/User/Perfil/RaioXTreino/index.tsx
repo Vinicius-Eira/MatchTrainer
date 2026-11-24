@@ -354,22 +354,23 @@ export function RaioXTreino({ navigation }: any) {
           {renderPremiumList(OPCOES_INVESTIMENTO, state.investimento, actions.setInvestimento)}
         </View>
 
-        {!state.isLocked && (
+        {!state.isLocked ? (
           <TouchableOpacity
-            style={styles.btnSalvar}
+            style={[styles.btnSalvar, state.salvando && { opacity: 0.6 }]}
             onPress={actions.handleSalvar}
             disabled={state.salvando}
             activeOpacity={0.85}
           >
-            <LinearGradient colors={["#FF8C00", "#FF5500"]} style={styles.btnGradient}>
-              {state.salvando ? (
-                <ActivityIndicator size="small" color="#000" />
-              ) : (
+            {state.salvando ? (
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle-outline" size={20} color={theme.colors.primary} />
                 <Text style={styles.btnSalvarText}>Salvar Preferências</Text>
-              )}
-            </LinearGradient>
+              </>
+            )}
           </TouchableOpacity>
-        )}
+        ) : null}
       </ScrollView>
     </View>
   );

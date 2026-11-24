@@ -66,7 +66,7 @@ export interface PersonalMatchItem {
   iconUi: string;
 }
 
-export const SCORE_MINIMO_MATCH = 80;
+export const SCORE_MINIMO_MATCH = 85;
 export const LIMITE_TOP_MATCH = 3;
 
 export function classificarTierMatch(score: number): { tier: MatchTier; label: string } {

@@ -394,6 +394,49 @@ export function PerfilAluno({ navigation }: any) {
           </View>
         </View>
       </Modal>
+      <Modal
+        visible={Boolean(state.modalSairVisivel)}
+        transparent
+        animationType="fade"
+        onRequestClose={actions.fecharModalSair}
+      >
+        <View style={styles.successOverlay}>
+          <View style={styles.logoutCard}>
+            <View style={styles.logoutIconOuter}>
+              <Ionicons name="log-out-outline" size={32} color="#FF3B30" />
+            </View>
+            <Text style={styles.successTitle}>Sair da sua conta?</Text>
+            <Text style={styles.successSub}>
+              Você precisará fazer login novamente para acompanhar seus treinos e matches.
+            </Text>
+            <View style={styles.logoutActionsRow}>
+              <TouchableOpacity
+                style={styles.logoutBtnCancel}
+                onPress={actions.fecharModalSair}
+                disabled={state.saindo}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.logoutBtnCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.logoutBtnConfirm, state.saindo && { opacity: 0.6 }]}
+                onPress={actions.confirmarLogout}
+                disabled={state.saindo}
+                activeOpacity={0.85}
+              >
+                {state.saindo ? (
+                  <ActivityIndicator size="small" color="#FF3B30" />
+                ) : (
+                  <>
+                    <Ionicons name="exit-outline" size={16} color="#FF3B30" />
+                    <Text style={styles.logoutBtnConfirmText}>Sair</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
