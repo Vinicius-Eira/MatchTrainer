@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StatusBar,
@@ -54,14 +55,21 @@ export function PerfilAluno({ navigation }: any) {
         </TouchableOpacity>
       </BlurView>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.photoSection}>
           <TouchableOpacity onPress={actions.escolherFoto} style={styles.avatarContainer} activeOpacity={0.8}>
             <LinearGradient colors={[theme.colors.primary, "rgba(255, 107, 0, 0.2)"]} style={styles.avatarRing}>
-              <Image
-                source={{ uri: state.fotoUri || "https://via.placeholder.com/150" }}
-                style={styles.avatarImage}
-              />
+              {state.fotoUri ? (
+                <Image source={{ uri: state.fotoUri }} style={styles.avatarImage} />
+              ) : (
+                <View style={[styles.avatarImage, { justifyContent: "center", alignItems: "center" }]}>
+                  <Ionicons name="person" size={44} color="#666" />
+                </View>
+              )}
             </LinearGradient>
             <View style={styles.cameraBadge}>
               <Ionicons name="camera" size={16} color="#000" />
@@ -319,24 +327,11 @@ export function PerfilAluno({ navigation }: any) {
             <Text style={styles.actionDesc}>
               {state.temPersonal
                 ? "Preferências de Match blindadas (Contrato Ativo)"
-                : "Veja as diretrizes do seu perfil comportamental"}
+                : "Edite sua logística, objetivos e preferências do Match"}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#666" />
         </TouchableOpacity>
-
-        {!state.temPersonal && (
-          <TouchableOpacity style={styles.actionCard} onPress={actions.abrirEditarPreferencias} activeOpacity={0.8}>
-            <View style={styles.actionIconBox}>
-              <Ionicons name="options-outline" size={20} color={theme.colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.actionTitle}>Ajustar Preferências do Match</Text>
-              <Text style={styles.actionDesc}>Atualize objetivos, horários, modalidade ou estilo de treinador.</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#666" />
-          </TouchableOpacity>
-        )}
 
         <TouchableOpacity style={styles.actionCard} onPress={actions.abrirPrivacidade} activeOpacity={0.8}>
           <View style={styles.actionIconBox}>
@@ -349,17 +344,20 @@ export function PerfilAluno({ navigation }: any) {
           <Ionicons name="chevron-forward" size={18} color="#666" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.btnSalvar} onPress={actions.handleSalvar} disabled={state.salvando} activeOpacity={0.85}>
-          <LinearGradient colors={["#FF8C00", "#FF5500"]} style={styles.btnGradient}>
-            {state.salvando ? (
-              <ActivityIndicator size="small" color="#000" />
-            ) : (
-              <>
-                <Text style={styles.btnSalvarText}>Atualizar Perfil</Text>
-                <Ionicons name="checkmark-circle" size={20} color="#000" style={{ marginLeft: 8 }} />
-              </>
-            )}
-          </LinearGradient>
+        <TouchableOpacity
+          style={[styles.btnSalvar, state.salvando && { opacity: 0.6 }]}
+          onPress={actions.handleSalvar}
+          disabled={state.salvando}
+          activeOpacity={0.85}
+        >
+          {state.salvando ? (
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle-outline" size={20} color={theme.colors.primary} />
+              <Text style={styles.btnSalvarText}>Atualizar Perfil</Text>
+            </>
+          )}
         </TouchableOpacity>
       </ScrollView>
 
@@ -374,6 +372,28 @@ export function PerfilAluno({ navigation }: any) {
         onRevogarSaude={actions.confirmarRevogarSaude}
         onAbrirTermos={actions.abrirTermos}
       />
+
+      <Modal
+        visible={Boolean(state.modalSucessoVisivel)}
+        transparent
+        animationType="fade"
+        onRequestClose={actions.fecharModalSucesso}
+      >
+        <View style={styles.successOverlay}>
+          <View style={styles.successCard}>
+            <View style={styles.successIconOuter}>
+              <Ionicons name="checkmark-done" size={34} color="#00E676" />
+            </View>
+            <Text style={styles.successTitle}>Perfil salvo com sucesso!</Text>
+            <Text style={styles.successSub}>
+              Suas informações e localização foram atualizadas no MatchTrainer.
+            </Text>
+            <TouchableOpacity style={styles.successBtn} onPress={actions.fecharModalSucesso} activeOpacity={0.85}>
+              <Text style={styles.successBtnText}>Continuar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

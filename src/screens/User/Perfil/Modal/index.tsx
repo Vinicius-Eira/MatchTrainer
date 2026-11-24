@@ -17,9 +17,9 @@ interface PrivacyModalProps {
 }
 
 const formatarDataHora = (iso?: string | null) => {
-  if (!iso) return "--";
+  if (!iso) return "";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "--";
+  if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString("pt-BR");
 };
 
@@ -40,10 +40,12 @@ export function PrivacyModal({
   onRevogarSaude,
   onAbrirTermos,
 }: PrivacyModalProps) {
-  const ultimoSaude = consentimentos.find((c) => c.tipo_consentimento === "dados_saude_match");
+  const ultimoSaude = (consentimentos || []).find((c) => c.tipo_consentimento === "dados_saude_match");
+  const dataUltimo = formatarDataHora(ultimoSaude?.aceito_em);
+  const labelStatus = dataUltimo ? `Status atual (${dataUltimo}):` : "Status atual:";
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal visible={Boolean(visible)} animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalHeader}>
           <View>
@@ -61,7 +63,7 @@ export function PrivacyModal({
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
-=            <View style={styles.lgpdCard}>
+            <View style={styles.lgpdCard}>
               <Text style={styles.lgpdCardTitle}>Dados Sensíveis de Saúde no Match</Text>
               <Text style={styles.lgpdCardText}>
                 Informações sobre lesões, gestação ou condições clínicas são opcionais e usadas apenas para filtrar
@@ -69,9 +71,7 @@ export function PrivacyModal({
               </Text>
 
               <View style={styles.lgpdStatusRow}>
-                <Text style={styles.lgpdCardText}>
-                  Status atual{ultimoSaude?.aceito_em ? ` (${formatarDataHora(ultimoSaude.aceito_em)})` : ""}:
-                </Text>
+                <Text style={styles.lgpdCardText}>{labelStatus}</Text>
                 <View
                   style={[
                     styles.lgpdPill,
@@ -81,12 +81,12 @@ export function PrivacyModal({
                   ]}
                 >
                   <Text style={[styles.lgpdPillText, { color: consentimentoSaudeAtivo ? "#00E676" : "#A1A1AA" }]}>
-                    {consentimentoSaudeAtivo ? "Autorizado" : "Não informado / Revogado"}
+                    {consentimentoSaudeAtivo ? "Autorizado" : "Não informado"}
                   </Text>
                 </View>
               </View>
 
-              {consentimentoSaudeAtivo && (
+              {consentimentoSaudeAtivo ? (
                 <TouchableOpacity
                   style={[styles.btnRevogar, revogandoSaude && { opacity: 0.6 }]}
                   onPress={onRevogarSaude}
@@ -102,25 +102,25 @@ export function PrivacyModal({
                     </>
                   )}
                 </TouchableOpacity>
-              )}
+              ) : null}
             </View>
 
-=            <View style={styles.lgpdCard}>
+            <View style={styles.lgpdCard}>
               <Text style={styles.lgpdCardTitle}>Quem Pode Ver Seu Perfil</Text>
               <Text style={styles.lgpdCardText}>
                 Seu perfil é privado. Nenhum personal trainer vê seus dados pessoais ou de saúde antes de você iniciar
                 contato ou aceitar um convite.
               </Text>
 
-              {personalsComAcesso.length === 0 ? (
+              {!personalsComAcesso || personalsComAcesso.length === 0 ? (
                 <Text style={[styles.lgpdCardText, { marginTop: 10, color: "#71717A" }]}>
                   Nenhum profissional possui acesso aos seus dados no momento.
                 </Text>
               ) : (
                 personalsComAcesso.map((item) => (
                   <View key={item.conexaoId} style={styles.sharedRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.actionTitle}>{item.personalNome}</Text>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={styles.actionTitle}>{item.personalNome || "Profissional"}</Text>
                       <Text style={styles.actionDesc}>{item.personalCidade || "Atendimento Online"}</Text>
                     </View>
                     <View
@@ -136,7 +136,7 @@ export function PrivacyModal({
               )}
             </View>
 
-=            <View style={styles.lgpdCard}>
+            <View style={styles.lgpdCard}>
               <Text style={styles.lgpdCardTitle}>Transparência do Algoritmo de Match</Text>
               <Text style={styles.lgpdCardText}>
                 O MatchTrainer utiliza critérios objetivos (modalidade, objetivos, restrições de saúde quando autorizadas,

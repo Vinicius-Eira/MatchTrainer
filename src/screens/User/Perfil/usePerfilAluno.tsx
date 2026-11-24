@@ -23,6 +23,7 @@ function validarDataBr(dataStr: string): string | null {
 export function usePerfilAluno(navigation: any) {
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [modalSucessoVisivel, setModalSucessoVisivel] = useState(false);
   const [inputFocado, setInputFocado] = useState<string | null>(null);
   const [buscandoLocal, setBuscandoLocal] = useState(false);
 
@@ -281,7 +282,7 @@ export function usePerfilAluno(navigation: any) {
       const { error } = await supabase.from("usuarios").update(payload).eq("id", user.id);
       if (error) throw error;
 
-      Alert.alert("Sucesso", "Seu perfil foi atualizado!");
+      setModalSucessoVisivel(true);
     } catch (error: any) {
       Alert.alert("Erro ao Salvar", error.message);
     } finally {
@@ -321,6 +322,7 @@ export function usePerfilAluno(navigation: any) {
       metaPeso,
       temPersonal,
       modalPrivacidadeVisivel,
+      modalSucessoVisivel,
       carregandoPrivacidade,
       revogandoSaude,
       consentimentoSaudeAtivo,
@@ -346,10 +348,11 @@ export function usePerfilAluno(navigation: any) {
       abrirEditarPreferencias,
       abrirPrivacidade,
       fecharPrivacidade: () => setModalPrivacidadeVisivel(false),
+      fecharModalSucesso: () => setModalSucessoVisivel(false),
       confirmarRevogarSaude,
       abrirTermos: () => {
         setModalPrivacidadeVisivel(false);
-        navigation.navigate("TermosDeUso");
+        navigation.navigate("TermosDeUso", { somenteLeitura: true, origem: "PerfilAluno" });
       },
       handleSalvar,
       logout,
