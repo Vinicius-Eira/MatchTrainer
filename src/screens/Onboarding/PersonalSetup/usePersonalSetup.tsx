@@ -1,84 +1,23 @@
 import { useEffect, useState } from "react";
-import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
+import {
+  buscarEstadoVerificacaoCref,
+  EXIGIR_CEDULA_CREF_NO_SETUP,
+  validarFormatoCref,
+} from "../../../services/crefVerificacao";
 import { supabase } from "../../../services/supabase";
+import { FeedbackModalData, FeedbackModalTipo } from "./components/SetupModals";
+import {
+  DestaqueStoryItem,
+  FormacaoSetupItem,
+  PublicacaoSetupItem,
+  uploadImagemStorage,
+  usePersonalCref,
+  usePersonalVitrine,
+} from "./usePersonalSetupMediaCref";
 
-export interface DestaqueStoryItem {
-  id: string;
-  titulo: string;
-  icone: string;
-  subtitulo: string;
-  conteudo: string;
-  imagem_url?: string | null;
-  pendenteUpload?: boolean;
-  base64?: string | null;
-}
-
-export interface FormacaoSetupItem {
-  id: string;
-  titulo: string;
-  instituicao: string;
-  ano?: string;
-}
-
-export interface PublicacaoSetupItem {
-  id: string;
-  imagem_url: string;
-  categoria: "resultado" | "treino" | "certificado" | "espaco";
-  titulo?: string | null;
-  legenda?: string | null;
-  metrica_destaque?: string | null;
-  fixado: boolean;
-  pendenteUpload?: boolean;
-  base64?: string | null;
-}
-
-const B64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-function base64ToUint8Array(base64: string): Uint8Array {
-  const clean = base64.replace(/^data:image\/\w+;base64,/, "").replace(/[^A-Za-z0-9+/=]/g, "");
-  const padding = clean.endsWith("==") ? 2 : clean.endsWith("=") ? 1 : 0;
-  const byteLength = (clean.length * 3) / 4 - padding;
-  const bytes = new Uint8Array(byteLength);
-
-  let p = 0;
-  for (let i = 0; i < clean.length; i += 4) {
-    const e1 = B64_CHARS.indexOf(clean[i]);
-    const e2 = B64_CHARS.indexOf(clean[i + 1]);
-    const e3 = B64_CHARS.indexOf(clean[i + 2]);
-    const e4 = B64_CHARS.indexOf(clean[i + 3]);
-
-    const c1 = (e1 << 2) | (e2 >> 4);
-    const c2 = ((e2 & 15) << 4) | (e3 >> 2);
-    const c3 = ((e3 & 3) << 6) | e4;
-
-    if (p < byteLength) bytes[p++] = c1;
-    if (e3 !== -1 && clean[i + 2] !== "=" && p < byteLength) bytes[p++] = c2;
-    if (e4 !== -1 && clean[i + 3] !== "=" && p < byteLength) bytes[p++] = c3;
-  }
-
-  return bytes;
-}
-
-async function uploadImagemStorage(
-  userId: string,
-  pasta: "avatar" | "capa" | "feed" | "story",
-  base64: string
-): Promise<string> {
-  const bytes = base64ToUint8Array(base64);
-  const filePath = `${userId}/${pasta}-${Date.now()}-${Math.floor(Math.random() * 1000)}.jpg`;
-
-  const { error } = await supabase.storage.from("vitrine-personal").upload(filePath, bytes, {
-    contentType: "image/jpeg",
-    upsert: true,
-  });
-
-  if (error) throw error;
-
-  const { data } = supabase.storage.from("vitrine-personal").getPublicUrl(filePath);
-  return data.publicUrl;
-}
+export type { DestaqueStoryItem, FormacaoSetupItem, PublicacaoSetupItem };
 
 export function usePersonalSetup(navigation: any) {
   const [loading, setLoading] = useState(false);
@@ -87,10 +26,32 @@ export function usePersonalSetup(navigation: any) {
   const [inputFocado, setInputFocado] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
 
+  const [feedbackModal, setFeedbackModal] = useState<FeedbackModalData>({
+    visible: false,
+    tipo: "warning",
+    titulo: "",
+    mensagem: "",
+  });
+  const [modalSalvoVisivel, setModalSalvoVisivel] = useState(false);
+  const [savedUserId, setSavedUserId] = useState<string | null>(null);
+
+  const mostrarFeedback = (
+    tipo: FeedbackModalTipo,
+    titulo: string,
+    mensagem: string,
+    kicker?: string,
+    textoBotao?: string
+  ) => {
+    setFeedbackModal({ visible: true, tipo, titulo, mensagem, kicker, textoBotao });
+  };
+
+  const fecharFeedback = () => {
+    setFeedbackModal((prev) => ({ ...prev, visible: false }));
+  };
+
   const [nome, setNome] = useState("");
   const [fotoUri, setFotoUri] = useState<string | null>(null);
   const [fotoBase64, setFotoBase64] = useState<string | null>(null);
-  const [cref, setCref] = useState("");
   const [telefone, setTelefone] = useState("");
   const [genero, setGenero] = useState("");
   const [cidade, setCidade] = useState("");
@@ -127,20 +88,8 @@ export function usePersonalSetup(navigation: any) {
   const [outroValorTexto, setOutroValorTexto] = useState("");
   const [experiencia, setExperiencia] = useState("");
 
-  const [corDestaque, setCorDestaque] = useState("#FF6B00");
-  const [capaUrl, setCapaUrl] = useState<string | null>(null);
-  const [capaBase64, setCapaBase64] = useState<string | null>(null);
-  const [headline, setHeadline] = useState("");
-  const [bio, setBio] = useState("");
-  const [metodoTitulo, setMetodoTitulo] = useState("");
-  const [metodoDescricao, setMetodoDescricao] = useState("");
-  const [diferenciaisLista, setDiferenciaisLista] = useState<string[]>([]);
-  const [destaques, setDestaques] = useState<DestaqueStoryItem[]>([]);
-  const [formacoes, setFormacoes] = useState<FormacaoSetupItem[]>([]);
-  const [avaliacoes, setAvaliacoes] = useState<any[]>([]);
-  const [depoimentosFixados, setDepoimentosFixados] = useState<string[]>([]);
-  const [publicacoes, setPublicacoes] = useState<PublicacaoSetupItem[]>([]);
-  const [publicacoesRemoverIds, setPublicacoesRemoverIds] = useState<string[]>([]);
+  const crefHook = usePersonalCref(nome, mostrarFeedback);
+  const vitrine = usePersonalVitrine(mostrarFeedback);
 
   useEffect(() => {
     const carregarDadosExistentes = async () => {
@@ -151,9 +100,9 @@ export function usePersonalSetup(navigation: any) {
         if (!user) return;
 
         if (user.user_metadata?.nome) setNome(user.user_metadata.nome);
-        if (user.user_metadata?.cref) setCref(user.user_metadata.cref.toUpperCase());
+        if (user.user_metadata?.cref) crefHook.setCref(user.user_metadata.cref.toUpperCase());
 
-        const [reqPlanos, reqPersonal, reqPubs, reqAval] = await Promise.all([
+        const [reqPlanos, reqPersonal, reqPubs, reqAval, estadoCref] = await Promise.all([
           supabase.from("planos").select("servicos_inclusos").eq("personal_id", user.id).eq("status", "ativo"),
           supabase.from("personals").select("*").eq("id", user.id).maybeSingle(),
           supabase
@@ -168,7 +117,13 @@ export function usePersonalSetup(navigation: any) {
             .eq("personal_id", user.id)
             .order("criado_em", { ascending: false })
             .limit(20),
+          buscarEstadoVerificacaoCref().catch(() => ({
+            status: "nao_enviado" as const,
+            crefVerificado: false,
+          })),
         ]);
+
+        crefHook.setCrefVerificacao(estadoCref);
 
         if (reqPlanos.data) {
           const bloqueados: string[] = [];
@@ -183,7 +138,7 @@ export function usePersonalSetup(navigation: any) {
         }
 
         if (!reqPubs.error && Array.isArray(reqPubs.data)) {
-          setPublicacoes(
+          vitrine.setPublicacoes(
             reqPubs.data.map((p: any) => ({
               id: p.id,
               imagem_url: p.imagem_url,
@@ -197,17 +152,17 @@ export function usePersonalSetup(navigation: any) {
         }
 
         if (!reqAval.error && Array.isArray(reqAval.data)) {
-          setAvaliacoes(reqAval.data);
+          vitrine.setAvaliacoes(reqAval.data);
         }
 
         const data = reqPersonal.data;
         if (data) {
           if (data.ativo) setIsEditing(true);
-          if (data.cref) setCref(data.cref.toUpperCase());
+          if (data.cref) crefHook.setCref(data.cref.toUpperCase());
           if (data.nome) setNome(data.nome);
-          if (data.capa_url) setCapaUrl(data.capa_url);
-          if (data.headline) setHeadline(data.headline);
-          if (data.descricao) setBio(data.descricao);
+          if (data.capa_url) vitrine.setCapaUrl(data.capa_url);
+          if (data.headline) vitrine.setHeadline(data.headline);
+          if (data.descricao) vitrine.setBio(data.descricao);
           if (data.telefone) {
             let v = data.telefone.replace(/\D/g, "");
             if (v.length > 2) v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
@@ -267,13 +222,13 @@ export function usePersonalSetup(navigation: any) {
               ? JSON.parse(data.vitrine_config)
               : data.vitrine_config || {};
 
-          if (vc.cor_destaque) setCorDestaque(vc.cor_destaque);
-          setMetodoTitulo(vc.metodo_titulo || "");
-          setMetodoDescricao(vc.metodo_descricao || esp.diferenciais || "");
-          setDiferenciaisLista(Array.isArray(vc.diferenciais_lista) ? vc.diferenciais_lista : []);
-          setDestaques(Array.isArray(vc.destaques) ? vc.destaques : []);
-          setFormacoes(Array.isArray(vc.formacoes) ? vc.formacoes : []);
-          setDepoimentosFixados(Array.isArray(vc.depoimentos_fixados) ? vc.depoimentos_fixados : []);
+          if (vc.cor_destaque) vitrine.setCorDestaque(vc.cor_destaque);
+          vitrine.setMetodoTitulo(vc.metodo_titulo || "");
+          vitrine.setMetodoDescricao(vc.metodo_descricao || esp.diferenciais || "");
+          vitrine.setDiferenciaisLista(Array.isArray(vc.diferenciais_lista) ? vc.diferenciais_lista : []);
+          vitrine.setDestaques(Array.isArray(vc.destaques) ? vc.destaques : []);
+          vitrine.setFormacoes(Array.isArray(vc.formacoes) ? vc.formacoes : []);
+          vitrine.setDepoimentosFixados(Array.isArray(vc.depoimentos_fixados) ? vc.depoimentos_fixados : []);
         }
       } catch (error) {
         console.log("Erro ao carregar PersonalSetup:", error);
@@ -287,23 +242,68 @@ export function usePersonalSetup(navigation: any) {
 
   const validarPasso = (passo: number): boolean => {
     if (passo === 1) {
-      if (!nome.trim() || !cref.trim() || !telefone.trim() || !genero || !cidade.trim()) {
-        Alert.alert("Passo 1 incompleto", "Preencha nome, gênero, CREF, WhatsApp e sincronize sua localização.");
+      if (!nome.trim() || !crefHook.cref.trim() || !telefone.trim() || !genero || !cidade.trim()) {
+        mostrarFeedback(
+          "warning",
+          "Passo 1 incompleto",
+          "Preencha nome, gênero, CREF, WhatsApp e sincronize sua localização para continuar.",
+          "DADOS OBRIGATÓRIOS"
+        );
+        return false;
+      }
+      const checkCref = validarFormatoCref(crefHook.cref);
+      if (!checkCref.valido) {
+        mostrarFeedback(
+          "error",
+          "CREF Inválido",
+          checkCref.erro || "Informe seu CREF no padrão oficial: 000000-G/SP ou 000000-P/RJ.",
+          "VALIDAÇÃO CREF"
+        );
+        return false;
+      }
+      if (crefHook.crefDisponivel === false) {
+        mostrarFeedback(
+          "error",
+          "CREF Já Cadastrado",
+          "Este número de CREF já está vinculado a outra conta no MatchTrainer.",
+          "CREF DUPLICADO"
+        );
+        return false;
+      }
+      if (
+        EXIGIR_CEDULA_CREF_NO_SETUP &&
+        !crefHook.crefVerificacao.crefVerificado &&
+        crefHook.crefVerificacao.status !== "em_analise"
+      ) {
+        mostrarFeedback(
+          "warning",
+          "Envie sua Cédula CREF",
+          "Para garantir que apenas profissionais registrados atendam no app, envie a foto da sua cédula do CREF ou o PDF do CREF Digital antes de avançar.",
+          "VERIFICAÇÃO OBRIGATÓRIA"
+        );
         return false;
       }
     }
     if (passo === 2) {
       if (servicosOferecidos.length === 0) {
-        Alert.alert("Passo 2 incompleto", "Selecione ao menos um serviço.");
+        mostrarFeedback("warning", "Passo 2 incompleto", "Selecione ao menos um serviço para continuar.");
         return false;
       }
       if (servicosOferecidos.includes("Presencial")) {
         if (locaisAtendidos.length === 0 || turnos.length === 0) {
-          Alert.alert("Passo 2 incompleto", "Para atendimento presencial, informe os Locais e Turnos.");
+          mostrarFeedback(
+            "warning",
+            "Passo 2 incompleto",
+            "Para atendimento presencial, informe os Locais e Turnos disponíveis."
+          );
           return false;
         }
         if (turnos.includes("variado") && !horariosEspecificos.trim()) {
-          Alert.alert("Passo 2 incompleto", "Informe seus horários específicos de disponibilidade.");
+          mostrarFeedback(
+            "warning",
+            "Passo 2 incompleto",
+            "Informe seus horários específicos de disponibilidade."
+          );
           return false;
         }
       }
@@ -315,25 +315,29 @@ export function usePersonalSetup(navigation: any) {
         limitacoesAtendidas.length === 0 ||
         faixasEtariasAtendidas.length === 0
       ) {
-        Alert.alert("Passo 3 incompleto", "Selecione público, faixas etárias, focos de treino e restrições.");
+        mostrarFeedback(
+          "warning",
+          "Passo 3 incompleto",
+          "Selecione público, faixas etárias, focos de treino e restrições."
+        );
         return false;
       }
       if (objetivosAtendidos.includes("outro") && !outroObjetivoTexto.trim()) {
-        Alert.alert("Passo 3 incompleto", "Especifique o seu foco de treino em 'Outro Foco'.");
+        mostrarFeedback("warning", "Passo 3 incompleto", "Especifique o seu foco de treino em 'Outro Foco'.");
         return false;
       }
       if (limitacoesAtendidas.includes("outra") && !outraLimitacaoTexto.trim()) {
-        Alert.alert("Passo 3 incompleto", "Especifique a restrição em 'Outra Restrição'.");
+        mostrarFeedback("warning", "Passo 3 incompleto", "Especifique a restrição em 'Outra Restrição'.");
         return false;
       }
     }
     if (passo === 4) {
       if (!cobranca || !acompanhamento || !autonomiaEsperada || valoresAluno.length === 0 || !estiloComunicacao) {
-        Alert.alert("Passo 4 incompleto", "Preencha suas preferências do Motor do Match.");
+        mostrarFeedback("warning", "Passo 4 incompleto", "Preencha suas preferências do Motor do Match.");
         return false;
       }
       if (valoresAluno.includes("outro") && !outroValorTexto.trim()) {
-        Alert.alert("Passo 4 incompleto", "Especifique o valor adicional selecionado.");
+        mostrarFeedback("warning", "Passo 4 incompleto", "Especifique o valor adicional selecionado.");
         return false;
       }
     }
@@ -348,9 +352,7 @@ export function usePersonalSetup(navigation: any) {
   const passoAnterior = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
   const irParaPasso = (passo: number) => {
-    if (isEditing || passo <= currentStep) {
-      setCurrentStep(passo);
-    }
+    if (isEditing || passo <= currentStep) setCurrentStep(passo);
   };
 
   const obterLocalizacaoAtual = async () => {
@@ -358,7 +360,7 @@ export function usePersonalSetup(navigation: any) {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Aviso", "Permissão de localização negada.");
+        mostrarFeedback("warning", "Permissão Negada", "Libere a localização para sincronizar seu radar GPS.");
         return;
       }
 
@@ -371,15 +373,13 @@ export function usePersonalSetup(navigation: any) {
         longitude: location.coords.longitude,
       });
 
-      if (reverse && reverse.length > 0) {
+      if (reverse?.[0]) {
         const geo = reverse[0];
-        const novaCidade = geo.city || geo.subregion || cidade;
-        const novoBairro = geo.district || geo.name || bairro;
-        if (novaCidade) setCidade(novaCidade);
-        if (novoBairro) setBairro(novoBairro);
+        if (geo.city || geo.subregion) setCidade(geo.city || geo.subregion || cidade);
+        if (geo.district || geo.name) setBairro(geo.district || geo.name || bairro);
       }
     } catch {
-      Alert.alert("Erro", "Não foi possível obter a localização pelo GPS.");
+      mostrarFeedback("error", "Erro no GPS", "Não foi possível obter sua localização pelo GPS agora.");
     } finally {
       setBuscandoLocalizacao(false);
     }
@@ -388,7 +388,7 @@ export function usePersonalSetup(navigation: any) {
   const selecionarFotoPrincipal = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permissão necessária", "Libere o acesso à galeria para escolher sua foto.");
+      mostrarFeedback("warning", "Permissão Necessária", "Libere o acesso à galeria para escolher sua foto.");
       return;
     }
 
@@ -400,90 +400,10 @@ export function usePersonalSetup(navigation: any) {
       base64: true,
     });
 
-    if (!result.canceled && result.assets && result.assets[0]) {
+    if (!result.canceled && result.assets?.[0]) {
       setFotoUri(result.assets[0].uri);
       setFotoBase64(result.assets[0].base64 || null);
     }
-  };
-
-  const selecionarFotoCapa = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permissão necessária", "Libere o acesso à galeria para escolher sua foto de capa.");
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.72,
-      base64: true,
-    });
-
-    if (!result.canceled && result.assets && result.assets[0]) {
-      setCapaUrl(result.assets[0].uri);
-      setCapaBase64(result.assets[0].base64 || null);
-    }
-  };
-
-  const adicionarDiferencial = (texto: string) => {
-    const limpo = texto.trim();
-    if (!limpo) return;
-    setDiferenciaisLista((prev) => [...prev, limpo]);
-  };
-
-  const removerDiferencial = (index: number) => {
-    setDiferenciaisLista((prev) => prev.filter((_, idx) => idx !== index));
-  };
-
-  const adicionarDestaque = (item: Omit<DestaqueStoryItem, "id">) => {
-    setDestaques((prev) => [...prev, { ...item, id: `dest-${Date.now()}` }]);
-  };
-
-  const editarDestaque = (atualizado: DestaqueStoryItem) => {
-    setDestaques((prev) => prev.map((item) => (item.id === atualizado.id ? atualizado : item)));
-  };
-
-  const removerDestaque = (id: string) => {
-    setDestaques((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const adicionarFormacao = (item: Omit<FormacaoSetupItem, "id">) => {
-    setFormacoes((prev) => [...prev, { ...item, id: `form-${Date.now()}` }]);
-  };
-
-  const removerFormacao = (id: string) => {
-    setFormacoes((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const toggleFixarDepoimento = (id: string) => {
-    setDepoimentosFixados((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
-  };
-
-  const adicionarPublicacaoLocal = (pub: Omit<PublicacaoSetupItem, "id" | "pendenteUpload">) => {
-    const novo: PublicacaoSetupItem = {
-      ...pub,
-      id: `temp-${Date.now()}`,
-      pendenteUpload: true,
-    };
-    setPublicacoes((prev) => (novo.fixado ? [novo, ...prev] : [...prev, novo]));
-  };
-
-  const atualizarPublicacaoLocal = (atualizada: PublicacaoSetupItem) => {
-    setPublicacoes((prev) => prev.map((p) => (p.id === atualizada.id ? atualizada : p)));
-  };
-
-  const toggleFixarPublicacao = (id: string) => {
-    setPublicacoes((prev) => prev.map((p) => (p.id === id ? { ...p, fixado: !p.fixado } : p)));
-  };
-
-  const removerPublicacao = (id: string) => {
-    const alvo = publicacoes.find((p) => p.id === id);
-    if (alvo && !alvo.pendenteUpload) {
-      setPublicacoesRemoverIds((prev) => [...prev, id]);
-    }
-    setPublicacoes((prev) => prev.filter((p) => p.id !== id));
   };
 
   const formatarNome = (texto: string) =>
@@ -533,7 +453,11 @@ export function usePersonalSetup(navigation: any) {
 
   const handleToggleServicos = (servicoId: string) => {
     if (servicosOferecidos.includes(servicoId) && servicosBloqueados.includes(servicoId)) {
-      Alert.alert("Ação Bloqueada", "Você possui alunos ativos neste serviço no momento.");
+      mostrarFeedback(
+        "warning",
+        "Ação Bloqueada",
+        "Você possui alunos ativos neste serviço no momento e não pode desativá-lo."
+      );
       return;
     }
     toggleArrayItem(servicoId, servicosOferecidos, setServicosOferecidos);
@@ -561,15 +485,15 @@ export function usePersonalSetup(navigation: any) {
         setFotoBase64(null);
       }
 
-      let capaFinalUrl = capaUrl;
-      if (capaBase64) {
-        capaFinalUrl = await uploadImagemStorage(user.id, "capa", capaBase64);
-        setCapaUrl(capaFinalUrl);
-        setCapaBase64(null);
+      let capaFinalUrl = vitrine.capaUrl;
+      if (vitrine.capaBase64) {
+        capaFinalUrl = await uploadImagemStorage(user.id, "capa", vitrine.capaBase64);
+        vitrine.setCapaUrl(capaFinalUrl);
+        vitrine.setCapaBase64(null);
       }
 
       const destaquesLimpos: DestaqueStoryItem[] = [];
-      for (const d of destaques) {
+      for (const d of vitrine.destaques) {
         let imgStoryUrl = d.imagem_url || null;
         if (d.pendenteUpload && d.base64) {
           imgStoryUrl = await uploadImagemStorage(user.id, "story", d.base64);
@@ -583,7 +507,7 @@ export function usePersonalSetup(navigation: any) {
           imagem_url: imgStoryUrl,
         });
       }
-      setDestaques(destaquesLimpos);
+      vitrine.setDestaques(destaquesLimpos);
 
       const especialidadesEstruturadas = {
         objetivos: objetivosAtendidos,
@@ -596,7 +520,7 @@ export function usePersonalSetup(navigation: any) {
         generoAtendido,
         faixasEtarias: faixasEtariasAtendidas,
         estiloComunicacao,
-        diferenciais: metodoDescricao.trim(),
+        diferenciais: vitrine.metodoDescricao.trim(),
         horarios_especificos:
           servicosOferecidos.includes("Presencial") && turnos.includes("variado")
             ? horariosEspecificos.trim()
@@ -609,13 +533,13 @@ export function usePersonalSetup(navigation: any) {
       };
 
       const vitrineConfig = {
-        cor_destaque: corDestaque || "#FF6B00",
-        metodo_titulo: metodoTitulo.trim(),
-        metodo_descricao: metodoDescricao.trim(),
-        diferenciais_lista: diferenciaisLista,
+        cor_destaque: vitrine.corDestaque || "#FF6B00",
+        metodo_titulo: vitrine.metodoTitulo.trim(),
+        metodo_descricao: vitrine.metodoDescricao.trim(),
+        diferenciais_lista: vitrine.diferenciaisLista,
         destaques: destaquesLimpos,
-        formacoes,
-        depoimentos_fixados: depoimentosFixados,
+        formacoes: vitrine.formacoes,
+        depoimentos_fixados: vitrine.depoimentosFixados,
       };
 
       let generoDB = "outro";
@@ -626,7 +550,7 @@ export function usePersonalSetup(navigation: any) {
         id: user.id,
         email: user.email,
         nome: nome.trim(),
-        cref: cref.trim().toUpperCase(),
+        cref: crefHook.cref.trim().toUpperCase(),
         telefone: telefone.trim(),
         cidade: cidade.trim(),
         bairro: bairro.trim(),
@@ -641,8 +565,8 @@ export function usePersonalSetup(navigation: any) {
         preco_presencial: servicosOferecidos.includes("Presencial") ? precoPresencial : null,
         preco_medio: servicosOferecidos.includes("Consultoria") ? precoConsultoria : precoPresencial,
         capa_url: capaFinalUrl,
-        headline: headline.trim() || null,
-        descricao: bio.trim(),
+        headline: vitrine.headline.trim() || null,
+        descricao: vitrine.bio.trim(),
         foto_url: fotoFinalUrl,
         instagram: instagram.trim().replace(/^@/, ""),
         tiktok: tiktok.trim().replace(/^@/, ""),
@@ -653,90 +577,36 @@ export function usePersonalSetup(navigation: any) {
 
       if (errPersonal) throw errPersonal;
 
-      if (publicacoesRemoverIds.length > 0) {
-        await supabase
-          .from("personal_publicacoes")
-          .delete()
-          .in("id", publicacoesRemoverIds)
-          .eq("personal_id", user.id);
-        setPublicacoesRemoverIds([]);
-      }
+      await vitrine.sincronizarPublicacoesNoBanco(user.id);
 
-      for (const pub of publicacoes) {
-        if (pub.pendenteUpload && pub.base64) {
-          const urlPublica = await uploadImagemStorage(user.id, "feed", pub.base64);
-          await supabase.from("personal_publicacoes").insert([
-            {
-              personal_id: user.id,
-              imagem_url: urlPublica,
-              categoria: pub.categoria,
-              titulo: pub.titulo || null,
-              legenda: pub.legenda || null,
-              metrica_destaque: pub.metrica_destaque || null,
-              fixado: pub.fixado,
-            },
-          ]);
-        } else if (!pub.pendenteUpload) {
-          await supabase
-            .from("personal_publicacoes")
-            .update({
-              categoria: pub.categoria,
-              titulo: pub.titulo || null,
-              legenda: pub.legenda || null,
-              metrica_destaque: pub.metrica_destaque || null,
-              fixado: pub.fixado,
-            })
-            .eq("id", pub.id)
-            .eq("personal_id", user.id);
-        }
-      }
-
-      const { data: pubsAtualizadas } = await supabase
-        .from("personal_publicacoes")
-        .select("*")
-        .eq("personal_id", user.id)
-        .order("fixado", { ascending: false })
-        .order("criado_em", { ascending: false });
-
-      if (Array.isArray(pubsAtualizadas)) {
-        setPublicacoes(
-          pubsAtualizadas.map((p: any) => ({
-            id: p.id,
-            imagem_url: p.imagem_url,
-            categoria: p.categoria || "resultado",
-            titulo: p.titulo,
-            legenda: p.legenda,
-            metrica_destaque: p.metrica_destaque,
-            fixado: Boolean(p.fixado),
-          }))
-        );
-      }
-
-      Alert.alert(
-        "Perfil e Vitrine salvos!",
-        "Sua paleta, destaques e fotos já estão publicados e visíveis para os alunos.",
-        [
-          {
-            text: "Ir para o Painel",
-            style: "cancel",
-            onPress: () => (isEditing ? navigation.goBack() : navigation.replace("PersonalDashboard")),
-          },
-          {
-            text: "Ver Minha Vitrine",
-            onPress: () =>
-              navigation.navigate("PersonalPublicProfile", {
-                id: user.id,
-                personalId: user.id,
-                fromDashboard: true,
-              }),
-          },
-        ]
-      );
+      setSavedUserId(user.id);
+      setModalSalvoVisivel(true);
     } catch (err: any) {
-      Alert.alert("Erro ao salvar", err?.message || "Não foi possível salvar seu perfil agora.");
+      mostrarFeedback(
+        "error",
+        "Erro ao salvar",
+        err?.message || "Não foi possível salvar seu perfil agora. Tente novamente.",
+        "FALHA AO SALVAR"
+      );
     } finally {
       setLoading(false);
     }
+  };
+
+  const irParaPainelPosSalvar = () => {
+    setModalSalvoVisivel(false);
+    if (isEditing) navigation.goBack();
+    else navigation.replace("PersonalDashboard");
+  };
+
+  const verVitrinePosSalvar = () => {
+    setModalSalvoVisivel(false);
+    if (!savedUserId) return;
+    navigation.navigate("PersonalPublicProfile", {
+      id: savedUserId,
+      personalId: savedUserId,
+      fromDashboard: true,
+    });
   };
 
   return {
@@ -746,9 +616,15 @@ export function usePersonalSetup(navigation: any) {
       loadingDados,
       isEditing,
       inputFocado,
+      feedbackModal,
+      modalSalvoVisivel,
       nome,
       fotoUri,
-      cref,
+      cref: crefHook.cref,
+      crefVerificacao: crefHook.crefVerificacao,
+      crefDisponivel: crefHook.crefDisponivel,
+      verificandoCrefIA: crefHook.verificandoCrefIA,
+      modalUploadCrefVisivel: crefHook.modalUploadCrefVisivel,
       telefone,
       genero,
       cidade,
@@ -779,33 +655,43 @@ export function usePersonalSetup(navigation: any) {
       valoresAluno,
       outroValorTexto,
       experiencia,
-      corDestaque,
-      capaUrl,
-      headline,
-      bio,
-      metodoTitulo,
-      metodoDescricao,
-      diferenciaisLista,
-      destaques,
-      formacoes,
-      avaliacoes,
-      depoimentosFixados,
-      publicacoes,
+      corDestaque: vitrine.corDestaque,
+      capaUrl: vitrine.capaUrl,
+      headline: vitrine.headline,
+      bio: vitrine.bio,
+      metodoTitulo: vitrine.metodoTitulo,
+      metodoDescricao: vitrine.metodoDescricao,
+      diferenciaisLista: vitrine.diferenciaisLista,
+      destaques: vitrine.destaques,
+      formacoes: vitrine.formacoes,
+      avaliacoes: vitrine.avaliacoes,
+      depoimentosFixados: vitrine.depoimentosFixados,
+      publicacoes: vitrine.publicacoes,
     },
     actions: {
       proximoPasso,
       passoAnterior,
       irParaPasso,
       setInputFocado,
+      mostrarFeedback,
+      fecharFeedback,
+      setModalSalvoVisivel,
+      irParaPainelPosSalvar,
+      verVitrinePosSalvar,
       setNome,
-      setCref,
+      setCref: crefHook.setCref,
+      handleAlterarCref: crefHook.handleAlterarCref,
+      setModalUploadCrefVisivel: crefHook.setModalUploadCrefVisivel,
+      handleCrefCamera: crefHook.handleCrefCamera,
+      handleCrefGaleria: crefHook.handleCrefGaleria,
+      handleCrefPdf: crefHook.handleCrefPdf,
       setTelefone,
       setGenero,
       setInstagram,
       setTiktok,
       obterLocalizacaoAtual,
       selecionarFotoPrincipal,
-      selecionarFotoCapa,
+      selecionarFotoCapa: vitrine.selecionarFotoCapa,
       setPrecoConsultoria,
       setPrecoPresencial,
       setTurnos,
@@ -825,23 +711,23 @@ export function usePersonalSetup(navigation: any) {
       setValoresAluno,
       setOutroValorTexto,
       setExperiencia,
-      setCorDestaque,
-      setHeadline,
-      setBio,
-      setMetodoTitulo,
-      setMetodoDescricao,
-      adicionarDiferencial,
-      removerDiferencial,
-      adicionarDestaque,
-      editarDestaque,
-      removerDestaque,
-      adicionarFormacao,
-      removerFormacao,
-      toggleFixarDepoimento,
-      adicionarPublicacaoLocal,
-      atualizarPublicacaoLocal,
-      toggleFixarPublicacao,
-      removerPublicacao,
+      setCorDestaque: vitrine.setCorDestaque,
+      setHeadline: vitrine.setHeadline,
+      setBio: vitrine.setBio,
+      setMetodoTitulo: vitrine.setMetodoTitulo,
+      setMetodoDescricao: vitrine.setMetodoDescricao,
+      adicionarDiferencial: vitrine.adicionarDiferencial,
+      removerDiferencial: vitrine.removerDiferencial,
+      adicionarDestaque: vitrine.adicionarDestaque,
+      editarDestaque: vitrine.editarDestaque,
+      removerDestaque: vitrine.removerDestaque,
+      adicionarFormacao: vitrine.adicionarFormacao,
+      removerFormacao: vitrine.removerFormacao,
+      toggleFixarDepoimento: vitrine.toggleFixarDepoimento,
+      adicionarPublicacaoLocal: vitrine.adicionarPublicacaoLocal,
+      atualizarPublicacaoLocal: vitrine.atualizarPublicacaoLocal,
+      toggleFixarPublicacao: vitrine.toggleFixarPublicacao,
+      removerPublicacao: vitrine.removerPublicacao,
       formatarNome,
       formatarWhatsApp,
       handlePrecoChange,

@@ -14,11 +14,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { theme } from "../../../theme/theme";
+import { SetupModals } from "./components/SetupModals";
 import { STEP_TITLES } from "./constants";
 import { Identity } from "./steps/Identity";
-import { Services } from "./steps/Services";
-import { Public } from "./steps/Public";
 import { Match } from "./steps/Match";
+import { Public } from "./steps/Public";
+import { Services } from "./steps/Services";
 import { Vitrine } from "./steps/Vitrine";
 import { styles } from "./styles";
 import { usePersonalSetup } from "./usePersonalSetup";
@@ -61,7 +62,11 @@ export function PersonalSetup({ navigation }: any) {
       >
         <View style={styles.stepperHeader}>
           <View style={styles.headerBackCol}>
-            <TouchableOpacity onPress={handleVoltarTopo} activeOpacity={0.7} style={{ paddingVertical: 4, paddingRight: 8 }}>
+            <TouchableOpacity
+              onPress={handleVoltarTopo}
+              activeOpacity={0.7}
+              style={{ paddingVertical: 4, paddingRight: 8 }}
+            >
               <Ionicons name="arrow-back" size={23} color="#FFF" />
             </TouchableOpacity>
           </View>
@@ -86,11 +91,7 @@ export function PersonalSetup({ navigation }: any) {
             return (
               <TouchableOpacity
                 key={stepNum}
-                style={[
-                  styles.stepDotTrack,
-                  concluido && styles.stepDotDone,
-                  ativo && styles.stepDotActive,
-                ]}
+                style={[styles.stepDotTrack, concluido && styles.stepDotDone, ativo && styles.stepDotActive]}
                 onPress={() => actions.irParaPasso(stepNum)}
                 disabled={!state.isEditing && stepNum > state.currentStep}
                 activeOpacity={0.7}
@@ -144,7 +145,10 @@ export function PersonalSetup({ navigation }: any) {
                 <ActivityIndicator size="small" color={theme.colors.success} />
               ) : (
                 <>
-                  <LinearGradient colors={["rgba(0, 230, 118, 0.15)", "transparent"]} style={StyleSheet.absoluteFill} />
+                  <LinearGradient
+                    colors={["rgba(0, 230, 118, 0.15)", "transparent"]}
+                    style={StyleSheet.absoluteFill}
+                  />
                   <Text style={[styles.btnAvancarStepText, { color: theme.colors.success }]}>Salvar Tudo</Text>
                   <Ionicons name="checkmark-done" size={18} color={theme.colors.success} style={{ marginLeft: 6 }} />
                 </>
@@ -153,6 +157,15 @@ export function PersonalSetup({ navigation }: any) {
           )}
         </View>
       </BlurView>
+
+      <SetupModals
+        feedback={state.feedbackModal}
+        onFecharFeedback={actions.fecharFeedback}
+        modalSalvoVisivel={state.modalSalvoVisivel}
+        onFecharSalvo={() => actions.setModalSalvoVisivel(false)}
+        onIrParaPainel={actions.irParaPainelPosSalvar}
+        onVerVitrine={actions.verVitrinePosSalvar}
+      />
     </KeyboardAvoidingView>
   );
 }
