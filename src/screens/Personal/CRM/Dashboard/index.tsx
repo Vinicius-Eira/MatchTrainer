@@ -1,30 +1,28 @@
 import React from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  RefreshControl,
   ScrollView,
   StatusBar,
-  Platform,
-  UIManager,
-  ActivityIndicator,
-  Image,
-  FlatList,
-  RefreshControl,
+  Text,
   TextInput,
-  Modal
+  TouchableOpacity,
+  UIManager,
+  View,
 } from "react-native";
-import { InsightCard } from '../../../../components/personal/InsightCard';
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { theme } from "../../../../theme/theme";
-import { scale, verticalScale, moderateScale } from "../../../../utils/responsive";
 import { WidgetOnboarding } from "../../../../components/WidgetOnboarding";
-
+import { theme } from "../../../../theme/theme";
+import { moderateScale, scale } from "../../../../utils/responsive";
 import { styles } from "./styles";
-import { useDashboard } from "./usePersonalDashboard"; 
+import { useDashboard } from "./usePersonalDashboard";
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -33,7 +31,6 @@ export function PersonalDashboard({ navigation }: any) {
     jornada,
     progressoPct,
     completarMissao,
-    insightsReais,
     refreshing,
     activeTab,
     setActiveTab,
@@ -48,55 +45,62 @@ export function PersonalDashboard({ navigation }: any) {
     setSortOrder,
     origemFilter,
     setOrigemFilter,
+    modalSairVisivel,
+    setModalSairVisivel,
+    saindo,
     loading,
     personal,
     emContato,
     ativos,
-    inativos,
     notaMedia,
     naoLidas,
-    handleOpenInsight,
     onRefresh,
     handleLogout,
+    confirmarLogout,
     getListaAtiva,
   } = useDashboard(navigation);
+
+  const fotoPersonalValida =
+    personal?.foto_url && typeof personal.foto_url === "string" && personal.foto_url.trim().length > 5
+      ? personal.foto_url
+      : null;
 
   const renderItem = ({ item }: { item: any }) => {
     const isAtivo = activeTab === "aluno_ativo";
     const isInativo = activeTab === "inativo";
-    
     const status = item.status;
     const userData = item.usuarios;
-    const temMensagemNaoLida = naoLidas[item.id] > 0;
-    
+    const qtdNaoLidas = naoLidas[item.id] || 0;
+
     const isVIP = item.isVIP;
-    const isAguardandoAssinatura = status === "aguardando_assinatura";
-    
-    const fotoUrl = (userData?.foto_url && typeof userData.foto_url === 'string' && userData.foto_url.trim().length > 5) 
-      ? userData.foto_url 
-      : null;
+    const isAguardandoAssinatura = status === "aguardando_assinatura" || status === "aguardando_aluno";
+
+    const fotoUrl =
+      userData?.foto_url && typeof userData.foto_url === "string" && userData.foto_url.trim().length > 5
+        ? userData.foto_url
+        : null;
 
     let dataFormatada = "";
     if (item.criado_em) {
       const d = new Date(item.criado_em);
-      const mes = d.toLocaleString('pt-BR', { month: 'short' }).replace('.', '');
-      dataFormatada = `${d.getDate()} de ${mes.charAt(0).toUpperCase() + mes.slice(1)}`;
+      const mes = d.toLocaleString("pt-BR", { month: "short" }).replace(".", "");
+      dataFormatada = `${d.getDate()} ${mes.charAt(0).toUpperCase() + mes.slice(1)}`;
     }
 
-    let leftBorderColor = isVIP ? "#0A84FF" : "#00E676"; 
+    let leftBorderColor = isVIP ? "#0A84FF" : "#00E676";
     if (isInativo) leftBorderColor = "#FF3B30";
 
     const prefs = userData?.preferencias || {};
     const pesoStr = userData?.peso ? `${userData.peso}kg` : null;
     const freqBruta = prefs?.frequencia_semanal || prefs?.frequencia;
-    const freqStr = freqBruta ? `${freqBruta.split('-')[0]}x/sem` : null;
+    const freqStr = freqBruta ? `${String(freqBruta).split("-")[0]}x/sem` : null;
 
     return (
       <TouchableOpacity
         style={[
           styles.studentCardPremium,
           { borderLeftColor: leftBorderColor },
-          isInativo && { opacity: 0.65 }
+          isInativo && { opacity: 0.65 },
         ]}
         activeOpacity={0.8}
         onPress={() => {
@@ -109,18 +113,19 @@ export function PersonalDashboard({ navigation }: any) {
         }}
       >
         <View style={styles.cardHeaderArea}>
-          
           <View style={styles.avatarWrapper}>
             {fotoUrl ? (
               <Image source={{ uri: fotoUrl }} style={styles.avatarImage} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={moderateScale(20)} color="#555" />
+                <Ionicons name="person" size={moderateScale(20)} color="#71717A" />
               </View>
             )}
-            {temMensagemNaoLida ? (
-              <View style={styles.statusIndicatorMessage} />
-            ) : isAtivo ? (
+            {qtdNaoLidas > 0 ? (
+              <View style={styles.statusIndicatorMessage}>
+                <Text style={styles.unreadCountText}>{qtdNaoLidas > 9 ? "9+" : qtdNaoLidas}</Text>
+              </View>
+            ) : isAtivo && !isAguardandoAssinatura ? (
               <View style={styles.statusIndicatorOnline} />
             ) : null}
           </View>
@@ -136,108 +141,123 @@ export function PersonalDashboard({ navigation }: any) {
 
             <View style={styles.tagsRow}>
               <View style={styles.orangePill}>
-                <Ionicons name="flag" size={10} color={theme.colors.primary} style={{marginRight: 4}} />
-                <Text style={styles.orangePillText} numberOfLines={1}>{item.objetivoSeguro}</Text>
+                <Ionicons name="flag" size={10} color={theme.colors.primary} style={{ marginRight: 4 }} />
+                <Text style={styles.orangePillText} numberOfLines={1}>
+                  {item.objetivoSeguro}
+                </Text>
               </View>
 
-              {item.modalidadeUi !== "A Definir" && item.modalidadeUi !== "Pendente" && (
+              {item.modalidadeUi !== "A Definir" && item.modalidadeUi !== "Pendente" ? (
                 <View style={styles.orangePill}>
-                  <Ionicons name="layers" size={10} color={theme.colors.primary} style={{marginRight: 4}} />
+                  <Ionicons name="layers" size={10} color={theme.colors.primary} style={{ marginRight: 4 }} />
                   <Text style={styles.orangePillText}>{item.modalidadeUi}</Text>
                 </View>
-              )}
+              ) : null}
             </View>
 
-            {(pesoStr || freqStr) && (
+            {pesoStr || freqStr ? (
               <View style={styles.metricsRow}>
-                {pesoStr && (
+                {pesoStr ? (
                   <View style={styles.metricBadge}>
-                    <MaterialCommunityIcons name="weight-kilogram" size={12} color="#888" />
+                    <MaterialCommunityIcons name="weight-kilogram" size={12} color="#A1A1AA" />
                     <Text style={styles.metricBadgeText}>{pesoStr}</Text>
                   </View>
-                )}
-                {freqStr && (
+                ) : null}
+                {freqStr ? (
                   <View style={styles.metricBadge}>
-                    <Ionicons name="calendar-outline" size={12} color="#888" />
+                    <Ionicons name="calendar-outline" size={11} color="#A1A1AA" />
                     <Text style={styles.metricBadgeText}>{freqStr}</Text>
                   </View>
-                )}
+                ) : null}
               </View>
-            )}
+            ) : null}
           </View>
-
         </View>
 
         <View style={styles.cardDivider} />
 
         <View style={styles.cardFooterArea}>
-          
-          <View style={styles.originIndicator}>
-             {isVIP ? (
-                <>
-                  <Ionicons name="ticket" size={12} color="#0A84FF" />
-                  <Text style={[styles.originIndicatorText, { color: "#0A84FF" }]}>CONVITE</Text>
-                </>
-             ) : (
-                <>
-                  <Ionicons name="flash" size={12} color="#00E676" />
-                  <Text style={[styles.originIndicatorText, { color: "#00E676" }]}>MATCH</Text>
-                </>
-             )}
+          <View
+            style={[
+              styles.originPill,
+              isVIP
+                ? { backgroundColor: "rgba(10, 132, 255, 0.1)", borderColor: "rgba(10, 132, 255, 0.35)" }
+                : { backgroundColor: "rgba(0, 230, 118, 0.1)", borderColor: "rgba(0, 230, 118, 0.35)" },
+            ]}
+          >
+            <Ionicons name={isVIP ? "ticket-outline" : "flash"} size={11} color={isVIP ? "#0A84FF" : "#00E676"} />
+            <Text style={[styles.originIndicatorText, { color: isVIP ? "#0A84FF" : "#00E676" }]}>
+              {isVIP ? "CONVITE" : "MATCH"}
+            </Text>
           </View>
 
           <View style={styles.alertWrapper}>
             {isAguardandoAssinatura ? (
               <View style={styles.badgeAlertGold}>
-                <Ionicons name="time" size={12} color="#FFD700" />
+                <Ionicons name="time-outline" size={12} color="#FFD700" />
                 <Text style={styles.badgeAlertGoldText}>AGUARDANDO ASSINATURA</Text>
               </View>
             ) : isAtivo && !item.tem_plano && !item.isVIP ? (
               <View style={styles.badgeAlertDanger}>
-                <Ionicons name="alert-circle" size={12} color="#FF3B30" />
+                <Ionicons name="alert-circle-outline" size={12} color="#FF3B30" />
                 <Text style={styles.badgeAlertDangerText}>SEM PLANO</Text>
               </View>
             ) : isAtivo && sortOrder === "vencimento" && item.dia_vencimento !== 99 ? (
               <View style={styles.badgeAlertNeutral}>
-                <Ionicons name="calendar-outline" size={12} color="#AAA" />
+                <Ionicons name="calendar-outline" size={12} color="#A1A1AA" />
                 <Text style={styles.badgeAlertNeutralText}>VENCE DIA {item.dia_vencimento}</Text>
               </View>
             ) : (
-               <Ionicons name="chevron-forward" size={16} color="#444" />
+              <Ionicons name="chevron-forward" size={16} color="#52525B" />
             )}
           </View>
-          
         </View>
-
       </TouchableOpacity>
     );
   };
 
-  if (loading && !personal && !refreshing)
+  if (loading && !personal && !refreshing) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
+  }
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.surface} />
+      <StatusBar barStyle="light-content" backgroundColor="#0A0A0F" />
 
-      <LinearGradient colors={[theme.colors.surfaceLight, theme.colors.background]} style={styles.headerBackground}>
+      <LinearGradient colors={["#13131C", "#040406"]} style={styles.headerBackground}>
         <View style={styles.headerTop}>
           <View style={{ flex: 1, paddingRight: scale(10) }}>
             <Text style={styles.greeting}>PAINEL DO TREINADOR</Text>
-            <Text style={styles.personalName} numberOfLines={1}>Olá, {personal?.nome?.split(" ")[0] || "Professor"}</Text>
+            <Text style={styles.personalName} numberOfLines={1}>
+              Olá, {personal?.nome?.split(" ")[0] || "Professor"}
+            </Text>
           </View>
+
           <View style={styles.headerActionsRight}>
-            <TouchableOpacity style={styles.btnLogout} onPress={handleLogout} activeOpacity={0.7}>
-              <Ionicons name="log-out-outline" size={moderateScale(22)} color={theme.colors.danger} />
+            <TouchableOpacity style={styles.btnLogout} onPress={handleLogout} activeOpacity={0.75}>
+              <Ionicons name="log-out-outline" size={moderateScale(20)} color="#FF3B30" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.settingsBtn} onPress={() => navigation.navigate("PersonalSetup")} activeOpacity={0.7}>
-              <Image source={{ uri: personal?.foto_url || "https://via.placeholder.com/150" }} style={styles.headerAvatar} />
+
+            <TouchableOpacity
+              style={styles.settingsBtn}
+              onPress={() => navigation.navigate("PersonalSetup")}
+              activeOpacity={0.8}
+            >
+              <View style={styles.headerAvatarRing}>
+                {fotoPersonalValida ? (
+                  <Image source={{ uri: fotoPersonalValida }} style={styles.headerAvatar} />
+                ) : (
+                  <View style={styles.headerAvatarFallback}>
+                    <Ionicons name="person" size={moderateScale(24)} color="#A1A1AA" />
+                  </View>
+                )}
+              </View>
               <View style={styles.settingsOverlay}>
-                <Ionicons name="pencil" size={moderateScale(12)} color={theme.colors.backgroundPure} />
+                <Ionicons name="pencil" size={moderateScale(10)} color="#000" />
               </View>
             </TouchableOpacity>
           </View>
@@ -248,26 +268,34 @@ export function PersonalDashboard({ navigation }: any) {
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <View style={styles.iconWrapperNeutral}>
-              <MaterialCommunityIcons name="account-group" size={moderateScale(22)} color={theme.colors.textSecondary} />
+              <MaterialCommunityIcons name="account-group" size={moderateScale(20)} color="#A1A1AA" />
             </View>
             <Text style={styles.statValue}>{ativos.length}</Text>
-            <Text style={styles.statLabel}>Alunos Ativos</Text>
+            <Text style={styles.statLabel}>Ativos</Text>
           </View>
+
           <View style={styles.statDivider} />
-          <TouchableOpacity style={styles.statItem} onPress={() => navigation.navigate("Avaliacoes")} activeOpacity={0.7}>
+
+          <TouchableOpacity style={styles.statItem} onPress={() => navigation.navigate("Avaliacoes")} activeOpacity={0.75}>
             <View style={styles.iconWrapperPrimary}>
-              <MaterialCommunityIcons name="star" size={moderateScale(22)} color={theme.colors.primary} />
+              <MaterialCommunityIcons name="star" size={moderateScale(20)} color={theme.colors.primary} />
             </View>
             <Text style={styles.statValue}>{Number(notaMedia).toFixed(1)}</Text>
             <Text style={styles.statLabel}>Sua Nota</Text>
           </TouchableOpacity>
+
           <View style={styles.statDivider} />
+
           <View style={styles.statItem}>
             <View style={emContato.length > 0 ? styles.iconWrapperAlert : styles.iconWrapperNeutral}>
-              <MaterialCommunityIcons name="bell-ring" size={moderateScale(22)} color={emContato.length > 0 ? theme.colors.primary : theme.colors.textSecondary} />
+              <MaterialCommunityIcons
+                name="bell-ring"
+                size={moderateScale(20)}
+                color={emContato.length > 0 ? theme.colors.primary : "#A1A1AA"}
+              />
             </View>
             <Text style={styles.statValue}>{emContato.length}</Text>
-            <Text style={styles.statLabel}>Solicitações</Text>
+            <Text style={styles.statLabel}>Novos</Text>
           </View>
         </View>
       </View>
@@ -275,106 +303,175 @@ export function PersonalDashboard({ navigation }: any) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+          />
+        }
       >
-        <WidgetOnboarding jornada={jornada} progressoPct={progressoPct} navigation={navigation} completarMissao={completarMissao} />
+        <WidgetOnboarding
+          jornada={jornada}
+          progressoPct={progressoPct}
+          navigation={navigation}
+          completarMissao={completarMissao}
+        />
 
         <View style={styles.quickAccessGrid}>
-          <TouchableOpacity style={styles.quickAccessCard} activeOpacity={0.8} onPress={() => navigation.navigate("Recebimentos")}>
+          <TouchableOpacity
+            style={styles.quickAccessCard}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate("Recebimentos")}
+          >
             <View style={styles.quickAccessHeader}>
-              <View style={[styles.quickAccessIcon, { backgroundColor: "rgba(255, 107, 0, 0.15)" }]}>
-                <Ionicons name="wallet-outline" size={moderateScale(22)} color={theme.colors.primary} />
+              <View style={[styles.quickAccessIcon, { backgroundColor: "rgba(255, 107, 0, 0.14)" }]}>
+                <Ionicons name="wallet-outline" size={moderateScale(20)} color={theme.colors.primary} />
               </View>
-              <Ionicons name="arrow-forward" size={moderateScale(16)} color={theme.colors.textSecondary} />
+              <Ionicons name="arrow-forward" size={moderateScale(15)} color="#71717A" />
             </View>
             <Text style={styles.quickAccessTitle}>Recebimentos</Text>
             <Text style={styles.quickAccessSubtitle}>Caixa e PDF</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.quickAccessCard} activeOpacity={0.8} onPress={() => navigation.navigate("PainelCrescimento")}>
+          <TouchableOpacity
+            style={styles.quickAccessCard}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate("PainelCrescimento")}
+          >
             <View style={styles.quickAccessHeader}>
-              <View style={[styles.quickAccessIcon, { backgroundColor: "rgba(10, 132, 255, 0.15)" }]}>
-                <Ionicons name="rocket-outline" size={moderateScale(22)} color="#0A84FF" />
+              <View style={[styles.quickAccessIcon, { backgroundColor: "rgba(10, 132, 255, 0.14)" }]}>
+                <Ionicons name="rocket-outline" size={moderateScale(20)} color="#0A84FF" />
               </View>
-              <Ionicons name="arrow-forward" size={moderateScale(16)} color={theme.colors.textSecondary} />
+              <Ionicons name="arrow-forward" size={moderateScale(15)} color="#71717A" />
             </View>
             <Text style={styles.quickAccessTitle}>MatchBusiness</Text>
             <Text style={styles.quickAccessSubtitle}>Metas e Gráficos</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.fullWidthCard} activeOpacity={0.8} onPress={() => navigation.navigate("Presets")}>
+        <TouchableOpacity
+          style={styles.fullWidthCard}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate("Presets")}
+        >
           <View style={styles.fullWidthCardIconBg}>
-            <MaterialCommunityIcons name="dumbbell" size={moderateScale(24)} color={theme.colors.primary} />
+            <MaterialCommunityIcons name="dumbbell" size={moderateScale(22)} color={theme.colors.primary} />
           </View>
           <View style={styles.fullWidthCardText}>
             <Text style={styles.fullWidthCardTitle}>Modelos de Treino</Text>
             <Text style={styles.fullWidthCardSubtitle}>Gerencie suas fichas e presets globais</Text>
           </View>
-          <Ionicons name="chevron-forward" size={moderateScale(20)} color={theme.colors.textSecondary} />
+          <Ionicons name="chevron-forward" size={moderateScale(18)} color="#71717A" />
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.fullWidthCard} 
-          activeOpacity={0.8} 
+        <TouchableOpacity
+          style={styles.fullWidthCard}
+          activeOpacity={0.8}
           onPress={() => navigation.navigate("ExerciseLibrary", { isSelectionMode: false, isStudioMode: true })}
         >
-          <View style={[styles.fullWidthCardIconBg, { backgroundColor: "rgba(0, 230, 118, 0.15)" }]}>
-            <Ionicons name="play-circle-outline" size={moderateScale(26)} color="#00E676" />
+          <View style={[styles.fullWidthCardIconBg, { backgroundColor: "rgba(0, 230, 118, 0.14)" }]}>
+            <Ionicons name="play-circle-outline" size={moderateScale(24)} color="#00E676" />
           </View>
           <View style={styles.fullWidthCardText}>
             <Text style={styles.fullWidthCardTitle}>Meus Exercícios e Vídeos</Text>
             <Text style={styles.fullWidthCardSubtitle}>Crie exercícios e suba vídeos da galeria</Text>
           </View>
-          <Ionicons name="chevron-forward" size={moderateScale(20)} color={theme.colors.textSecondary} />
+          <Ionicons name="chevron-forward" size={moderateScale(18)} color="#71717A" />
         </TouchableOpacity>
 
-       
         <View style={styles.crmHeader}>
-          <Text style={styles.sectionTitle}>Gestão de Alunos</Text>
+          <View style={styles.sectionTitleRow}>
+            <View style={styles.sectionBar} />
+            <Text style={styles.sectionTitle}>Gestão de Alunos</Text>
+          </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={[styles.actionHeaderBtn, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]} onPress={() => navigation.navigate("AdicionarAluno")}>
-              <Ionicons name="person-add" size={moderateScale(20)} color="#000" />
+            <TouchableOpacity
+              style={styles.actionHeaderBtn}
+              onPress={() => navigation.navigate("AdicionarAluno")}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="person-add-outline" size={moderateScale(16)} color={theme.colors.primary} />
+              <Text style={styles.actionHeaderBtnText}>Convidar</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.segmentControl}>
-          <TouchableOpacity style={[styles.segmentBtn, activeTab === "em_contato" && styles.segmentBtnActive]} onPress={() => setActiveTab("em_contato")} activeOpacity={0.8}>
-            <Text style={[styles.segmentText, activeTab === "em_contato" && styles.segmentTextActive]}>Novos {emContato.length > 0 && `(${emContato.length})`}</Text>
+          <TouchableOpacity
+            style={[styles.segmentBtn, activeTab === "em_contato" && styles.segmentBtnActive]}
+            onPress={() => setActiveTab("em_contato")}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.segmentText, activeTab === "em_contato" && styles.segmentTextActive]}>
+              Novos {emContato.length > 0 ? `(${emContato.length})` : ""}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.segmentBtn, activeTab === "aluno_ativo" && styles.segmentBtnActive]} onPress={() => { setActiveTab("aluno_ativo"); setModalidadeFilter("Todos"); }} activeOpacity={0.8}>
-            <Text style={[styles.segmentText, activeTab === "aluno_ativo" && styles.segmentTextActive]}>Ativos {ativos.length > 0 && `(${ativos.length})`}</Text>
+          <TouchableOpacity
+            style={[styles.segmentBtn, activeTab === "aluno_ativo" && styles.segmentBtnActive]}
+            onPress={() => {
+              setActiveTab("aluno_ativo");
+              setModalidadeFilter("Todos");
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.segmentText, activeTab === "aluno_ativo" && styles.segmentTextActive]}>
+              Ativos {ativos.length > 0 ? `(${ativos.length})` : ""}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.segmentBtn, activeTab === "inativo" && styles.segmentBtnActive]} onPress={() => setActiveTab("inativo")} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={[styles.segmentBtn, activeTab === "inativo" && styles.segmentBtnActive]}
+            onPress={() => setActiveTab("inativo")}
+            activeOpacity={0.8}
+          >
             <Text style={[styles.segmentText, activeTab === "inativo" && styles.segmentTextActive]}>Inativos</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.searchSortContainer}>
           <View style={styles.searchBar}>
-            <Ionicons name="search" size={moderateScale(18)} color={theme.colors.textSecondary} />
-            <TextInput style={styles.searchInput} placeholder="Buscar aluno..." placeholderTextColor={theme.colors.textSecondary} value={searchQuery} onChangeText={setSearchQuery} keyboardAppearance="dark" />
-            {searchQuery.length > 0 && (
+            <Ionicons name="search" size={moderateScale(17)} color="#71717A" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar aluno..."
+              placeholderTextColor="#71717A"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              keyboardAppearance="dark"
+            />
+            {searchQuery.length > 0 ? (
               <TouchableOpacity onPress={() => setSearchQuery("")} style={{ padding: scale(4) }}>
-                <Ionicons name="close-circle" size={moderateScale(18)} color={theme.colors.textSecondary} />
+                <Ionicons name="close-circle" size={moderateScale(17)} color="#71717A" />
               </TouchableOpacity>
-            )}
+            ) : null}
           </View>
-          <TouchableOpacity style={styles.sortBtn} onPress={() => setIsFilterModalVisible(true)} activeOpacity={0.7}>
-            <Ionicons name="options" size={moderateScale(20)} color={theme.colors.primary} />
+          <TouchableOpacity style={styles.sortBtn} onPress={() => setIsFilterModalVisible(true)} activeOpacity={0.75}>
+            <Ionicons name="options-outline" size={moderateScale(20)} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>
 
-        {activeTab === "aluno_ativo" && filtrosDinamicos.length > 2 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.secondaryFilterContainer}>
+        {activeTab === "aluno_ativo" && filtrosDinamicos.length > 2 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.secondaryFilterContainer}
+          >
             {filtrosDinamicos.map((mod: string) => (
-              <TouchableOpacity key={mod} style={[styles.secondaryFilterChip, modalidadeFilter === mod && styles.secondaryFilterChipActive]} onPress={() => setModalidadeFilter(mod)}>
-                <Text style={[styles.secondaryFilterText, modalidadeFilter === mod && styles.secondaryFilterTextActive]}>{mod}</Text>
+              <TouchableOpacity
+                key={mod}
+                style={[styles.secondaryFilterChip, modalidadeFilter === mod && styles.secondaryFilterChipActive]}
+                onPress={() => setModalidadeFilter(mod)}
+              >
+                <Text
+                  style={[styles.secondaryFilterText, modalidadeFilter === mod && styles.secondaryFilterTextActive]}
+                >
+                  {mod}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
-        )}
+        ) : null}
 
         <FlatList
           data={getListaAtiva()}
@@ -385,20 +482,40 @@ export function PersonalDashboard({ navigation }: any) {
             <View style={styles.emptyState}>
               <View style={styles.emptyIconBg}>
                 <Ionicons
-                  name={activeTab === "em_contato" ? "search-outline" : activeTab === "aluno_ativo" ? "barbell-outline" : "archive-outline"}
-                  size={moderateScale(36)} color={theme.colors.textMuted}
+                  name={
+                    activeTab === "em_contato"
+                      ? "search-outline"
+                      : activeTab === "aluno_ativo"
+                        ? "barbell-outline"
+                        : "archive-outline"
+                  }
+                  size={moderateScale(34)}
+                  color="#52525B"
                 />
               </View>
-              <Text style={styles.emptyTitle}>{searchQuery !== "" ? "Nenhum aluno encontrado" : "Nenhum registro aqui"}</Text>
+              <Text style={styles.emptyTitle}>
+                {searchQuery !== "" ? "Nenhum aluno encontrado" : "Nenhum registro aqui"}
+              </Text>
               <Text style={styles.emptyText}>
-                {searchQuery !== "" ? `Ninguém com o nome "${searchQuery}" nesta lista.` : activeTab === "em_contato" ? "Sua vitrine está online! Quando novos alunos se interessarem, eles aparecerão aqui." : activeTab === "aluno_ativo" ? "Você não possui alunos para este filtro de exibição." : "Os alunos com ciclos finalizados ou pausados ficarão salvos aqui."}
+                {searchQuery !== ""
+                  ? `Ninguém com o nome "${searchQuery}" nesta lista.`
+                  : activeTab === "em_contato"
+                    ? "Sua vitrine está online! Quando novos alunos se interessarem, eles aparecerão aqui."
+                    : activeTab === "aluno_ativo"
+                      ? "Você não possui alunos para este filtro de exibição."
+                      : "Os alunos com ciclos finalizados ou pausados ficarão salvos aqui."}
               </Text>
             </View>
           }
         />
       </ScrollView>
 
-      <Modal visible={isFilterModalVisible} transparent animationType="slide" onRequestClose={() => setIsFilterModalVisible(false)}>
+      <Modal
+        visible={isFilterModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsFilterModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setIsFilterModalVisible(false)} activeOpacity={1} />
           <View style={styles.bottomSheet}>
@@ -422,25 +539,81 @@ export function PersonalDashboard({ navigation }: any) {
 
             <Text style={styles.sheetSectionTitle}>Ordenar Lista por</Text>
             <TouchableOpacity style={styles.sortOption} onPress={() => setSortOrder("recentes")}>
-              <Text style={[styles.sortOptionText, sortOrder === "recentes" && styles.sortOptionTextActive]}>Mais Recentes</Text>
-              {sortOrder === "recentes" && <Ionicons name="checkmark-circle" size={moderateScale(22)} color={theme.colors.primary} />}
+              <Text style={[styles.sortOptionText, sortOrder === "recentes" && styles.sortOptionTextActive]}>
+                Mais Recentes
+              </Text>
+              {sortOrder === "recentes" ? (
+                <Ionicons name="checkmark-circle" size={moderateScale(20)} color={theme.colors.primary} />
+              ) : null}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.sortOption} onPress={() => setSortOrder("alfabetica")}>
-              <Text style={[styles.sortOptionText, sortOrder === "alfabetica" && styles.sortOptionTextActive]}>Ordem Alfabética (A-Z)</Text>
-              {sortOrder === "alfabetica" && <Ionicons name="checkmark-circle" size={moderateScale(22)} color={theme.colors.primary} />}
+              <Text style={[styles.sortOptionText, sortOrder === "alfabetica" && styles.sortOptionTextActive]}>
+                Ordem Alfabética (A-Z)
+              </Text>
+              {sortOrder === "alfabetica" ? (
+                <Ionicons name="checkmark-circle" size={moderateScale(20)} color={theme.colors.primary} />
+              ) : null}
             </TouchableOpacity>
 
-            {activeTab === "aluno_ativo" && (
+            {activeTab === "aluno_ativo" ? (
               <TouchableOpacity style={styles.sortOption} onPress={() => setSortOrder("vencimento")}>
-                <Text style={[styles.sortOptionText, sortOrder === "vencimento" && styles.sortOptionTextActive]}>Dia de Vencimento</Text>
-                {sortOrder === "vencimento" && <Ionicons name="checkmark-circle" size={moderateScale(22)} color={theme.colors.primary} />}
+                <Text style={[styles.sortOptionText, sortOrder === "vencimento" && styles.sortOptionTextActive]}>
+                  Dia de Vencimento
+                </Text>
+                {sortOrder === "vencimento" ? (
+                  <Ionicons name="checkmark-circle" size={moderateScale(20)} color={theme.colors.primary} />
+                ) : null}
               </TouchableOpacity>
-            )}
+            ) : null}
 
             <TouchableOpacity style={styles.sheetBtnClose} onPress={() => setIsFilterModalVisible(false)}>
               <Text style={styles.sheetBtnCloseText}>Aplicar Filtros</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={Boolean(modalSairVisivel)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalSairVisivel(false)}
+      >
+        <View style={styles.logoutOverlay}>
+          <View style={styles.logoutCard}>
+            <View style={styles.logoutIconOuter}>
+              <Ionicons name="log-out-outline" size={30} color="#FF3B30" />
+            </View>
+            <Text style={styles.logoutTitle}>Sair do painel?</Text>
+            <Text style={styles.logoutSub}>
+              Você precisará fazer login novamente para gerenciar seus alunos e propostas.
+            </Text>
+            <View style={styles.logoutRow}>
+              <TouchableOpacity
+                style={styles.logoutBtnCancel}
+                onPress={() => setModalSairVisivel(false)}
+                disabled={saindo}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.logoutBtnCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.logoutBtnConfirm, saindo && { opacity: 0.6 }]}
+                onPress={confirmarLogout}
+                disabled={saindo}
+                activeOpacity={0.85}
+              >
+                {saindo ? (
+                  <ActivityIndicator size="small" color="#FF3B30" />
+                ) : (
+                  <>
+                    <Ionicons name="exit-outline" size={16} color="#FF3B30" />
+                    <Text style={styles.logoutBtnConfirmText}>Sair</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

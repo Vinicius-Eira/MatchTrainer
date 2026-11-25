@@ -11,10 +11,12 @@ export interface AlunoAtivoItem {
   email: string | null;
   foto_url: string | null;
   modalidade: string;
+  origem: "convite" | "match";
   dia_vencimento: number | null;
   valor_mensal: number | null;
   frequencia: string | null;
   status_plano: string | null;
+  usuarioCompleto: any;
 }
 
 export interface ConviteItem {
@@ -50,18 +52,20 @@ async function buscarDadosCarteira() {
     return { ativos: [] as AlunoAtivoItem[], convites: [] as ConviteItem[] };
   }
 
-  const [{ data: conexoesData, error: errConn }, { data: convitesData, error: errConvites }] =
-    await Promise.all([
-      supabase
-        .from("conexoes")
-        .select("id, usuario_id, modalidade, status")
-        .eq("personal_id", user.id)
-        .eq("status", "aluno_ativo"),
-      supabase.rpc("listar_convites_personal"),
-    ]);
+  const [{ data: conexoesData, error: errConn }, { data: convitesData, error: errConvites }] = await Promise.all([
+    supabase
+      .from("conexoes")
+      .select("id, usuario_id, modalidade, status, origem")
+      .eq("personal_id", user.id)
+      .eq("status", "aluno_ativo"),
+    supabase.rpc("listar_convites_personal"),
+  ]);
 
   if (errConn) throw errConn;
   if (errConvites) throw errConvites;
+
+  const convites: ConviteItem[] = Array.isArray(convitesData) ? convitesData : [];
+  const emailsConvite = new Set(convites.map((c) => c.email?.toLowerCase().trim()).filter(Boolean));
 
   const conexoes = conexoesData || [];
   let ativos: AlunoAtivoItem[] = [];
@@ -71,10 +75,7 @@ async function buscarDadosCarteira() {
     const conexaoIds = conexoes.map((c) => c.id);
 
     const [{ data: usuariosData }, { data: planosData }] = await Promise.all([
-      supabase
-        .from("usuarios")
-        .select("id, nome, email, foto_url")
-        .in("id", alunoIds),
+      supabase.from("usuarios").select("*").in("id", alunoIds),
       supabase
         .from("planos")
         .select("conexao_id, modalidade, valor_mensal, dia_vencimento, frequencia, status")
@@ -91,6 +92,23 @@ async function buscarDadosCarteira() {
         if (!userRow) return null;
         const plano = planosMap.get(conn.id);
 
+        const emailNorm = userRow.email?.toLowerCase().trim() || "";
+        const prefs =
+          typeof userRow.preferencias === "string"
+            ? (() => {
+                try {
+                  return JSON.parse(userRow.preferencias);
+                } catch {
+                  return {};
+                }
+              })()
+            : userRow.preferencias || {};
+
+        const isConvite =
+          conn.origem === "convite" ||
+          prefs?.criado_pelo_personal === true ||
+          (emailNorm.length > 0 && emailsConvite.has(emailNorm));
+
         return {
           id: userRow.id,
           conexao_id: conn.id,
@@ -98,16 +116,16 @@ async function buscarDadosCarteira() {
           email: userRow.email || null,
           foto_url: userRow.foto_url || null,
           modalidade: plano?.modalidade || conn.modalidade || "Consultoria",
+          origem: isConvite ? "convite" : "match",
           dia_vencimento: plano?.dia_vencimento ?? null,
           valor_mensal: plano?.valor_mensal ?? null,
           frequencia: plano?.frequencia ?? null,
           status_plano: plano?.status ?? "ativo",
+          usuarioCompleto: userRow,
         };
       })
       .filter(Boolean) as AlunoAtivoItem[];
   }
-
-  const convites: ConviteItem[] = Array.isArray(convitesData) ? convitesData : [];
 
   return { ativos, convites };
 }
@@ -148,9 +166,7 @@ export function useMeusAlunos(navigation: NavigationProp<any>) {
   );
 
   const normalizarModalidade = (valor: string) =>
-    String(valor || "consultoria").toLowerCase().includes("presencial")
-      ? "presencial"
-      : "consultoria";
+    String(valor || "consultoria").toLowerCase().includes("presencial") ? "presencial" : "consultoria";
 
   const alunosFiltrados = (() => {
     let base = [...alunosAtivos];
@@ -158,9 +174,7 @@ export function useMeusAlunos(navigation: NavigationProp<any>) {
 
     if (termo) {
       base = base.filter(
-        (a) =>
-          a.nome.toLowerCase().includes(termo) ||
-          (a.email && a.email.toLowerCase().includes(termo))
+        (a) => a.nome.toLowerCase().includes(termo) || (a.email && a.email.toLowerCase().includes(termo))
       );
     }
 
@@ -177,11 +191,7 @@ export function useMeusAlunos(navigation: NavigationProp<any>) {
     const termo = busca.trim().toLowerCase();
 
     if (termo) {
-      base = base.filter(
-        (c) =>
-          c.nome.toLowerCase().includes(termo) ||
-          c.email.toLowerCase().includes(termo)
-      );
+      base = base.filter((c) => c.nome.toLowerCase().includes(termo) || c.email.toLowerCase().includes(termo));
     }
 
     if (filtroTipo !== "todos") {
@@ -199,9 +209,9 @@ export function useMeusAlunos(navigation: NavigationProp<any>) {
 
   const handleAbrirAluno = (aluno: AlunoAtivoItem) => {
     navigation.navigate("VisaoAluno", {
-      alunoId: aluno.id,
       conexaoId: aluno.conexao_id,
-      nomeAluno: aluno.nome,
+      aluno: aluno.usuarioCompleto,
+      statusAtual: "aluno_ativo",
     });
   };
 
@@ -217,9 +227,7 @@ export function useMeusAlunos(navigation: NavigationProp<any>) {
           onPress: async () => {
             setAcaoLoadingId(convite.id);
             try {
-              const { error } = await supabase.rpc("revogar_convite_aluno", {
-                p_convite_id: convite.id,
-              });
+              const { error } = await supabase.rpc("revogar_convite_aluno", { p_convite_id: convite.id });
               if (error) throw error;
               await carregarCarteira();
             } catch (err: any) {
@@ -244,9 +252,7 @@ export function useMeusAlunos(navigation: NavigationProp<any>) {
           onPress: async () => {
             setAcaoLoadingId(convite.id);
             try {
-              const { data, error } = await supabase.rpc("reemitir_convite_aluno", {
-                p_convite_id: convite.id,
-              });
+              const { data, error } = await supabase.rpc("reemitir_convite_aluno", { p_convite_id: convite.id });
               if (error) throw error;
 
               const expiraEm = data?.expires_at
