@@ -16,9 +16,9 @@ import { FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-ico
 import { BlurView } from "expo-blur";
 import { theme } from "../../../../../theme/theme";
 import { moderateScale } from "../../../../../utils/responsive";
-import { useCriarContratoMatch } from "./useContratoMatch";
 import { ModalRevisaoIA } from "../components/ModalRevisaoIA";
-import { frequenciaList, styles } from "../AdicionarAluno/styles";
+import { anexoStyles, frequenciaList, styles, sucessoModalStyles } from "./styles";
+import { useCriarContratoMatch } from "./useContratoMatch";
 
 const OPCOES_MODALIDADE_ALUNO = [
   { id: "Consultoria" as const, label: "Consultoria", icon: "phone-portrait-outline" as any },
@@ -28,6 +28,7 @@ const OPCOES_MODALIDADE_ALUNO = [
 export function ContratoMatch({ route, navigation }: any) {
   const { state, actions } = useCriarContratoMatch(route, navigation);
   const exibirSeletorModalidade = state.modalidadesDisponiveis.length > 1;
+  const primeiroNomeAluno = state.nomeAluno?.split(" ")[0] || "O aluno";
 
   return (
     <View style={styles.mainContainer}>
@@ -43,7 +44,11 @@ export function ContratoMatch({ route, navigation }: any) {
       </BlurView>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.innerContent}>
             <View style={styles.heroSection}>
               <View style={styles.iconBadge}>
@@ -53,7 +58,8 @@ export function ContratoMatch({ route, navigation }: any) {
                 Firmar <Text style={styles.titleHighlight}>Contrato.</Text>
               </Text>
               <Text style={styles.subtitle}>
-                Defina as condições comerciais para o aluno {state.nomeAluno}. Ele será notificado no app para aceitar e iniciar os treinos.
+                Defina as condições comerciais para o aluno {state.nomeAluno}. Ele será notificado no app para aceitar e
+                iniciar os treinos.
               </Text>
             </View>
 
@@ -77,7 +83,9 @@ export function ContratoMatch({ route, navigation }: any) {
                         activeOpacity={0.8}
                       >
                         <Ionicons name={opcao.icon} size={moderateScale(24)} color={iconColor} />
-                        <Text style={[styles.modalityText, isSelected && styles.modalityTextActive]}>{opcao.label}</Text>
+                        <Text style={[styles.modalityText, isSelected && styles.modalityTextActive]}>
+                          {opcao.label}
+                        </Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -116,7 +124,9 @@ export function ContratoMatch({ route, navigation }: any) {
                     style={[styles.pill, state.frequencia === item.id && styles.pillActive]}
                     onPress={() => actions.setFrequencia(item.id)}
                   >
-                    <Text style={[styles.pillText, state.frequencia === item.id && styles.pillTextActive]}>{item.label}</Text>
+                    <Text style={[styles.pillText, state.frequencia === item.id && styles.pillTextActive]}>
+                      {item.label}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -130,7 +140,9 @@ export function ContratoMatch({ route, navigation }: any) {
                     onPress={() => actions.handleVencimentoSelect(item)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.pillText, state.vencimento === item && styles.pillTextActive]}>Dia {item}</Text>
+                    <Text style={[styles.pillText, state.vencimento === item && styles.pillTextActive]}>
+                      Dia {item}
+                    </Text>
                   </TouchableOpacity>
                 ))}
                 <TouchableOpacity
@@ -138,12 +150,19 @@ export function ContratoMatch({ route, navigation }: any) {
                   onPress={() => actions.handleVencimentoSelect("Outro")}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.pillText, state.vencimento === "Outro" && styles.pillTextActive]}>Personalizar</Text>
+                  <Text style={[styles.pillText, state.vencimento === "Outro" && styles.pillTextActive]}>
+                    Personalizar
+                  </Text>
                 </TouchableOpacity>
               </View>
 
               {state.vencimento === "Outro" && (
-                <View style={[styles.inputWrapper, { marginTop: 15, backgroundColor: "rgba(0,0,0,0.4)", borderColor: "rgba(0, 230, 118, 0.3)" }]}>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    { marginTop: 15, backgroundColor: "rgba(0,0,0,0.4)", borderColor: "rgba(0, 230, 118, 0.3)" },
+                  ]}
+                >
                   <Ionicons name="calendar" size={moderateScale(18)} color="#00E676" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
@@ -161,12 +180,16 @@ export function ContratoMatch({ route, navigation }: any) {
             </View>
 
             <View style={styles.sectionHeader}>
-              <View style={[styles.sectionDot, { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary }]} />
+              <View
+                style={[styles.sectionDot, { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary }]}
+              />
               <Text style={styles.sectionTitle}>Direitos e Responsabilidades</Text>
             </View>
 
             <View style={styles.editorHeader}>
-              <Text style={styles.editorHeaderDesc}>Opcional: descreva as regras ou importe seu contrato (PDF/imagem) para organizar com IA.</Text>
+              <Text style={styles.editorHeaderDesc}>
+                Opcional: descreva as regras ou importe seu contrato (PDF/imagem) para organizar com IA.
+              </Text>
               <TouchableOpacity
                 style={styles.btnImportar}
                 onPress={() => actions.setModalUploadVisivel(true)}
@@ -264,16 +287,32 @@ export function ContratoMatch({ route, navigation }: any) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <Modal visible={state.modalUploadVisivel} transparent animationType="slide" onRequestClose={() => actions.setModalUploadVisivel(false)}>
+      <Modal
+        visible={state.modalUploadVisivel}
+        transparent
+        animationType="slide"
+        onRequestClose={() => actions.setModalUploadVisivel(false)}
+      >
         <View style={styles.modalUploadOverlay}>
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => actions.setModalUploadVisivel(false)} activeOpacity={1} />
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            onPress={() => actions.setModalUploadVisivel(false)}
+            activeOpacity={1}
+          />
           <View style={styles.modalUploadSheet}>
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>Importar Documento</Text>
-            <Text style={styles.sheetSubtitle}>O arquivo original será preservado com segurança (PDF até 10 MB, imagem até 5 MB).</Text>
+            <Text style={styles.sheetSubtitle}>
+              O arquivo original será preservado com segurança (PDF até 10 MB, imagem até 5 MB).
+            </Text>
 
             <TouchableOpacity style={styles.uploadOptionBtn} onPress={actions.handlePickDocument} activeOpacity={0.7}>
-              <View style={[styles.uploadOptionIcon, { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.3)" }]}>
+              <View
+                style={[
+                  styles.uploadOptionIcon,
+                  { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.3)" },
+                ]}
+              >
                 <Ionicons name="document-text" size={24} color={theme.colors.primary} />
               </View>
               <View style={styles.uploadOptionTexts}>
@@ -284,7 +323,12 @@ export function ContratoMatch({ route, navigation }: any) {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.uploadOptionBtn} onPress={actions.handlePickImage} activeOpacity={0.7}>
-              <View style={[styles.uploadOptionIcon, { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.3)" }]}>
+              <View
+                style={[
+                  styles.uploadOptionIcon,
+                  { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.3)" },
+                ]}
+              >
                 <Ionicons name="images" size={24} color={theme.colors.primary} />
               </View>
               <View style={styles.uploadOptionTexts}>
@@ -295,7 +339,12 @@ export function ContratoMatch({ route, navigation }: any) {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.uploadOptionBtn} onPress={actions.handleTakePicture} activeOpacity={0.7}>
-              <View style={[styles.uploadOptionIcon, { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.3)" }]}>
+              <View
+                style={[
+                  styles.uploadOptionIcon,
+                  { backgroundColor: "rgba(255, 107, 0, 0.1)", borderColor: "rgba(255, 107, 0, 0.3)" },
+                ]}
+              >
                 <Ionicons name="camera" size={24} color={theme.colors.primary} />
               </View>
               <View style={styles.uploadOptionTexts}>
@@ -305,7 +354,11 @@ export function ContratoMatch({ route, navigation }: any) {
               <Ionicons name="chevron-forward" size={18} color="#444" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.sheetBtnClose} onPress={() => actions.setModalUploadVisivel(false)} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.sheetBtnClose}
+              onPress={() => actions.setModalUploadVisivel(false)}
+              activeOpacity={0.7}
+            >
               <Text style={styles.sheetBtnCloseText}>Cancelar</Text>
             </TouchableOpacity>
           </View>
@@ -318,69 +371,61 @@ export function ContratoMatch({ route, navigation }: any) {
         onAplicarTexto={actions.handleAplicarTextoIA}
         onFechar={() => actions.setModalRevisaoIAVisivel(false)}
       />
+
+      <Modal
+        visible={Boolean(state.modalSucessoVisivel)}
+        transparent
+        animationType="fade"
+        onRequestClose={actions.handleConcluirEnvio}
+      >
+        <View style={sucessoModalStyles.overlay}>
+          <BlurView intensity={45} tint="dark" style={StyleSheet.absoluteFill} />
+
+          <View style={sucessoModalStyles.card}>
+            <View style={sucessoModalStyles.iconOuter}>
+              <Ionicons name="paper-plane" size={30} color="#00E676" />
+            </View>
+
+            <Text style={sucessoModalStyles.kicker}>Contrato Enviado</Text>
+            <Text style={sucessoModalStyles.title}>Proposta enviada!</Text>
+            <Text style={sucessoModalStyles.subtitle}>
+              {primeiroNomeAluno} já pode visualizar as condições no chat para revisar os termos e assinar o contrato.
+            </Text>
+
+            {state.resumoPropostaEnviada ? (
+              <View style={sucessoModalStyles.summaryBox}>
+                <View style={sucessoModalStyles.summaryRow}>
+                  <Text style={sucessoModalStyles.summaryLabel}>Modalidade</Text>
+                  <Text style={sucessoModalStyles.summaryValue}>{state.resumoPropostaEnviada.modalidade}</Text>
+                </View>
+                <View style={sucessoModalStyles.summaryDivider} />
+                <View style={sucessoModalStyles.summaryRow}>
+                  <Text style={sucessoModalStyles.summaryLabel}>Valor ({state.resumoPropostaEnviada.frequencia})</Text>
+                  <Text style={sucessoModalStyles.summaryValueAccent}>
+                    {state.resumoPropostaEnviada.valorFormatado}
+                  </Text>
+                </View>
+                <View style={sucessoModalStyles.summaryDivider} />
+                <View style={sucessoModalStyles.summaryRow}>
+                  <Text style={sucessoModalStyles.summaryLabel}>Vencimento</Text>
+                  <Text style={sucessoModalStyles.summaryValue}>
+                    Todo dia {String(state.resumoPropostaEnviada.diaVencimento).padStart(2, "0")}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            <TouchableOpacity
+              style={sucessoModalStyles.btnVoltarChat}
+              onPress={actions.handleConcluirEnvio}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="chatbubbles-outline" size={18} color={theme.colors.primary} />
+              <Text style={sucessoModalStyles.btnVoltarChatText}>Voltar ao Chat</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
-
-const anexoStyles = StyleSheet.create({
-  card: {
-    backgroundColor: "rgba(0, 230, 118, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(0, 230, 118, 0.28)",
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  iconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: "rgba(0, 230, 118, 0.12)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  title: {
-    color: "#FFF",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  sub: {
-    color: "#8E8E93",
-    fontSize: 11,
-    marginTop: 2,
-  },
-  btnRemove: {
-    padding: 8,
-  },
-  actionsRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 10,
-  },
-  btnSmall: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-  },
-  btnSmallPrimary: {
-    backgroundColor: "rgba(255, 107, 0, 0.1)",
-    borderColor: "rgba(255, 107, 0, 0.35)",
-  },
-  btnSmallText: {
-    color: "#FFF",
-    fontSize: 11.5,
-    fontWeight: "700",
-  },
-});

@@ -19,6 +19,13 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 
 type ModalidadeEfetiva = "Consultoria" | "Presencial";
 
+interface ResumoPropostaEnviada {
+  valorFormatado: string;
+  frequencia: string;
+  diaVencimento: number;
+  modalidade: ModalidadeEfetiva;
+}
+
 async function carregarModalidadesPersonal() {
   const {
     data: { user },
@@ -77,6 +84,8 @@ export function useCriarContratoMatch(route: any, navigation: any) {
   const [loading, setLoading] = useState(false);
 
   const [modalUploadVisivel, setModalUploadVisivel] = useState(false);
+  const [modalSucessoVisivel, setModalSucessoVisivel] = useState(false);
+  const [resumoPropostaEnviada, setResumoPropostaEnviada] = useState<ResumoPropostaEnviada | null>(null);
   const [isProcessandoTexto, setIsProcessandoTexto] = useState(false);
   const [statusProcessamento, setStatusProcessamento] = useState("");
 
@@ -337,16 +346,23 @@ export function useCriarContratoMatch(route: any, navigation: any) {
 
       if (error) throw error;
 
-      Alert.alert(
-        "Proposta Enviada!",
-        "O aluno já pode visualizar as condições no chat para revisar e assinar o contrato."
-      );
-      navigation.goBack();
+      setResumoPropostaEnviada({
+        valorFormatado: `R$ ${mensalidade}`,
+        frequencia,
+        diaVencimento: diaInt,
+        modalidade,
+      });
+      setModalSucessoVisivel(true);
     } catch (error: any) {
       Alert.alert("Erro ao Enviar", error.message || "Não foi possível enviar a proposta.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleConcluirEnvio = () => {
+    setModalSucessoVisivel(false);
+    navigation.goBack();
   };
 
   return {
@@ -367,6 +383,8 @@ export function useCriarContratoMatch(route: any, navigation: any) {
       isProcessandoTexto,
       statusProcessamento,
       modalUploadVisivel,
+      modalSucessoVisivel,
+      resumoPropostaEnviada,
     },
     actions: {
       setModalidade,
@@ -389,6 +407,7 @@ export function useCriarContratoMatch(route: any, navigation: any) {
       handleMelhorarTextoManual,
       handleAplicarTextoIA,
       handleEnviarProposta,
+      handleConcluirEnvio,
     },
   };
 }
