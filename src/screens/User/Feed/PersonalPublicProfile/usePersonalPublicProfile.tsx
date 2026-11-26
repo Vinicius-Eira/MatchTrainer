@@ -134,7 +134,6 @@ export function usePersonalPublicProfile(route: any, navigation: any) {
         data: { user },
       } = await supabase.auth.getUser();
 
-      // Verificação estrita pelo ID autenticado — impede qualquer aluno de entrar como dono
       const ehDono = Boolean(user && user.id === personalId);
       setIsOwner(ehDono);
 

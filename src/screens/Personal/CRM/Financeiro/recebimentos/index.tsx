@@ -1,200 +1,34 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Modal,
   Platform,
   RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { theme } from "../../../../../theme/theme";
-
-import {
-  DIAS_SEMANA,
-  FORMAS_PAGAMENTO,
-  MESES_NOME,
-  MOTIVOS_CONGELAMENTO,
-  PdfPreset,
-  STATUS_FILTROS,
-  StatusFiltro,
-} from "./constants";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import { RecebimentosModals } from "./components/RecebimentosModals";
+import { STATUS_FILTROS, StatusFiltro } from "./constants";
 import { styles } from "./styles";
 import { useRecebimentos } from "./useRecebimentos";
 
 export function Recebimentos({ navigation }: any) {
-  const {
-    loading,
-    refreshing,
-    nomePersonal,
-    modalDataVisivel,
-    tempAno,
-    tempMes,
-    tempInicio,
-    tempFim,
-    modalPdfVisivel,
-    pdfPreset,
-    pdfAno,
-    pdfMes,
-    pdfInicio,
-    pdfFim,
-    gerandoPdf,
-    modalidadeAtiva,
-    statusAtivo,
-    buscaAlunoCongelar,
-    modalBaixaVisivel,
-    faturaSelecionada,
-    valorInput,
-    formaPgto,
-    observacao,
-    processando,
-    etapaBaixa,
-    modalCongelarVisivel,
-    alunoSelecionadoId,
-    motivoPausa,
-    textoOutroMotivo,
-    diasPausa,
-    dataRetornoCalculada,
-    fabAberto,
-    reciboRef,
-    alunosFiltrados,
-    alunosCongelarFiltrados,
-    totalRecebido,
-    totalPendente,
-    totalAtrasado,
-    totalGeral,
-    percRecebido,
-    percAReceber,
-    percAtraso,
-    hoje,
-    modalidadesPersonal,
-    formatDDMMYYYY,
+  const v = useRecebimentos(navigation);
 
-    setModalidadeAtiva,
-    setStatusAtivo,
-    abrirCalendarioTopo,
-    selecionarMesCalendario,
-    selecionarDiaCalendario,
-    aplicarFiltroCalendario,
-    setaMudarMesRapido,
-    abrirModalPdf,
-    setModalPdfVisivel,
-    selecionarPresetPdf,
-    setPdfAno,
-    selecionarMesPdf,
-    selecionarDiaPdf,
-    exportarPdfPeriodo,
-    alternarBloqueioAluno,
-    confirmarBaixaManual,
-    confirmarCongelamento,
-    compartilharReciboImage,
-    abrirWhatsApp,
-    abrirModalBaixa,
-    setTempAno,
-    setModalDataVisivel,
-    setFabAberto,
-    setModalBaixaVisivel,
-    setValorInput,
-    setFormaPgto,
-    setObservacao,
-    setAlunoSelecionadoId,
-    setModalCongelarVisivel,
-    setBuscaAlunoCongelar,
-    setMotivoPausa,
-    setTextoOutroMotivo,
-    setDiasPausa,
-    onRefresh,
-    textoHeaderData,
-  } = useRecebimentos(navigation);
-
-  const renderizarGradeCalendario = (
-    ano: number,
-    mes: number,
-    inicioSel: Date | null,
-    fimSel: Date | null,
-    onPressDia: (dia: number) => void
-  ) => {
-    const daysInMonth = new Date(ano, mes + 1, 0).getDate();
-    const firstDay = new Date(ano, mes, 1).getDay();
-    const days = [];
-
-    for (let i = 0; i < firstDay; i++) {
-      days.push(<View key={`empty-${i}`} style={styles.calDayBox} />);
-    }
-
-    for (let i = 1; i <= daysInMonth; i++) {
-      const currentDate = new Date(ano, mes, i);
-      let isSelected = false;
-      let isBetween = false;
-
-      const isToday =
-        currentDate.getDate() === hoje.getDate() &&
-        currentDate.getMonth() === hoje.getMonth() &&
-        currentDate.getFullYear() === hoje.getFullYear();
-
-      if (inicioSel && fimSel) {
-        const iniZero = new Date(inicioSel.getFullYear(), inicioSel.getMonth(), inicioSel.getDate()).getTime();
-        const fimZero = new Date(fimSel.getFullYear(), fimSel.getMonth(), fimSel.getDate()).getTime();
-        const curZero = currentDate.getTime();
-
-        if (curZero >= iniZero && curZero <= fimZero) {
-          isSelected = true;
-          if (curZero > iniZero && curZero < fimZero) isBetween = true;
-        }
-      } else if (inicioSel) {
-        if (
-          currentDate.getDate() === inicioSel.getDate() &&
-          currentDate.getMonth() === inicioSel.getMonth() &&
-          currentDate.getFullYear() === inicioSel.getFullYear()
-        ) {
-          isSelected = true;
-        }
-      }
-
-      days.push(
-        <TouchableOpacity
-          key={i}
-          style={[
-            styles.calDayBox,
-            isSelected && styles.calDayBoxSelected,
-            isBetween && styles.calDayBoxBetween,
-            isToday && !isSelected && styles.calDayBoxToday,
-          ]}
-          onPress={() => onPressDia(i)}
-        >
-          <Text
-            style={[
-              styles.calDayText,
-              isSelected && styles.calDayTextSelected,
-              isToday && !isSelected && { color: theme.colors.primary },
-            ]}
-          >
-            {i}
-          </Text>
-          {isToday && !isSelected && <View style={styles.todayDot} />}
-        </TouchableOpacity>
-      );
-    }
-
-    return days;
-  };
-
-  const exibirFiltroModalidade = modalidadesPersonal.length > 1;
+  const exibirFiltroModalidade = v.modalidadesPersonal.length > 1;
   const listaModalidadesUi = ["Todos", "Consultoria", "Presencial"];
 
   const formatMoedaCurta = (valor: number) =>
     `R$ ${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  if (loading && !refreshing) {
+  if (v.loading && !v.refreshing) {
     return (
       <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
         <ActivityIndicator size="large" color="#FF6B00" />
@@ -226,24 +60,24 @@ export function Recebimentos({ navigation }: any) {
         <View style={styles.monthSelectorCompact}>
           <TouchableOpacity
             style={styles.monthArrowSm}
-            onPress={() => setaMudarMesRapido(-1)}
+            onPress={() => v.setaMudarMesRapido(-1)}
             activeOpacity={0.7}
             hitSlop={{ top: 8, bottom: 8, left: 6, right: 4 }}
           >
             <Ionicons name="chevron-back" size={14} color="#FF6B00" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.monthCenterSm} onPress={abrirCalendarioTopo} activeOpacity={0.75}>
+          <TouchableOpacity style={styles.monthCenterSm} onPress={v.abrirCalendarioTopo} activeOpacity={0.75}>
             <Ionicons name="calendar-outline" size={12} color="#FF6B00" style={{ marginRight: 4 }} />
             <Text style={styles.monthTextSm} numberOfLines={1}>
-              {textoHeaderData()}
+              {v.textoHeaderData()}
             </Text>
             <Ionicons name="chevron-down" size={11} color="#FF6B00" style={{ marginLeft: 3 }} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.monthArrowSm}
-            onPress={() => setaMudarMesRapido(1)}
+            onPress={() => v.setaMudarMesRapido(1)}
             activeOpacity={0.7}
             hitSlop={{ top: 8, bottom: 8, left: 4, right: 6 }}
           >
@@ -260,11 +94,11 @@ export function Recebimentos({ navigation }: any) {
             {listaModalidadesUi.map((mod) => (
               <TouchableOpacity
                 key={mod}
-                style={[styles.modalidadeBtn, modalidadeAtiva === mod && styles.modalidadeBtnAtiva]}
-                onPress={() => setModalidadeAtiva(mod)}
+                style={[styles.modalidadeBtn, v.modalidadeAtiva === mod && styles.modalidadeBtnAtiva]}
+                onPress={() => v.setModalidadeAtiva(mod)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.modalidadeText, modalidadeAtiva === mod && styles.modalidadeTextAtiva]}>
+                <Text style={[styles.modalidadeText, v.modalidadeAtiva === mod && styles.modalidadeTextAtiva]}>
                   {mod}
                 </Text>
               </TouchableOpacity>
@@ -274,12 +108,15 @@ export function Recebimentos({ navigation }: any) {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusFilterScroll}>
           {STATUS_FILTROS.map((status) => {
-            const isAtivo = statusAtivo === status.id;
+            const isAtivo = v.statusAtivo === status.id;
             return (
               <TouchableOpacity
                 key={status.id}
-                style={[styles.statusChip, isAtivo && { backgroundColor: status.activeBg, borderColor: status.activeColor }]}
-                onPress={() => setStatusAtivo(status.id as StatusFiltro)}
+                style={[
+                  styles.statusChip,
+                  isAtivo && { backgroundColor: status.activeBg, borderColor: status.activeColor },
+                ]}
+                onPress={() => v.setStatusAtivo(status.id as StatusFiltro)}
                 activeOpacity={0.8}
               >
                 <Text style={[styles.statusText, isAtivo && { color: status.activeColor, fontWeight: "900" }]}>
@@ -294,7 +131,7 @@ export function Recebimentos({ navigation }: any) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B00" />}
+        refreshControl={<RefreshControl refreshing={v.refreshing} onRefresh={v.onRefresh} tintColor="#FF6B00" />}
       >
         <View style={styles.sectionPadding}>
           <View style={styles.heroCard}>
@@ -312,13 +149,13 @@ export function Recebimentos({ navigation }: any) {
                 </View>
                 <View>
                   <Text style={styles.heroTitle}>Receita Filtrada</Text>
-                  <Text style={styles.heroSubPeriod}>{textoHeaderData()}</Text>
+                  <Text style={styles.heroSubPeriod}>{v.textoHeaderData()}</Text>
                 </View>
               </View>
 
               <View style={styles.heroCountBadge}>
                 <Text style={styles.heroCountText}>
-                  {alunosFiltrados.length} {alunosFiltrados.length === 1 ? "fatura" : "faturas"}
+                  {v.alunosFiltrados.length} {v.alunosFiltrados.length === 1 ? "fatura" : "faturas"}
                 </Text>
               </View>
             </View>
@@ -326,23 +163,23 @@ export function Recebimentos({ navigation }: any) {
             <View style={styles.heroValueRow}>
               <Text style={styles.heroCurrency}>R$</Text>
               <Text style={styles.heroValue}>
-                {totalGeral.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {v.totalGeral.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
             </View>
 
             <View style={styles.stackedBarContainer}>
-              {totalGeral === 0 ? (
+              {v.totalGeral === 0 ? (
                 <View style={[styles.barSegment, { flex: 1, backgroundColor: "#1E1E26" }]} />
               ) : (
                 <>
-                  {percRecebido > 0 && (
-                    <View style={[styles.barSegment, { flex: percRecebido, backgroundColor: "#00E676" }]} />
+                  {v.percRecebido > 0 && (
+                    <View style={[styles.barSegment, { flex: v.percRecebido, backgroundColor: "#00E676" }]} />
                   )}
-                  {percAReceber > 0 && (
-                    <View style={[styles.barSegment, { flex: percAReceber, backgroundColor: "#FFD700" }]} />
+                  {v.percAReceber > 0 && (
+                    <View style={[styles.barSegment, { flex: v.percAReceber, backgroundColor: "#FFD700" }]} />
                   )}
-                  {percAtraso > 0 && (
-                    <View style={[styles.barSegment, { flex: percAtraso, backgroundColor: "#FF3B30" }]} />
+                  {v.percAtraso > 0 && (
+                    <View style={[styles.barSegment, { flex: v.percAtraso, backgroundColor: "#FF3B30" }]} />
                   )}
                 </>
               )}
@@ -355,9 +192,9 @@ export function Recebimentos({ navigation }: any) {
                   <Text style={styles.heroMetricLabel}>Recebido</Text>
                 </View>
                 <Text style={[styles.heroMetricAmount, { color: "#00E676" }]} numberOfLines={1} adjustsFontSizeToFit>
-                  {formatMoedaCurta(totalRecebido)}
+                  {formatMoedaCurta(v.totalRecebido)}
                 </Text>
-                <Text style={styles.heroMetricPct}>{percRecebido.toFixed(0)}%</Text>
+                <Text style={styles.heroMetricPct}>{v.percRecebido.toFixed(0)}%</Text>
               </View>
 
               <View style={styles.heroMetricPill}>
@@ -366,9 +203,9 @@ export function Recebimentos({ navigation }: any) {
                   <Text style={styles.heroMetricLabel}>A Receber</Text>
                 </View>
                 <Text style={[styles.heroMetricAmount, { color: "#FFD700" }]} numberOfLines={1} adjustsFontSizeToFit>
-                  {formatMoedaCurta(totalPendente)}
+                  {formatMoedaCurta(v.totalPendente)}
                 </Text>
-                <Text style={styles.heroMetricPct}>{percAReceber.toFixed(0)}%</Text>
+                <Text style={styles.heroMetricPct}>{v.percAReceber.toFixed(0)}%</Text>
               </View>
 
               <View style={styles.heroMetricPill}>
@@ -377,16 +214,16 @@ export function Recebimentos({ navigation }: any) {
                   <Text style={styles.heroMetricLabel}>Atraso</Text>
                 </View>
                 <Text style={[styles.heroMetricAmount, { color: "#FF3B30" }]} numberOfLines={1} adjustsFontSizeToFit>
-                  {formatMoedaCurta(totalAtrasado)}
+                  {formatMoedaCurta(v.totalAtrasado)}
                 </Text>
-                <Text style={styles.heroMetricPct}>{percAtraso.toFixed(0)}%</Text>
+                <Text style={styles.heroMetricPct}>{v.percAtraso.toFixed(0)}%</Text>
               </View>
             </View>
           </View>
         </View>
 
         <View style={styles.listContainer}>
-          {alunosFiltrados.length === 0 ? (
+          {v.alunosFiltrados.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <View style={styles.emptyStateIconBg}>
                 <Ionicons name="calendar-outline" size={42} color="#FF6B00" />
@@ -397,7 +234,7 @@ export function Recebimentos({ navigation }: any) {
               </Text>
             </View>
           ) : (
-            alunosFiltrados.map((item) => {
+            v.alunosFiltrados.map((item) => {
               const isAtrasado = item.status === "atrasado";
               const isPendente = item.status === "proximo" || item.status === "pendente";
               const isPago = item.status === "pago";
@@ -453,7 +290,7 @@ export function Recebimentos({ navigation }: any) {
                       conexaoId: item.conexao_id || item.plano_id,
                       aluno: item.aluno_dados,
                       statusAtual: "aluno_ativo",
-                      personalInfo: { nome: nomePersonal },
+                      personalInfo: { nome: v.nomePersonal },
                     })
                   }
                 >
@@ -532,7 +369,7 @@ export function Recebimentos({ navigation }: any) {
                             {isBloqueado && (
                               <TouchableOpacity
                                 style={[styles.btnActionSquare, styles.btnActionLockActive]}
-                                onPress={() => alternarBloqueioAluno(item)}
+                                onPress={() => v.alternarBloqueioAluno(item)}
                                 activeOpacity={0.75}
                               >
                                 <Ionicons name="lock-open-outline" size={18} color="#FF3B30" />
@@ -546,7 +383,7 @@ export function Recebimentos({ navigation }: any) {
                                 styles.btnAction,
                                 isAtrasado ? styles.btnActionWhatsAppOutline : styles.btnActionWarningOutline,
                               ]}
-                              onPress={() => abrirWhatsApp(item.telefone, item.nome, item.valor, item.status)}
+                              onPress={() => v.abrirWhatsApp(item.telefone, item.nome, item.valor, item.status)}
                               activeOpacity={0.78}
                             >
                               <MaterialCommunityIcons
@@ -555,12 +392,7 @@ export function Recebimentos({ navigation }: any) {
                                 color={isAtrasado ? "#25D366" : "#FFD700"}
                                 style={{ marginRight: 7 }}
                               />
-                              <Text
-                                style={[
-                                  styles.btnActionText,
-                                  { color: isAtrasado ? "#25D366" : "#FFD700" },
-                                ]}
-                              >
+                              <Text style={[styles.btnActionText, { color: isAtrasado ? "#25D366" : "#FFD700" }]}>
                                 {isAtrasado ? "Cobrar" : "Lembrar"}
                               </Text>
                             </TouchableOpacity>
@@ -571,7 +403,7 @@ export function Recebimentos({ navigation }: any) {
                                   styles.btnActionSquare,
                                   isBloqueado ? styles.btnActionLockActive : styles.btnActionLockIdle,
                                 ]}
-                                onPress={() => alternarBloqueioAluno(item)}
+                                onPress={() => v.alternarBloqueioAluno(item)}
                                 activeOpacity={0.75}
                               >
                                 <Ionicons
@@ -584,7 +416,7 @@ export function Recebimentos({ navigation }: any) {
 
                             <TouchableOpacity
                               style={[styles.btnActionSquare, styles.btnActionOutline]}
-                              onPress={() => abrirModalBaixa(item)}
+                              onPress={() => v.abrirModalBaixa(item)}
                               activeOpacity={0.75}
                             >
                               <Ionicons name="checkmark-circle-outline" size={20} color="#00E676" />
@@ -599,189 +431,32 @@ export function Recebimentos({ navigation }: any) {
             })
           )}
 
-          <TouchableOpacity style={styles.btnCentralPdf} onPress={abrirModalPdf} activeOpacity={0.85}>
-            <LinearGradient colors={["#14141A", "#0D0D12"]} style={styles.btnPdfGradient}>
-              <View style={styles.btnPdfIconBox}>
-                <Ionicons name="document-text-outline" size={21} color="#FF6B00" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.btnPdfTitle}>Baixar Relatório (PDF)</Text>
-                <Text style={styles.btnPdfSubtitle}>Escolha uma data ou período para exportar o extrato</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#FF6B00" />
-            </LinearGradient>
+          <TouchableOpacity style={styles.pdfExportCard} onPress={v.abrirModalPdf} activeOpacity={0.82}>
+            <View style={styles.pdfExportIconBox}>
+              <Ionicons name="document-text-outline" size={21} color="#FF6B00" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pdfExportTitle}>Exportar Relatório (PDF)</Text>
+              <Text style={styles.pdfExportSubtitle}>Escolha uma data ou período para baixar o extrato</Text>
+            </View>
+            <View style={styles.pdfExportArrowPill}>
+              <Ionicons name="download-outline" size={16} color="#FF6B00" />
+            </View>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      <Modal visible={modalDataVisivel} animationType="fade" transparent>
-        <View style={styles.modalDataOverlay}>
-          <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
-          <View style={styles.modalDataCard}>
-            <View style={styles.modalDataHeader}>
-              <TouchableOpacity onPress={() => setTempAno(tempAno - 1)} style={styles.modalDataArrow}>
-                <Ionicons name="chevron-back" size={22} color="#FFF" />
-              </TouchableOpacity>
-              <Text style={styles.modalDataAno}>{tempAno}</Text>
-              <TouchableOpacity onPress={() => setTempAno(tempAno + 1)} style={styles.modalDataArrow}>
-                <Ionicons name="chevron-forward" size={22} color="#FFF" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-              {MESES_NOME.map((mes, index) => {
-                const isActive = tempMes === index;
-                return (
-                  <TouchableOpacity
-                    key={mes}
-                    style={[styles.modalDataMesBtn, isActive && styles.modalDataMesBtnAtivo]}
-                    onPress={() => selecionarMesCalendario(index)}
-                  >
-                    <Text style={[styles.modalDataMesText, isActive && styles.modalDataMesTextAtivo]}>{mes}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-            <View style={styles.calWeekRow}>
-              {DIAS_SEMANA.map((d, i) => (
-                <Text key={i} style={styles.calWeekText}>
-                  {d}
-                </Text>
-              ))}
-            </View>
-            <View style={styles.calDaysGrid}>
-              {renderizarGradeCalendario(tempAno, tempMes, tempInicio, tempFim, selecionarDiaCalendario)}
-            </View>
-            <Text style={{ color: "#71717A", fontSize: 11, textAlign: "center", marginTop: 14 }}>
-              Toque em 1 dia específico ou selecione a data inicial e a data final.
-            </Text>
-            <View style={{ flexDirection: "row", marginTop: 20, gap: 10 }}>
-              <TouchableOpacity style={[styles.modalDataCloseBtn, { flex: 1 }]} onPress={() => setModalDataVisivel(false)}>
-                <Text style={styles.modalDataCloseText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalDataCloseBtn, { flex: 1, backgroundColor: "#FF6B00", borderColor: "#FF6B00" }]}
-                onPress={aplicarFiltroCalendario}
-              >
-                <Text style={[styles.modalDataCloseText, { color: "#000", fontWeight: "900" }]}>Aplicar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={modalPdfVisivel} animationType="slide" transparent onRequestClose={() => setModalPdfVisivel(false)}>
-        <View style={styles.modalDataOverlay}>
-          <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
-          <View style={styles.modalPdfCard}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.pdfModalSubTag}>EXTRATO FINANCEIRO</Text>
-                <Text style={styles.modalTitle}>Exportar Relatório (PDF)</Text>
-              </View>
-              <TouchableOpacity onPress={() => setModalPdfVisivel(false)} style={styles.modalCloseBtn}>
-                <Ionicons name="close" size={22} color="#888" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.pdfPresetRow}>
-              {[
-                { id: "hoje", label: "Hoje" },
-                { id: "ultimos_7", label: "7 Dias" },
-                { id: "mes_atual", label: "Mês Atual" },
-                { id: "personalizado", label: "Período" },
-              ].map((opt) => {
-                const active = pdfPreset === opt.id;
-                return (
-                  <TouchableOpacity
-                    key={opt.id}
-                    style={[styles.pdfPresetChip, active && styles.pdfPresetChipActive]}
-                    onPress={() => selecionarPresetPdf(opt.id as PdfPreset)}
-                  >
-                    <Text style={[styles.pdfPresetChipText, active && styles.pdfPresetChipTextActive]}>
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <View style={styles.pdfRangeSummary}>
-              <View style={styles.pdfRangeBox}>
-                <Text style={styles.pdfRangeLabel}>DATA INICIAL</Text>
-                <Text style={styles.pdfRangeValue}>{formatDDMMYYYY(pdfInicio)}</Text>
-              </View>
-              <Ionicons name="arrow-forward" size={16} color="#FF6B00" />
-              <View style={styles.pdfRangeBox}>
-                <Text style={styles.pdfRangeLabel}>DATA FINAL</Text>
-                <Text style={styles.pdfRangeValue}>{formatDDMMYYYY(pdfFim || pdfInicio)}</Text>
-              </View>
-            </View>
-
-            <View style={styles.modalDataHeader}>
-              <TouchableOpacity onPress={() => setPdfAno(pdfAno - 1)} style={styles.modalDataArrow}>
-                <Ionicons name="chevron-back" size={20} color="#FFF" />
-              </TouchableOpacity>
-              <Text style={styles.modalDataAno}>{pdfAno}</Text>
-              <TouchableOpacity onPress={() => setPdfAno(pdfAno + 1)} style={styles.modalDataArrow}>
-                <Ionicons name="chevron-forward" size={20} color="#FFF" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-              {MESES_NOME.map((mes, index) => {
-                const isActive = pdfMes === index;
-                return (
-                  <TouchableOpacity
-                    key={mes}
-                    style={[styles.modalDataMesBtn, isActive && styles.modalDataMesBtnAtivo]}
-                    onPress={() => selecionarMesPdf(index)}
-                  >
-                    <Text style={[styles.modalDataMesText, isActive && styles.modalDataMesTextAtivo]}>{mes}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            <View style={styles.calWeekRow}>
-              {DIAS_SEMANA.map((d, i) => (
-                <Text key={i} style={styles.calWeekText}>
-                  {d}
-                </Text>
-              ))}
-            </View>
-            <View style={styles.calDaysGrid}>
-              {renderizarGradeCalendario(pdfAno, pdfMes, pdfInicio, pdfFim, selecionarDiaPdf)}
-            </View>
-
-            <TouchableOpacity
-              style={[styles.btnExportPdfConfirm, gerandoPdf && { opacity: 0.7 }]}
-              onPress={exportarPdfPeriodo}
-              disabled={gerandoPdf}
-            >
-              {gerandoPdf ? (
-                <ActivityIndicator color="#000" />
-              ) : (
-                <>
-                  <Ionicons name="download-outline" size={20} color="#000" style={{ marginRight: 8 }} />
-                  <Text style={styles.btnConfirmarText}>GERAR EXTRATO PDF</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {fabAberto && (
-        <TouchableOpacity style={styles.fabOverlay} activeOpacity={1} onPress={() => setFabAberto(false)}>
+      {v.fabAberto && (
+        <TouchableOpacity style={styles.fabOverlay} activeOpacity={1} onPress={() => v.setFabAberto(false)}>
           <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
         </TouchableOpacity>
       )}
-      {fabAberto && (
+      {v.fabAberto && (
         <View style={styles.fabMenu}>
           <TouchableOpacity
             style={styles.fabMenuItem}
             onPress={() => {
-              setFabAberto(false);
+              v.setFabAberto(false);
               navigation.navigate("AdicionarAluno");
             }}
           >
@@ -794,11 +469,11 @@ export function Recebimentos({ navigation }: any) {
           <TouchableOpacity
             style={styles.fabMenuItem}
             onPress={() => {
-              setFabAberto(false);
-              setAlunoSelecionadoId(null);
-              setBuscaAlunoCongelar("");
-              setTextoOutroMotivo("");
-              setModalCongelarVisivel(true);
+              v.setFabAberto(false);
+              v.setAlunoSelecionadoId(null);
+              v.setBuscaAlunoCongelar("");
+              v.setTextoOutroMotivo("");
+              v.setModalCongelarVisivel(true);
             }}
           >
             <Text style={styles.fabMenuText}>Congelar Plano</Text>
@@ -809,249 +484,33 @@ export function Recebimentos({ navigation }: any) {
         </View>
       )}
 
-      <TouchableOpacity style={styles.fabPill} activeOpacity={0.88} onPress={() => setFabAberto(!fabAberto)}>
-        <View style={[styles.fabPillIconCircle, fabAberto && { backgroundColor: "rgba(255, 59, 48, 0.2)" }]}>
-          <MaterialCommunityIcons name={fabAberto ? "close" : "plus"} size={20} color={fabAberto ? "#FF3B30" : "#FF6B00"} />
+      <TouchableOpacity style={styles.fabPill} activeOpacity={0.88} onPress={() => v.setFabAberto(!v.fabAberto)}>
+        <View style={[styles.fabPillIconCircle, v.fabAberto && { backgroundColor: "rgba(255, 59, 48, 0.2)" }]}>
+          <MaterialCommunityIcons
+            name={v.fabAberto ? "close" : "plus"}
+            size={20}
+            color={v.fabAberto ? "#FF3B30" : "#FF6B00"}
+          />
         </View>
-        <Text style={[styles.fabPillText, fabAberto && { color: "#FF3B30" }]}>{fabAberto ? "Fechar" : "Ações"}</Text>
+        <Text style={[styles.fabPillText, v.fabAberto && { color: "#FF3B30" }]}>
+          {v.fabAberto ? "Fechar" : "Ações"}
+        </Text>
       </TouchableOpacity>
 
-      <Modal visible={modalBaixaVisivel} animationType="slide" transparent>
-        <KeyboardAvoidingView style={styles.modalContainer} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-          <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill} />
-          <View style={styles.modalCard}>
-            {etapaBaixa === 1 && (
-              <>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Registrar Pagamento</Text>
-                  <TouchableOpacity onPress={() => setModalBaixaVisivel(false)} style={styles.modalCloseBtn}>
-                    <Ionicons name="close" size={24} color="#888" />
-                  </TouchableOpacity>
-                </View>
-                {faturaSelecionada && (
-                  <View style={styles.modalAlunoInfo}>
-                    {faturaSelecionada.foto ? (
-                      <Image source={{ uri: faturaSelecionada.foto }} style={styles.modalAvatar} />
-                    ) : (
-                      <View style={[styles.modalAvatar, { backgroundColor: "#222", justifyContent: "center", alignItems: "center" }]}>
-                        <Ionicons name="person" size={18} color="#666" />
-                      </View>
-                    )}
-                    <View>
-                      <Text style={styles.modalAlunoNome}>{faturaSelecionada.nome}</Text>
-                      <Text style={styles.modalAlunoDetalhe}>Venc: {faturaSelecionada.dataExibicao}</Text>
-                    </View>
-                  </View>
-                )}
-                <Text style={styles.inputLabel}>Valor Recebido (R$)</Text>
-                <View style={styles.inputBox}>
-                  <Text style={styles.inputPrefix}>R$</Text>
-                  <TextInput style={styles.input} keyboardType="numeric" value={valorInput} onChangeText={setValorInput} cursorColor="#FF6B00" />
-                </View>
-                <Text style={styles.inputLabel}>Forma de Pagamento</Text>
-                <View style={styles.chipContainer}>
-                  {FORMAS_PAGAMENTO.map((f) => (
-                    <TouchableOpacity key={f} style={[styles.chipBtn, formaPgto === f && styles.chipBtnAtiva]} onPress={() => setFormaPgto(f)}>
-                      <Text style={[styles.chipText, formaPgto === f && styles.chipTextAtiva]}>{f}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <Text style={styles.inputLabel}>Observações (Opcional)</Text>
-                <View style={[styles.inputBox, { height: 80, paddingTop: 12 }]}>
-                  <TextInput style={[styles.input, { textAlignVertical: "top" }]} multiline value={observacao} onChangeText={setObservacao} cursorColor="#FF6B00" />
-                </View>
-                <TouchableOpacity style={[styles.btnConfirmar, processando && { opacity: 0.7 }]} onPress={confirmarBaixaManual} disabled={processando}>
-                  {processando ? (
-                    <ActivityIndicator color="#000" />
-                  ) : (
-                    <>
-                      <Ionicons name="checkmark-circle" size={20} color="#000" style={{ marginRight: 8 }} />
-                      <Text style={styles.btnConfirmarText}>Confirmar</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </>
-            )}
-            {etapaBaixa === 2 && (
-              <View style={{ alignItems: "center", width: "100%" }}>
-                <Text style={{ color: "#FFF", fontSize: 24, fontFamily: theme.fonts.title, marginBottom: 20 }}>Sucesso! 🎉</Text>
-                <View ref={reciboRef} collapsable={false} style={styles.reciboPremiumContainer}>
-                  <LinearGradient colors={["#1A1A1A", "#0D0D0D"]} style={[StyleSheet.absoluteFill, { borderRadius: 24 }]} />
-                  <Ionicons name="shield-checkmark" size={150} color="rgba(255, 255, 255, 0.03)" style={styles.watermarkIcon} />
-                  <View style={styles.reciboPremiumHeader}>
-                    <View style={styles.iconSuccessBg}>
-                      <Ionicons name="checkmark-sharp" size={28} color="#00E676" />
-                    </View>
-                    <Text style={styles.reciboPremiumTitle}>RECIBO DIGITAL</Text>
-                    <Text style={styles.reciboPremiumSubtitle}>{new Date().toLocaleString("pt-BR")}</Text>
-                  </View>
-                  <View style={styles.dashedLine} />
-                  <View style={styles.reciboPremiumBody}>
-                    <View style={styles.reciboPremiumRow}>
-                      <Text style={styles.reciboPremiumLabel}>De (Aluno)</Text>
-                      <Text style={styles.reciboPremiumValue}>{faturaSelecionada?.nome}</Text>
-                    </View>
-                    <View style={styles.reciboPremiumRow}>
-                      <Text style={styles.reciboPremiumLabel}>Para</Text>
-                      <Text style={styles.reciboPremiumValue}>{nomePersonal}</Text>
-                    </View>
-                    <View style={styles.reciboPremiumRow}>
-                      <Text style={styles.reciboPremiumLabel}>Método</Text>
-                      <Text style={styles.reciboPremiumValue}>{formaPgto}</Text>
-                    </View>
-                    <View style={styles.reciboPremiumRow}>
-                      <Text style={styles.reciboPremiumLabel}>Vencimento</Text>
-                      <Text style={styles.reciboPremiumValue}>{faturaSelecionada?.dataExibicao}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.dashedLine} />
-                  <View style={styles.reciboPremiumFooter}>
-                    <Text style={styles.reciboPremiumTotalLabel}>TOTAL PAGO</Text>
-                    <Text style={styles.reciboPremiumTotalValue}>R$ {valorInput}</Text>
-                  </View>
-                  <View style={styles.reciboPremiumBottomBrand}>
-                    <Ionicons name="flash" size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
-                    <Text style={styles.reciboPremiumBrandText}>Gerado por MatchTrainer</Text>
-                  </View>
-                </View>
-                <TouchableOpacity style={styles.btnSharePremium} onPress={compartilharReciboImage} activeOpacity={0.8}>
-                  <LinearGradient colors={["#0A84FF", "#0066CC"]} style={styles.btnShareGradient}>
-                    <Ionicons name="share-social" size={20} color="#FFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.btnShareText}>Compartilhar Recibo</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.btnVoltarRecibo} onPress={() => setModalBaixaVisivel(false)}>
-                  <Text style={styles.btnVoltarReciboText}>Voltar ao Painel</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+      {v.gerandoPdf && (
+        <View style={styles.pdfLoadingOverlay}>
+          <BlurView intensity={35} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.pdfLoadingCard}>
+            <ActivityIndicator size="large" color="#FF6B00" />
+            <Text style={styles.pdfLoadingTitle}>Gerando Extrato PDF</Text>
+            <Text style={styles.pdfLoadingSub}>
+              {v.etapaPdfTexto || "Preparando arquivo para salvar no aparelho..."}
+            </Text>
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        </View>
+      )}
 
-      <Modal visible={modalCongelarVisivel} animationType="slide" transparent>
-        <KeyboardAvoidingView style={styles.modalContainer} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-          <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill} />
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Congelar Contrato</Text>
-              <TouchableOpacity onPress={() => setModalCongelarVisivel(false)} style={styles.modalCloseBtn}>
-                <Ionicons name="close" size={24} color="#888" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.inputLabel}>Buscar Aluno</Text>
-            <View style={styles.searchBarBox}>
-              <Ionicons name="search" size={18} color="#666" style={{ marginRight: 8 }} />
-              <TextInput
-                style={styles.input}
-                placeholder="Digite o nome do aluno..."
-                placeholderTextColor="#666"
-                value={buscaAlunoCongelar}
-                onChangeText={setBuscaAlunoCongelar}
-              />
-            </View>
-            <ScrollView style={styles.listAlunosScroll} nestedScrollEnabled>
-              {alunosCongelarFiltrados.length === 0 ? (
-                <Text style={{ color: "#666", textAlign: "center", marginTop: 20 }}>Nenhum aluno encontrado.</Text>
-              ) : (
-                alunosCongelarFiltrados.map((aluno) => (
-                  <TouchableOpacity
-                    key={aluno.id}
-                    style={[
-                      styles.alunoListItem,
-                      alunoSelecionadoId === aluno.id && { borderColor: "#0A84FF", backgroundColor: "rgba(10,132,255,0.1)" },
-                    ]}
-                    onPress={() => setAlunoSelecionadoId(aluno.id)}
-                  >
-                    {aluno.foto ? (
-                      <Image source={{ uri: aluno.foto }} style={styles.alunoListAvatar} />
-                    ) : (
-                      <View style={[styles.alunoListAvatar, { justifyContent: "center", alignItems: "center" }]}>
-                        <Ionicons name="person" size={16} color="#666" />
-                      </View>
-                    )}
-                    <Text
-                      style={[styles.alunoListNome, alunoSelecionadoId === aluno.id && { color: "#0A84FF", fontWeight: "bold" }]}
-                      numberOfLines={1}
-                    >
-                      {aluno.nome}
-                    </Text>
-                    {alunoSelecionadoId === aluno.id && <Ionicons name="checkmark-circle" size={20} color="#0A84FF" />}
-                  </TouchableOpacity>
-                ))
-              )}
-            </ScrollView>
-
-            <Text style={styles.inputLabel}>Motivo da Pausa</Text>
-            <View style={styles.chipContainer}>
-              {MOTIVOS_CONGELAMENTO.map((mot) => (
-                <TouchableOpacity
-                  key={mot}
-                  style={[styles.chipBtn, motivoPausa === mot && { borderColor: "#0A84FF", backgroundColor: "rgba(10,132,255,0.15)" }]}
-                  onPress={() => setMotivoPausa(mot)}
-                >
-                  <Text style={[styles.chipText, motivoPausa === mot && { color: "#0A84FF" }]}>{mot}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {motivoPausa === "Outro" && (
-              <View style={[styles.inputBox, { height: 60, marginBottom: 20 }]}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Descreva o motivo (Ex: Cirurgia)..."
-                  placeholderTextColor="#666"
-                  value={textoOutroMotivo}
-                  onChangeText={setTextoOutroMotivo}
-                  cursorColor="#0A84FF"
-                />
-              </View>
-            )}
-
-            <View style={{ flexDirection: "row", gap: 12, alignItems: "center", marginBottom: 24 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabel}>Dias Pausados</Text>
-                <View style={[styles.inputBox, { marginBottom: 0 }]}>
-                  <TextInput style={styles.input} keyboardType="numeric" value={diasPausa} onChangeText={setDiasPausa} cursorColor="#0A84FF" />
-                  <Text style={styles.inputPrefix}>Dias</Text>
-                </View>
-              </View>
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: "#1A1A1A",
-                  padding: 12,
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: "#333",
-                  height: 56,
-                  marginTop: 22,
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={{ color: "#888", fontSize: 10, textTransform: "uppercase", fontWeight: "bold" }}>Retorno em</Text>
-                <Text style={{ color: "#0A84FF", fontSize: 16, fontWeight: "bold" }}>{dataRetornoCalculada}</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.btnConfirmar, { backgroundColor: "#0A84FF", shadowColor: "#0A84FF" }, processando && { opacity: 0.7 }]}
-              onPress={confirmarCongelamento}
-              disabled={processando}
-            >
-              {processando ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <>
-                  <Ionicons name="snow" size={20} color="#FFF" style={{ marginRight: 8 }} />
-                  <Text style={[styles.btnConfirmarText, { color: "#FFF" }]}>Congelar Plano</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      <RecebimentosModals v={v} />
     </View>
   );
 }

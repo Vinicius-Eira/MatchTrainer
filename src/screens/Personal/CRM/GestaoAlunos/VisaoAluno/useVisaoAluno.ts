@@ -65,7 +65,7 @@ export function useVisaoAluno(route: any, navigation: any) {
       if (!session?.user) return;
 
       const [planoRes, anamneseRes, msgsRes, conexaoRes, bioRes] = await Promise.all([
-        supabase.from("planos").select("*").eq("conexao_id", conexaoId).in("status", ["ativo", "aguardando_assinatura", "pendente"]).maybeSingle(),
+        supabase.from("planos").select("*").eq("conexao_id", conexaoId).in("status", ["ativo", "congelado", "aguardando_assinatura", "pendente"]).maybeSingle(),
         supabase.from("anamneses").select("*").eq("usuario_id", aluno.id).eq("personal_id", session.user.id).order('criado_em', { ascending: false }).limit(1).maybeSingle(), 
         supabase.from("mensagens").select("conteudo").eq("conexao_id", conexaoId).eq("tipo_remetente", "aluno").like("conteudo", "%solicitar o encerramento%"),
         supabase.from("conexoes").select("confirmado_em, atualizado_em, criado_em, status").eq("id", conexaoId).maybeSingle(),
@@ -396,16 +396,32 @@ export function useVisaoAluno(route: any, navigation: any) {
       setStatus(novoStatus);
 
       if (novoStatus === "inativo") {
-        if (planoAtivo) {
-          await supabase.from("planos").update({ status: "cancelado" }).eq("id", planoAtivo.id);
+        const { data: planosAbertos } = await supabase
+          .from("planos")
+          .select("id")
+          .eq("conexao_id", conexaoId)
+          .neq("status", "cancelado");
+
+        const idsPlanos = (planosAbertos || []).map((p) => p.id);
+
+        if (idsPlanos.length > 0) {
+          await supabase.from("planos").update({ status: "cancelado" }).in("id", idsPlanos);
+          await supabase
+            .from("mensalidades")
+            .update({ status: "cancelada" })
+            .in("plano_id", idsPlanos)
+            .neq("status", "pago");
+
           await supabase.from("historico_financeiro_logs").insert([{
-            personal_id: session?.user.id, aluno_id: aluno.id, referencia_id: planoAtivo.id,
-            tipo_evento: "CONTRATO_CANCELADO", descricao: `Contrato encerrado e parceria movida para inativos.`, metadados: { acao: "cancelamento" },
+            personal_id: session?.user.id,
+            aluno_id: aluno.id,
+            referencia_id: idsPlanos[0],
+            tipo_evento: "CONTRATO_CANCELADO",
+            descricao: "Contrato encerrado e parceria movida para inativos.",
+            metadados: { acao: "cancelamento" },
           }]);
         }
         Alert.alert("Ciclo Encerrado", "O aluno foi movido para inativos.");
-        navigation.goBack();
-      } else if (novoStatus === "recusado") {
         navigation.goBack();
       }
     } catch (error) {
